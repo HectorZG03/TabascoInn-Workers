@@ -1,0 +1,41 @@
+    body {
+        background-color: #F5F5DC; /* Beige claro como fondo principal */
+    }
+    
+    /* ✅ NUEVA CLASE ESPECÍFICA PARA HEADERS VERDES */
+    .header-verde {
+        background-color: #007A4D !important;
+        background: #007A4D !important;
+    }
+    
+    /* ✅ FORZAR COLOR VERDE EN TODOS LOS CARD-HEADERS */
+    .card-header.header-verde,
+    .card-header.header-verde * {
+        background-color: #007A4D !important;
+        background: #007A4D !important;
+        color: white !important;
+    }
+    
+    /* ✅ SOBRESCRIBIR CUALQUIER CLASE DE BOOTSTRAP QUE PUEDA INTERFERIR */
+    .card-header.header-verde.bg-primary,
+    .card-header.header-verde.bg-secondary,
+    .card-header.header-verde.bg-success,
+    .card-header.header-verde.bg-info,
+    .card-header.header-verde.bg-warning,
+    .card-header.header-verde.bg-danger,
+    .card-header.header-verde.bg-dark {
+        background-color: #007A4D !important;
+        background: #007A4D !important;
+        border-color: #007A4D !important;
+    }
+    
+    .card-hover {
+        transition: transform 0.3s, box-shadow 0.3s;
+    }
+    .card-hover:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 10px 20px rgba(43, 46, 30, 0.1);
+    }
+    .btn:hover {
+        opacity: 0.9;
+    }

@@ -1,0 +1,26 @@
+.card-hover:hover {
+    transform: translateY(-2px);
+    transition: transform 0.2s ease;
+}
+
+.avatar-preview {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: #f8f9fa;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sticky-top {
+    top: 1rem;
+}
+
+@media (max-width: 992px) {
+    .sticky-top {
+        position: relative !important;
+        top: auto !important;
+    }
+}
