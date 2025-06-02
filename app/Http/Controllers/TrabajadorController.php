@@ -374,7 +374,7 @@ class TrabajadorController extends Controller
     {
         $trabajador->load(['fichaTecnica.categoria.area', 'documentos', 'despido']);
         
-        return view('trabajadores.ver_trabajador', compact('trabajador'));
+        return redirect()->route('trabajadores.perfil.show', $trabajador);
     }
 
     /**

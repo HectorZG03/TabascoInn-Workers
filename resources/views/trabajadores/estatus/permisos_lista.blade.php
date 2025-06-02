@@ -268,11 +268,14 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <a href="{{ route('permisos.show', $permiso) }}" 
-                                               class="btn btn-outline-primary" 
-                                               title="Ver Detalles">
+                                            <!-- Ver detalles -->
+                                            <button type="button" 
+                                                    class="btn btn-outline-primary" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalDetalles{{ $permiso->id_permiso }}"
+                                                    title="Ver Detalles">
                                                 <i class="bi bi-eye"></i>
-                                            </a>
+                                            </button>
                                             
                                             @if($permiso->fecha_fin >= now())
                                                 <button type="button" 
@@ -289,6 +292,167 @@
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
                                             @endif
+                                        </div>
+
+                                        <!-- Modal de detalles del permiso -->
+                                        <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1">
+                                            <div class="modal-dialog modal-lg">
+                                                <div class="modal-content">
+                                                    <div class="modal-header" style="background-color: #17a2b8; color: white;">
+                                                        <h5 class="modal-title">
+                                                            <i class="bi bi-calendar-event-fill"></i> Detalles del Permiso Laboral
+                                                        </h5>
+                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <div class="row">
+                                                            <!-- Información del trabajador -->
+                                                            <div class="col-md-6 mb-4">
+                                                                <div class="card border-primary">
+                                                                    <div class="card-header bg-primary text-white">
+                                                                        <h6 class="mb-0"><i class="bi bi-person"></i> Datos del Trabajador</h6>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div class="text-center mb-3">
+                                                                            <div class="avatar-circle mx-auto" style="background-color: #007bff; width: 60px; height: 60px; font-size: 18px;">
+                                                                                {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
+                                                                            </div>
+                                                                        </div>
+                                                                        <h5 class="text-center text-primary mb-3">{{ $permiso->trabajador->nombre_completo }}</h5>
+                                                                        
+                                                                        <div class="row text-sm">
+                                                                            <div class="col-12 mb-2">
+                                                                                <strong>ID:</strong> {{ $permiso->trabajador->id_trabajador }}
+                                                                            </div>
+                                                                            @if($permiso->trabajador->fichaTecnica)
+                                                                            <div class="col-12 mb-2">
+                                                                                <strong>Área:</strong> {{ $permiso->trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
+                                                                            </div>
+                                                                            <div class="col-12 mb-2">
+                                                                                <strong>Cargo:</strong> {{ $permiso->trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
+                                                                            </div>
+                                                                            @endif
+                                                                            <div class="col-12 mb-2">
+                                                                                <strong>Fecha Ingreso:</strong> 
+                                                                                <span class="badge bg-success">{{ $permiso->trabajador->fecha_ingreso->format('d/m/Y') }}</span>
+                                                                            </div>
+                                                                            <div class="col-12">
+                                                                                <strong>Estado Actual:</strong> 
+                                                                                <span class="badge bg-{{ $colorTipo[$permiso->trabajador->estatus] ?? 'secondary' }}">
+                                                                                    {{ $tiposPermisos[$permiso->trabajador->estatus] ?? ucfirst($permiso->trabajador->estatus) }}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Información del permiso -->
+                                                            <div class="col-md-6 mb-4">
+                                                                <div class="card border-info">
+                                                                    <div class="card-header bg-info text-white">
+                                                                        <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Datos del Permiso</h6>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-bold">Tipo de Permiso:</label>
+                                                                            <div>
+                                                                                <span class="badge bg-{{ $colorTipo[$permiso->tipo_permiso] ?? 'secondary' }} fs-6">
+                                                                                    <i class="{{ $iconoTipo[$permiso->tipo_permiso] ?? 'bi-calendar' }}"></i>
+                                                                                    {{ $tiposPermisos[$permiso->tipo_permiso] ?? $permiso->tipo_permiso }}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-bold">Periodo:</label>
+                                                                            <div class="row">
+                                                                                <div class="col-6">
+                                                                                    <small class="text-muted">Inicio:</small>
+                                                                                    <div class="fw-medium">{{ $permiso->fecha_inicio->format('d/m/Y') }}</div>
+                                                                                </div>
+                                                                                <div class="col-6">
+                                                                                    <small class="text-muted">Fin:</small>
+                                                                                    <div class="fw-medium">{{ $permiso->fecha_fin->format('d/m/Y') }}</div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-bold">Duración:</label>
+                                                                            <div>
+                                                                                <span class="badge bg-light text-dark border fs-6">
+                                                                                    {{ $permiso->dias_de_permiso }} día{{ $permiso->dias_de_permiso != 1 ? 's' : '' }}
+                                                                                </span>
+                                                                            </div>
+                                                                        </div>
+
+                                                                        <div class="mb-3">
+                                                                            <label class="form-label fw-bold">Estado:</label>
+                                                                            <div>
+                                                                                @if($permiso->fecha_fin >= now())
+                                                                                    <span class="badge bg-success fs-6">Activo</span>
+                                                                                    @if($permiso->fecha_fin->diffInDays(now()) <= 3)
+                                                                                        <div class="text-warning small mt-1">
+                                                                                            <i class="bi bi-exclamation-triangle"></i> Próximo a vencer en {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                        </div>
+                                                                                    @else
+                                                                                        <div class="text-muted small mt-1">
+                                                                                            Finaliza en {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                        </div>
+                                                                                    @endif
+                                                                                @else
+                                                                                    <span class="badge bg-secondary fs-6">Vencido</span>
+                                                                                    <div class="text-muted small mt-1">
+                                                                                        Venció hace {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                    </div>
+                                                                                @endif
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+
+                                                            <!-- Observaciones (si existen) -->
+                                                            @if($permiso->observaciones)
+                                                            <div class="col-12">
+                                                                <div class="card border-warning">
+                                                                    <div class="card-header bg-warning">
+                                                                        <h6 class="mb-0"><i class="bi bi-sticky"></i> Observaciones</h6>
+                                                                    </div>
+                                                                    <div class="card-body">
+                                                                        <div class="bg-light p-3 rounded">
+                                                                            {{ $permiso->observaciones }}
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            <i class="bi bi-x-circle"></i> Cerrar
+                                                        </button>
+                                                        
+                                                        @if($permiso->fecha_fin >= now())
+                                                            <button type="button" 
+                                                                    class="btn btn-warning" 
+                                                                    onclick="finalizarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')"
+                                                                    data-bs-dismiss="modal">
+                                                                <i class="bi bi-check-circle"></i> Finalizar Permiso
+                                                            </button>
+                                                            
+                                                            <button type="button" 
+                                                                    class="btn btn-danger" 
+                                                                    onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')"
+                                                                    data-bs-dismiss="modal">
+                                                                <i class="bi bi-x-circle"></i> Cancelar Permiso
+                                                            </button>
+                                                        @endif
+                                                    </div>
+                                                </div>
+                                            </div>
                                         </div>
                                     </td>
                                 </tr>
@@ -328,6 +492,21 @@
         @endif
     </div>
 </div>
+
+<!-- Estilos adicionales -->
+<style>
+.avatar-circle {
+    width: 40px;
+    height: 40px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: white;
+    font-weight: bold;
+    font-size: 14px;
+}
+</style>
 
 <script>
 function finalizarPermiso(permisoId, nombreTrabajador) {

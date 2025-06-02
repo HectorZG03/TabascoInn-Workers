@@ -5,6 +5,7 @@ use App\Http\Controllers\TrabajadorController;
 use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
 use App\Http\Controllers\PermisosLaboralesController;
+use App\Http\Controllers\BusquedaTrabajadoresController;
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -19,7 +20,20 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rutas protegidas
 Route::middleware(['auth'])->group(function () {
-   
+
+    // Rutas para búsqueda de trabajadores
+    Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
+        ->name('trabajadores.buscar');
+
+    Route::get('/api/trabajadores/busqueda-rapida', [BusquedaTrabajadoresController::class, 'busquedaRapida'])
+        ->name('trabajadores.busqueda.rapida');
+
+    Route::get('/api/trabajadores/sugerencias', [BusquedaTrabajadoresController::class, 'sugerencias'])
+        ->name('trabajadores.sugerencias');
+
+    Route::get('/api/trabajadores/estadisticas', [BusquedaTrabajadoresController::class, 'estadisticas'])
+        ->name('trabajadores.estadisticas');
+    
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
    

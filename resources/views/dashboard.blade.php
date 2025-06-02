@@ -95,9 +95,9 @@
                 <i class="bi bi-search fs-1 mb-3" style="color: #007A4D;"></i>
                 <h5 class="card-title" style="color: #2F2F2F;">Búsqueda</h5>
                 <p class="card-text" style="color: #5D3A1A;">Buscar empleados y consultar información</p>
-                <button class="btn" style="border-color: #007A4D; color: #007A4D;">
-                    <i class="bi bi-arrow-right"></i> Buscar
-                </button>
+                <a href="{{ route('trabajadores.buscar') }}" class="btn" style="border-color: #007A4D; color: #007A4D;">
+                                <i class="bi bi-arrow-right"></i> Buscar
+                </a>
             </div>
         </div>
     </div>
