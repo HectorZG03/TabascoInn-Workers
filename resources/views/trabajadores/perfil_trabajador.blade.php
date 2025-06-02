@@ -27,10 +27,6 @@
                                 {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
                             </p>
                             <div class="d-flex gap-2 mt-2">
-                                <span class="badge bg-{{ $trabajador->estatus_color }} fs-6">
-                                    <i class="{{ $trabajador->estatus_icono }}"></i>
-                                    {{ $trabajador->estatus_texto }}
-                                </span>
                                 @if($trabajador->es_nuevo)
                                     <span class="badge bg-info">
                                         <i class="bi bi-star"></i> Nuevo
@@ -74,9 +70,6 @@
                         </button>
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
-                        </button>
-                        <button class="nav-link" id="nav-estado-tab" data-bs-toggle="tab" data-bs-target="#nav-estado" type="button" role="tab">
-                            <i class="bi bi-gear"></i> Estado
                         </button>
                     </div>
                 </nav>
@@ -554,110 +547,6 @@
                                 </div>
                             </div>
                         @endforeach
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- ESTADO -->
-        <div class="tab-pane fade" id="nav-estado" role="tabpanel">
-            <div class="card shadow">
-                <div class="card-header bg-info text-white">
-                    <h5 class="mb-0">
-                        <i class="bi bi-gear"></i> Gestión de Estado
-                    </h5>
-                </div>
-                <div class="card-body">
-                    <div class="row">
-                        <!-- Estado Actual -->
-                        <div class="col-md-6 mb-4">
-                            <h6>Estado Actual</h6>
-                            <div class="alert alert-{{ $trabajador->estatus_color }} d-flex align-items-center" role="alert">
-                                <i class="{{ $trabajador->estatus_icono }} me-2"></i>
-                                <div>
-                                    <strong>{{ $trabajador->estatus_texto }}</strong>
-                                    @if($trabajador->puedeRegresar())
-                                        <br><small>Este es un estado temporal</small>
-                                    @elseif($trabajador->requiereAtencion())
-                                        <br><small>Este estado requiere atención</small>
-                                    @endif
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Cambiar Estado -->
-                        <div class="col-md-6">
-                            <h6>Cambiar Estado</h6>
-                            <form action="{{ route('trabajadores.perfil.update-estado', $trabajador) }}" method="POST">
-                                @csrf
-                                @method('PUT')
-                                
-                                <div class="mb-3">
-                                    <label for="estatus" class="form-label">Nuevo Estado</label>
-                                    <select class="form-select @error('estatus') is-invalid @enderror" 
-                                            id="estatus" 
-                                            name="estatus" 
-                                            required>
-                                        <option value="">Seleccionar estado...</option>
-                                        @foreach($estados as $valor => $texto)
-                                            @if($valor !== $trabajador->estatus)
-                                                <option value="{{ $valor }}">{{ $texto }}</option>
-                                            @endif
-                                        @endforeach
-                                    </select>
-                                    @error('estatus')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <div class="mb-3">
-                                    <label for="observaciones" class="form-label">Observaciones (opcional)</label>
-                                    <textarea class="form-control @error('observaciones') is-invalid @enderror" 
-                                              id="observaciones" 
-                                              name="observaciones" 
-                                              rows="3" 
-                                              placeholder="Motivo del cambio de estado..."></textarea>
-                                    @error('observaciones')
-                                        <div class="invalid-feedback">{{ $message }}</div>
-                                    @enderror
-                                </div>
-
-                                <button type="submit" class="btn btn-warning">
-                                    <i class="bi bi-arrow-repeat"></i> Cambiar Estado
-                                </button>
-                            </form>
-                        </div>
-                    </div>
-
-                    <!-- Información Adicional -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <h6>Información del Empleado</h6>
-                            <div class="table-responsive">
-                                <table class="table table-sm">
-                                    <tbody>
-                                        <tr>
-                                            <td><strong>Edad:</strong></td>
-                                            <td>{{ $stats['edad'] }} años</td>
-                                            <td><strong>Antigüedad:</strong></td>
-                                            <td>{{ $stats['antiguedad_texto'] }}</td>
-                                        </tr>
-                                        <tr>
-                                            <td><strong>Documentos Básicos:</strong></td>
-                                            <td>
-                                                @if($stats['documentos_basicos_completos'])
-                                                    <span class="badge bg-success">Completos</span>
-                                                @else
-                                                    <span class="badge bg-warning">Incompletos</span>
-                                                @endif
-                                            </td>
-                                            <td><strong>Última Actualización:</strong></td>
-                                            <td>{{ $stats['ultima_actualizacion'] }}</td>
-                                        </tr>
-                                    </tbody>
-                                </table>
-                            </div>
-                        </div>
                     </div>
                 </div>
             </div>

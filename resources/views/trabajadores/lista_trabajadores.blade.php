@@ -223,7 +223,6 @@
                                             <span class="badge bg-success">
                                                 ${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}
                                             </span>
-                                            {{-- ✅ ESTADO CON NUEVO ENUM --}}
                                             <span class="badge bg-{{ $trabajador->estatus_color }}">
                                                 <i class="{{ $trabajador->estatus_icono }}"></i>
                                                 {{ $trabajador->estatus_texto }}
@@ -269,7 +268,6 @@
                                         <div class="text-primary fw-medium">{{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'N/A' }}</div>
                                         <div class="text-muted small">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}</div>
                                     </td>
-                                    {{-- ✅ NUEVA COLUMNA DE ESTADO --}}
                                     <td>
                                         <span class="badge bg-{{ $trabajador->estatus_color }} fs-6">
                                             <i class="{{ $trabajador->estatus_icono }}"></i>
@@ -300,7 +298,6 @@
                                             ${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}
                                         </span>
                                     </td>
-                                    {{-- ✅ ANTIGÜEDAD SIMPLE DESDE BD --}}
                                     <td>
                                         <div class="small">
                                             <div class="fw-medium">
@@ -338,13 +335,35 @@
                                     </td>
                                     <td>
                                         <div class="btn-group btn-group-sm" role="group">
-                                            <!-- ✅ BOTÓN PARA VER PERFIL COMPLETO -->
+                                            <!-- Ver Perfil Completo -->
                                             <a href="{{ route('trabajadores.perfil.show', $trabajador) }}" 
-                                            class="btn btn-outline-primary" 
-                                            title="Ver Perfil Completo">
+                                               class="btn btn-outline-primary" 
+                                               title="Ver Perfil Completo">
                                                 <i class="bi bi-person-circle"></i>
                                             </a>
                                             
+                                            <!-- Asignar Permisos - Solo para trabajadores activos -->
+                                            @if($trabajador->estaActivo())
+                                                <button type="button" 
+                                                        class="btn btn-outline-info btn-permisos" 
+                                                        title="Asignar Permisos"
+                                                        data-id="{{ $trabajador->id_trabajador }}"
+                                                        data-nombre="{{ $trabajador->nombre_completo }}">
+                                                    <i class="bi bi-calendar-event"></i>
+                                                </button>
+                                            @endif
+                                            
+                                            <!-- Despedir - Solo para trabajadores activos -->
+                                            @if($trabajador->estaActivo())
+                                                <button type="button" 
+                                                        class="btn btn-outline-danger btn-despedir" 
+                                                        title="Despedir Trabajador"
+                                                        data-id="{{ $trabajador->id_trabajador }}"
+                                                        data-nombre="{{ $trabajador->nombre_completo }}"
+                                                        data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
+                                                    <i class="bi bi-person-x"></i>
+                                                </button>
+                                            @endif
                                         </div>
                                     </td>
                                 </tr>
@@ -394,76 +413,89 @@
     </div>
 </div>
 
-{{-- ✅ SCRIPT MEJORADO --}}
+{{-- ✅ INCLUIR MODALES --}}
+@include('trabajadores.modales.despidos')
+@include('trabajadores.modales.permisos')
+
+{{-- ✅ SCRIPTS DE LA VISTA PRINCIPAL --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // Auto-submit del formulario de filtros cuando cambian los selects
+    // ✅ FUNCIONALIDAD DE FILTROS Y BÚSQUEDA
     const areaSelect = document.getElementById('area');
     const categoriaSelect = document.getElementById('categoria');
     const estatusSelect = document.getElementById('estatus');
     const searchInput = document.getElementById('search');
     
     // Cargar categorías cuando cambia el área
-    areaSelect.addEventListener('change', function() {
-        const areaId = this.value;
-        
-        // Limpiar categorías
-        categoriaSelect.innerHTML = '<option value="">Todas las categorías</option>';
-        
-        if (areaId) {
-            // Cargar categorías de esta área
-            fetch(`/api/categorias/${areaId}`)
-                .then(response => {
-                    if (!response.ok) {
-                        throw new Error('Error en la respuesta del servidor');
-                    }
-                    return response.json();
-                })
-                .then(categorias => {
-                    categorias.forEach(categoria => {
-                        const option = document.createElement('option');
-                        option.value = categoria.id_categoria;
-                        option.textContent = categoria.nombre_categoria;
-                        
-                        // Mantener selección si existe
-                        if (categoria.id_categoria == '{{ request("categoria") }}') {
-                            option.selected = true;
+    if (areaSelect && categoriaSelect) {
+        areaSelect.addEventListener('change', function() {
+            const areaId = this.value;
+            
+            // Limpiar categorías
+            categoriaSelect.innerHTML = '<option value="">Todas las categorías</option>';
+            
+            if (areaId) {
+                // Cargar categorías de esta área
+                fetch(`/api/categorias/${areaId}`)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error('Error en la respuesta del servidor');
                         }
-                        
-                        categoriaSelect.appendChild(option);
+                        return response.json();
+                    })
+                    .then(categorias => {
+                        categorias.forEach(categoria => {
+                            const option = document.createElement('option');
+                            option.value = categoria.id_categoria;
+                            option.textContent = categoria.nombre_categoria;
+                            
+                            // Mantener selección si existe
+                            if (categoria.id_categoria == '{{ request("categoria") }}') {
+                                option.selected = true;
+                            }
+                            
+                            categoriaSelect.appendChild(option);
+                        });
+                    })
+                    .catch(error => {
+                        console.error('Error cargando categorías:', error);
                     });
-                })
-                .catch(error => {
-                    console.error('Error cargando categorías:', error);
-                    // Mostrar mensaje de error opcional
-                });
-        }
-    });
+            }
+        });
+    }
     
     // Auto-submit con debounce para búsqueda
-    let searchTimeout;
-    searchInput.addEventListener('input', function() {
-        clearTimeout(searchTimeout);
-        searchTimeout = setTimeout(() => {
-            document.getElementById('filtrosForm').submit();
-        }, 500);
-    });
+    if (searchInput) {
+        let searchTimeout;
+        searchInput.addEventListener('input', function() {
+            clearTimeout(searchTimeout);
+            searchTimeout = setTimeout(() => {
+                document.getElementById('filtrosForm').submit();
+            }, 500);
+        });
+    }
     
     // Submit inmediato para selects
-    areaSelect.addEventListener('change', () => {
-        setTimeout(() => {
-            document.getElementById('filtrosForm').submit();
-        }, 100);
-    });
+    if (areaSelect) {
+        areaSelect.addEventListener('change', () => {
+            setTimeout(() => {
+                document.getElementById('filtrosForm').submit();
+            }, 100);
+        });
+    }
     
-    categoriaSelect.addEventListener('change', () => {
-        document.getElementById('filtrosForm').submit();
-    });
+    if (categoriaSelect) {
+        categoriaSelect.addEventListener('change', () => {
+            document.getElementById('filtrosForm').submit();
+        });
+    }
     
     // Submit inmediato para estado
-    estatusSelect.addEventListener('change', () => {
-        document.getElementById('filtrosForm').submit();
-    });
+    if (estatusSelect) {
+        estatusSelect.addEventListener('change', () => {
+            document.getElementById('filtrosForm').submit();
+        });
+    }
     
     // Auto-hide alerts después de 5 segundos
     setTimeout(() => {
@@ -475,6 +507,8 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }, 5000);
+    
+    console.log('✅ Vista lista trabajadores inicializada correctamente');
 });
 </script>
 

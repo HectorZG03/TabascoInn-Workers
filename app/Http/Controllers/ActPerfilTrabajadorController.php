@@ -39,9 +39,6 @@ class ActPerfilTrabajadorController extends Controller
                                  ->get();
         }
 
-        // Estados disponibles
-        $estados = Trabajador::TODOS_ESTADOS;
-
         // Estadísticas del trabajador
         $stats = $this->calcularEstadisticasTrabajador($trabajador);
 
@@ -49,7 +46,6 @@ class ActPerfilTrabajadorController extends Controller
             'trabajador', 
             'areas', 
             'categorias', 
-            'estados',
             'stats'
         ));
     }
@@ -195,53 +191,6 @@ class ActPerfilTrabajadorController extends Controller
             ]);
 
             return back()->withErrors(['error' => 'Error al actualizar los datos laborales: ' . $e->getMessage()]);
-        }
-    }
-
-    /**
-     * Cambiar estado del trabajador
-     */
-    public function updateEstado(Request $request, Trabajador $trabajador)
-    {
-        $validated = $request->validate([
-            'estatus' => 'required|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
-            'observaciones' => 'nullable|string|max:500'
-        ], [
-            'estatus.required' => 'Debe seleccionar un estado',
-            'estatus.in' => 'El estado seleccionado no es válido',
-        ]);
-
-        DB::beginTransaction();
-        
-        try {
-            $estadoAnterior = $trabajador->estatus;
-            
-            $trabajador->update([
-                'estatus' => $validated['estatus']
-            ]);
-
-            // Log del cambio de estado
-            Log::info('Estado de trabajador cambiado', [
-                'trabajador_id' => $trabajador->id_trabajador,
-                'estado_anterior' => $estadoAnterior,
-                'estado_nuevo' => $validated['estatus'],
-                'observaciones' => $validated['observaciones'] ?? null,
-                'usuario' => Auth::user()->email ?? 'Sistema'
-            ]);
-
-            DB::commit();
-
-            return back()->with('success', "Estado cambiado de '{$trabajador::TODOS_ESTADOS[$estadoAnterior]}' a '{$trabajador->estatus_texto}' exitosamente");
-
-        } catch (\Exception $e) {
-            DB::rollback();
-            
-            Log::error('Error al cambiar estado del trabajador', [
-                'trabajador_id' => $trabajador->id_trabajador,
-                'error' => $e->getMessage()
-            ]);
-
-            return back()->withErrors(['error' => 'Error al cambiar el estado: ' . $e->getMessage()]);
         }
     }
 

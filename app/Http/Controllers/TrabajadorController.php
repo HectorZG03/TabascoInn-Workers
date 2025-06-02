@@ -277,7 +277,7 @@ class TrabajadorController extends Controller
                         if (!Storage::disk('public')->exists($ruta)) {
                             throw new \Exception("El archivo {$tipo} no existe después de guardarlo");
                         }
-                        
+                           
                         $documentosData[$tipo] = $ruta;
                         $documentosSubidos[] = $tipo;
                         

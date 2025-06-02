@@ -48,11 +48,11 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #D2B48C;">
             <div class="card-body text-center" style="background-color: #FFFFFF;">
-                <i class="bi bi-file-earmark-text fs-1 mb-3" style="color: #D2B48C;"></i>
-                <h5 class="card-title" style="color: #2F2F2F;">Lista de Trabajadores</h5>
+                <i class="bi bi-file-earmark-text fs-1 mb-3" style="color: #12e416;"></i>
+                <h5 class="card-title" style="color: #2F2F2F;">Lista de Trabajadores Activos</h5>
                 <p class="card-text" style="color: #5D3A1A;">Lista de trabajadores en el sistema </p>
-                    <a href="{{ route('trabajadores.index') }}" class="btn text-white" style="background-color: #D2B48C;">
-                        <i class="bi bi-arrow-right"></i> Ver Reportes
+                    <a href="{{ route('trabajadores.index') }}" class="btn text-white" style="background-color: #12e416;">
+                        <i class="bi bi-arrow-right"></i> Ver lista
                     </a>
             </div>
         </div>
@@ -62,11 +62,11 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">
             <div class="card-body text-center" style="background-color: #FFFFFF;">
-                <i class="bi bi-graph-up fs-1 mb-3" style="color: #007A4D;"></i>
-                <h5 class="card-title" style="color: #2F2F2F;">Dashboard Ejecutivo</h5>
-                <p class="card-text" style="color: #5D3A1A;">Métricas, KPIs y análisis de rendimiento</p>
-                <button class="btn text-white" style="background-color: #007A4D;">
-                    <i class="bi bi-arrow-right"></i> Ver Dashboard
+                <i class="bi bi-file-earmark-text fs-1 mb-3" style="color: #be0b0b;"></i>
+                <h5 class="card-title" style="color: #2F2F2F;">Lista de Trabajdores Inactivos</h5>
+                <p class="card-text" style="color: #5D3A1A;">Lista y gestion de estado de trbajadores dados de baja</p>
+                <button class="btn text-white" style="background-color: #be0b0b;">
+                    <i class="bi bi-arrow-right"></i> Ver lista
                 </button>
             </div>
         </div>
