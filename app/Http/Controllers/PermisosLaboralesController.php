@@ -185,7 +185,7 @@ class PermisosLaboralesController extends Controller
             'permiso_especial' => 'Permiso Especial',
         ];
 
-        return view('permisos.index', compact('permisos', 'stats', 'tiposPermisos'));
+            return view('trabajadores.estatus.permisos_lista', compact('permisos', 'stats', 'tiposPermisos'));
     }
 
     /**

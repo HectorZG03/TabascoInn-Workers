@@ -172,7 +172,7 @@ class DespidosController extends Controller
             'Fin de Contrato'
         ];
 
-        return view('despidos.index', compact('despidos', 'stats', 'condiciones'));
+        return view('trabajadores.estatus.despidos_lista', compact('despidos', 'stats', 'condiciones'));
     }
 
     /**
