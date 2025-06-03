@@ -14,29 +14,50 @@ class BusquedaTrabajadoresController extends Controller
     /**
      * Mostrar la página principal de búsqueda
      */
-    public function index(Request $request)
-    {
-        // Obtener datos para los filtros
-        $areas = Area::orderBy('nombre_area')->get();
-        $categorias = Categoria::with('area')->orderBy('nombre_categoria')->get();
-        
-        $trabajadores = null;
-        $stats = null;
+/**
+ * Mostrar la página principal de búsqueda
+ */
+public function index(Request $request)
+{
+    // Obtener datos para los filtros
+    $areas = Area::orderBy('nombre_area')->get();
+    $categorias = Categoria::with('area')->orderBy('nombre_categoria')->get();
+    
+    $trabajadores = null;
+    $stats = null;
 
-        // Si hay parámetros de búsqueda, realizar la consulta
-        if ($request->hasAny(['search', 'area', 'estatus', 'categoria', 'sexo', 'edad_min', 'edad_max', 'fecha_ingreso_desde', 'fecha_ingreso_hasta'])) {
-            
-            // Verificar si es una solicitud de exportación
-            if ($request->has('export')) {
-                return $this->exportarResultados($request);
-            }
-            
-            $trabajadores = $this->buscarTrabajadores($request);
-            $stats = $this->calcularEstadisticas($trabajadores->getCollection());
+    // ✅ CORRECCIÓN: Verificar parámetros de búsqueda INCLUYENDO 'page' cuando hay session
+    $parametrosBusqueda = ['search', 'area', 'estatus', 'categoria', 'sexo', 'edad_min', 'edad_max', 'fecha_ingreso_desde', 'fecha_ingreso_hasta'];
+    
+    // Verificar si hay búsqueda activa
+    $hayBusquedaActiva = $request->hasAny($parametrosBusqueda) || 
+                        ($request->has('page') && session()->has('ultima_busqueda'));
+    
+    if ($hayBusquedaActiva) {
+        // Si solo hay parámetro 'page', restaurar la última búsqueda desde la sesión
+        if ($request->has('page') && !$request->hasAny($parametrosBusqueda) && session()->has('ultima_busqueda')) {
+            $request->merge(session('ultima_busqueda'));
         }
-
-        return view('trabajadores.buscar', compact('areas', 'categorias', 'trabajadores', 'stats'));
+        
+        // Guardar parámetros de búsqueda en sesión (solo si no es solo 'page')
+        if ($request->hasAny($parametrosBusqueda)) {
+            session(['ultima_busqueda' => $request->only($parametrosBusqueda)]);
+        }
+        
+        // Verificar si es una solicitud de exportación
+        if ($request->has('export')) {
+            return $this->exportarResultados($request);
+        }
+        
+        $trabajadores = $this->buscarTrabajadores($request);
+        $stats = $this->calcularEstadisticas($trabajadores->getCollection());
+    } else {
+        // Limpiar sesión si no hay búsqueda
+        session()->forget('ultima_busqueda');
     }
+
+    return view('trabajadores.buscar', compact('areas', 'categorias', 'trabajadores', 'stats'));
+}
 
     /**
      * Realizar búsqueda de trabajadores con filtros
@@ -110,8 +131,12 @@ class BusquedaTrabajadoresController extends Controller
         // Ordenar por nombre
         $query->orderBy('nombre_trabajador')->orderBy('ape_pat');
 
-        // Paginar resultados
-        return $query->paginate(15)->appends($request->query());
+        // ✅ CORRECCIÓN: Asegurar que los parámetros se mantengan
+        $perPage = $request->get('per_page', 15);
+        $perPage = in_array($perPage, [15, 25, 50, 100]) ? $perPage : 15;
+
+        // Paginar resultados manteniendo TODOS los parámetros de la query
+        return $query->paginate($perPage)->withQueryString();
     }
 
     /**
@@ -382,7 +407,7 @@ class BusquedaTrabajadoresController extends Controller
     /**
      * Exportar a PDF
      */
-    private function exportarPDF($trabajadorxes)
+    private function exportarPDF($trabajadores)
     {
         // Implementar exportación a PDF usando DomPDF o similar
         // Por ahora redirijo con mensaje

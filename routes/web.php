@@ -6,6 +6,8 @@ use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
 use App\Http\Controllers\PermisosLaboralesController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
+use App\Http\Controllers\ImportController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -21,6 +23,40 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 // Rutas protegidas
 Route::middleware(['auth'])->group(function () {
 
+    // ✅ RUTAS DE CONFIGURACIÓN DE USUARIO
+    Route::prefix('configuracion')->name('users.')->group(function () {
+        // Menú principal de configuración
+        Route::get('/', [UserController::class, 'configMenu'])->name('config');
+        
+        // Perfil personal
+        Route::get('/perfil', [UserController::class, 'profile'])->name('profile');
+        Route::put('/perfil', [UserController::class, 'updateProfile'])->name('profile.update');
+        
+        // Cambio de contraseña
+        Route::get('/seguridad', [UserController::class, 'changePassword'])->name('change-password');
+        Route::put('/seguridad', [UserController::class, 'updatePassword'])->name('password.update');
+        
+        // Preferencias del usuario
+        Route::get('/preferencias', [UserController::class, 'preferences'])->name('preferences');
+        Route::put('/preferencias', [UserController::class, 'updatePreferences'])->name('preferences.update');
+        
+        // Actividad reciente
+        Route::get('/actividad', [UserController::class, 'activity'])->name('activity');
+        
+        // Gestión de usuarios (solo para gerencia)
+        Route::middleware('check.gerencia')->group(function () {
+            Route::get('/usuarios', [UserController::class, 'manageUsers'])->name('manage');
+            Route::get('/sistema', [UserController::class, 'systemConfig'])->name('system.config');
+        });
+    });
+
+    // ✅ RUTAS DE AYUDA
+    Route::prefix('ayuda')->name('help.')->group(function () {
+        Route::get('/', [UserController::class, 'helpIndex'])->name('index');
+        Route::get('/manual', [UserController::class, 'manual'])->name('manual');
+        Route::get('/soporte', [UserController::class, 'support'])->name('support');
+    });
+    
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
         ->name('trabajadores.buscar');
@@ -36,6 +72,15 @@ Route::middleware(['auth'])->group(function () {
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+
+    // ✅ RUTAS DE IMPORTACIÓN MASIVA
+    Route::prefix('import')->name('import.')->group(function () {
+        // Descargar plantilla Excel
+        Route::get('/plantilla', [ImportController::class, 'descargarPlantilla'])->name('plantilla');
+        
+        // Procesar importación masiva
+        Route::post('/procesar', [ImportController::class, 'importarTrabajadores'])->name('procesar');
+    });
    
     // ✅ RUTAS DE TRABAJADORES - Gestión General
     Route::prefix('trabajadores')->name('trabajadores.')->group(function () {

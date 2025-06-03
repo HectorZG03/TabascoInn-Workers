@@ -109,9 +109,9 @@
                 <i class="bi bi-gear fs-1 mb-3" style="color: #D2B48C;"></i>
                 <h5 class="card-title" style="color: #2F2F2F;">Configuración</h5>
                 <p class="card-text" style="color: #5D3A1A;">Ajustes del sistema y perfil de usuario</p>
-                <button class="btn" style="border-color: #D2B48C; color: #5D3A1A;">
-                    <i class="bi bi-arrow-right"></i> Configurar
-                </button>
+            <a href="{{ route('users.config') }}" class="btn" style="border-color: #D2B48C; color: #5D3A1A;">
+                <i class="bi bi-arrow-right"></i> Configurar
+            </a>
             </div>
         </div>
     </div>

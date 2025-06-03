@@ -109,37 +109,6 @@
                         </select>
                     </div>
 
-                    <!-- Género -->
-                    <div class="col-md-2">
-                        <label for="sexo" class="form-label fw-medium">Género</label>
-                        <select class="form-select" id="sexo" name="sexo">
-                            <option value="">Todos</option>
-                            <option value="M" {{ request('sexo') == 'M' ? 'selected' : '' }}>Masculino</option>
-                            <option value="F" {{ request('sexo') == 'F' ? 'selected' : '' }}>Femenino</option>
-                        </select>
-                    </div>
-
-                    <!-- Edad -->
-                    <div class="col-md-2">
-                        <label for="edad_min" class="form-label fw-medium">Edad mín.</label>
-                        <input type="number" 
-                               class="form-control" 
-                               id="edad_min" 
-                               name="edad_min" 
-                               value="{{ request('edad_min') }}"
-                               min="18" max="100">
-                    </div>
-
-                    <div class="col-md-2">
-                        <label for="edad_max" class="form-label fw-medium">Edad máx.</label>
-                        <input type="number" 
-                               class="form-control" 
-                               id="edad_max" 
-                               name="edad_max" 
-                               value="{{ request('edad_max') }}"
-                               min="18" max="100">
-                    </div>
-
                     <!-- Botones -->
                     <div class="col-md-3">
                         <label class="form-label">&nbsp;</label>
@@ -400,15 +369,68 @@
             @endif
         </div>
         
-        <!-- Paginación -->
+
+        <!-- Paginación Simple -->
         @if($trabajadores->hasPages())
-            <div class="card-footer">
+            <div class="card-footer" style="background-color: #F8F9FA;">
                 <div class="d-flex justify-content-between align-items-center">
+                    <!-- Información básica -->
                     <div class="text-muted small">
-                        Mostrando {{ $trabajadores->firstItem() }} a {{ $trabajadores->lastItem() }} 
+                        <i class="bi bi-info-circle me-1" style="color: #007A4D;"></i>
+                        Mostrando {{ $trabajadores->firstItem() }} - {{ $trabajadores->lastItem() }} 
                         de {{ $trabajadores->total() }} empleados
                     </div>
-                    {{ $trabajadores->links() }}
+                    
+                    <!-- Paginación básica -->
+                    <nav aria-label="Paginación">
+                        <ul class="pagination pagination-sm mb-0">
+                            {{-- Anterior --}}
+                            @if ($trabajadores->onFirstPage())
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="bi bi-chevron-left"></i></span>
+                                </li>
+                            @else
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $trabajadores->previousPageUrl() }}">
+                                        <i class="bi bi-chevron-left"></i>
+                                    </a>
+                                </li>
+                            @endif
+
+                            {{-- Páginas (máximo 5) --}}
+                            @foreach ($trabajadores->getUrlRange(
+                                max(1, $trabajadores->currentPage() - 2),
+                                min($trabajadores->lastPage(), $trabajadores->currentPage() + 2)
+                            ) as $page => $url)
+                                @if ($page == $trabajadores->currentPage())
+                                    <li class="page-item active">
+                                        <span class="page-link" style="background-color: #007A4D; border-color: #007A4D;">
+                                            {{ $page }}
+                                        </span>
+                                    </li>
+                                @else
+                                    <li class="page-item">
+                                        <a class="page-link" href="{{ $url }}" style="color: #007A4D;">
+                                            {{ $page }}
+                                        </a>
+                                    </li>
+                                @endif
+                            @endforeach
+
+                            {{-- Siguiente --}}
+                            @if ($trabajadores->hasMorePages())
+                                <li class="page-item">
+                                    <a class="page-link" href="{{ $trabajadores->nextPageUrl() }}">
+                                        <i class="bi bi-chevron-right"></i>
+                                    </a>
+                                </li>
+                            @else
+                                <li class="page-item disabled">
+                                    <span class="page-link"><i class="bi bi-chevron-right"></i></span>
+                                </li>
+                            @endif
+                        </ul>
+                    </nav>
                 </div>
             </div>
         @endif
