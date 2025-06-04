@@ -76,12 +76,12 @@
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #D2B48C;">
             <div class="card-body text-center" style="background-color: #FFFFFF;">
-                <i class="bi bi-people fs-1 mb-3" style="color: #D2B48C;"></i>
+                <i class="bi bi-people fs-1 mb-3" style="color: #1f86d4;"></i>
                 <h5 class="card-title" style="color: #2F2F2F;">Gestion de Permisos de Empleados</h5>
                 <p class="card-text" style="color: #5D3A1A;">Supervisar permisos del personal del Hotel</p>
                 <a href="{{ route('permisos.index') }}" 
                 class="btn text-white" 
-                style="background-color: #D2B48C; text-decoration: none;">
+                style="background-color: #1f86d4; text-decoration: none;">
                     <i class="bi bi-arrow-right"></i> Supervisar
                 </a>
             </div>

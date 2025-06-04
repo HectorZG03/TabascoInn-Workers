@@ -1,6 +1,7 @@
 <?php
-// app/Models/PermisoLaboral.php
+
 namespace App\Models;
+
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Carbon\Carbon;
@@ -11,7 +12,7 @@ class PermisosLaborales extends Model
     
     protected $table = 'permisos_laborales';
     protected $primaryKey = 'id_permiso';
-    public $timestamps = true; // ✅ CAMBIADO: Ahora usa timestamps
+    public $timestamps = true;
     
     protected $fillable = [
         'id_trabajador',
@@ -24,8 +25,8 @@ class PermisosLaborales extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
-        'created_at' => 'datetime', // ✅ AGREGADO
-        'updated_at' => 'datetime', // ✅ AGREGADO
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
     
     public function trabajador()
@@ -39,6 +40,24 @@ class PermisosLaborales extends Model
         return Carbon::parse($this->fecha_inicio)->diffInDays(Carbon::parse($this->fecha_fin)) + 1;
     }
     
+    // ✅ NUEVOS MÉTODOS SIN DECIMALES
+    public function getDiasRestantesAttribute(): int
+    {
+        if ($this->estaVencido()) return 0;
+        return (int) now()->startOfDay()->diffInDays($this->fecha_fin->startOfDay());
+    }
+    
+    public function getDiasVencidosAttribute(): int
+    {
+        if (!$this->estaVencido()) return 0;
+        return (int) now()->startOfDay()->diffInDays($this->fecha_fin->startOfDay());
+    }
+    
+    public function getDiasDesdeFinAttribute(): int
+    {
+        return (int) $this->fecha_fin->startOfDay()->diffInDays(now()->startOfDay());
+    }
+    
     public function scopePorTipo($query, $tipo)
     {
         return $query->where('tipo_permiso', $tipo);
@@ -49,7 +68,6 @@ class PermisosLaborales extends Model
         return $query->where('fecha_fin', '>=', now());
     }
     
-    // ✅ AGREGADO: Scopes adicionales útiles
     public function scopeVencidos($query)
     {
         return $query->where('fecha_fin', '<', now());
@@ -69,24 +87,22 @@ class PermisosLaborales extends Model
         return $query->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin]);
     }
     
-    // ✅ AGREGADO: Métodos útiles
     public function estaActivo()
     {
-        return $this->fecha_fin >= now();
+        return $this->fecha_fin >= now()->startOfDay();
     }
     
     public function estaVencido()
     {
-        return $this->fecha_fin < now();
+        return $this->fecha_fin < now()->startOfDay();
     }
     
+    // ✅ MÉTODO ACTUALIZADO
     public function diasRestantes()
     {
-        if ($this->estaVencido()) return 0;
-        return now()->diffInDays($this->fecha_fin);
+        return $this->dias_restantes; // Usa el accessor
     }
     
-    // ✅ AGREGADO: Accessor para información completa
     public function getResumenAttribute()
     {
         return [
@@ -97,7 +113,7 @@ class PermisosLaborales extends Model
             'fecha_fin' => $this->fecha_fin->format('d/m/Y'),
             'dias_permiso' => $this->dias_de_permiso,
             'esta_activo' => $this->estaActivo(),
-            'dias_restantes' => $this->diasRestantes(),
+            'dias_restantes' => $this->dias_restantes, // ✅ Sin decimales
             'observaciones' => $this->observaciones,
             'fecha_creacion' => $this->created_at ? $this->created_at->format('d/m/Y H:i') : null,
         ];

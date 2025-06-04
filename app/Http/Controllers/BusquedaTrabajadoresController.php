@@ -1,7 +1,6 @@
 <?php
 
 namespace App\Http\Controllers;
-
 use App\Models\Trabajador;
 use App\Models\Area;
 use App\Models\Categoria;
@@ -14,50 +13,42 @@ class BusquedaTrabajadoresController extends Controller
     /**
      * Mostrar la página principal de búsqueda
      */
-/**
- * Mostrar la página principal de búsqueda
- */
-public function index(Request $request)
-{
-    // Obtener datos para los filtros
-    $areas = Area::orderBy('nombre_area')->get();
-    $categorias = Categoria::with('area')->orderBy('nombre_categoria')->get();
-    
-    $trabajadores = null;
-    $stats = null;
+    public function index(Request $request)
+    {
+        // Obtener datos para los filtros
+        $areas = Area::orderBy('nombre_area')->get();
+        $categorias = Categoria::with('area')->orderBy('nombre_categoria')->get();
+        
+        $trabajadores = null;
+        $stats = null;
 
-    // ✅ CORRECCIÓN: Verificar parámetros de búsqueda INCLUYENDO 'page' cuando hay session
-    $parametrosBusqueda = ['search', 'area', 'estatus', 'categoria', 'sexo', 'edad_min', 'edad_max', 'fecha_ingreso_desde', 'fecha_ingreso_hasta'];
-    
-    // Verificar si hay búsqueda activa
-    $hayBusquedaActiva = $request->hasAny($parametrosBusqueda) || 
-                        ($request->has('page') && session()->has('ultima_busqueda'));
-    
-    if ($hayBusquedaActiva) {
-        // Si solo hay parámetro 'page', restaurar la última búsqueda desde la sesión
-        if ($request->has('page') && !$request->hasAny($parametrosBusqueda) && session()->has('ultima_busqueda')) {
-            $request->merge(session('ultima_busqueda'));
-        }
+        // ✅ CORRECCIÓN: Verificar parámetros de búsqueda INCLUYENDO 'page' cuando hay session
+        $parametrosBusqueda = ['search', 'area', 'estatus', 'categoria', 'sexo', 'edad_min', 'edad_max', 'fecha_ingreso_desde', 'fecha_ingreso_hasta'];
         
-        // Guardar parámetros de búsqueda en sesión (solo si no es solo 'page')
-        if ($request->hasAny($parametrosBusqueda)) {
-            session(['ultima_busqueda' => $request->only($parametrosBusqueda)]);
-        }
+        // Verificar si hay búsqueda activa
+        $hayBusquedaActiva = $request->hasAny($parametrosBusqueda) || 
+                            ($request->has('page') && session()->has('ultima_busqueda'));
         
-        // Verificar si es una solicitud de exportación
-        if ($request->has('export')) {
-            return $this->exportarResultados($request);
+        if ($hayBusquedaActiva) {
+            // Si solo hay parámetro 'page', restaurar la última búsqueda desde la sesión
+            if ($request->has('page') && !$request->hasAny($parametrosBusqueda) && session()->has('ultima_busqueda')) {
+                $request->merge(session('ultima_busqueda'));
+            }
+            
+            // Guardar parámetros de búsqueda en sesión (solo si no es solo 'page')
+            if ($request->hasAny($parametrosBusqueda)) {
+                session(['ultima_busqueda' => $request->only($parametrosBusqueda)]);
+            }
+
+            $trabajadores = $this->buscarTrabajadores($request);
+            $stats = $this->calcularEstadisticas($trabajadores->getCollection());
+        } else {
+            // Limpiar sesión si no hay búsqueda
+            session()->forget('ultima_busqueda');
         }
-        
-        $trabajadores = $this->buscarTrabajadores($request);
-        $stats = $this->calcularEstadisticas($trabajadores->getCollection());
-    } else {
-        // Limpiar sesión si no hay búsqueda
-        session()->forget('ultima_busqueda');
+
+        return view('trabajadores.buscar', compact('areas', 'categorias', 'trabajadores', 'stats'));
     }
-
-    return view('trabajadores.buscar', compact('areas', 'categorias', 'trabajadores', 'stats'));
-}
 
     /**
      * Realizar búsqueda de trabajadores con filtros
@@ -267,24 +258,6 @@ public function index(Request $request)
         return response()->json($stats);
     }
 
-    /**
-     * Exportar resultados de búsqueda
-     */
-    private function exportarResultados(Request $request)
-    {
-        // Obtener todos los resultados sin paginación para exportar
-        $trabajadores = $this->buscarTrabajadoresSinPaginacion($request);
-        
-        $formato = $request->export;
-        
-        if ($formato === 'excel') {
-            return $this->exportarExcel($trabajadores);
-        } elseif ($formato === 'pdf') {
-            return $this->exportarPDF($trabajadores);
-        }
-        
-        return redirect()->back()->with('error', 'Formato de exportación no válido.');
-    }
 
     /**
      * Búsqueda sin paginación para exportación
@@ -350,68 +323,4 @@ public function index(Request $request)
         return $query->orderBy('nombre_trabajador')->orderBy('ape_pat')->get();
     }
 
-    /**
-     * Exportar a Excel
-     */
-    private function exportarExcel($trabajadores)
-    {
-        // Implementar exportación a Excel usando Laravel Excel o similar
-        // Por ahora retorno un CSV simple
-        
-        $filename = 'empleados_' . Carbon::now()->format('Y-m-d_H-i-s') . '.csv';
-        
-        $headers = [
-            'Content-Type' => 'text/csv',
-            'Content-Disposition' => "attachment; filename=\"{$filename}\"",
-        ];
-
-        $callback = function() use ($trabajadores) {
-            $file = fopen('php://output', 'w');
-            
-            // Encabezados CSV
-            fputcsv($file, [
-                'ID',
-                'Nombre Completo',
-                'Área',
-                'Cargo',
-                'Estado',
-                'Fecha Ingreso',
-                'Teléfono',
-                'Email',
-                'Género',
-                'Edad'
-            ]);
-
-            // Datos
-            foreach ($trabajadores as $trabajador) {
-                fputcsv($file, [
-                    $trabajador->id_trabajador,
-                    $trabajador->nombre_completo,
-                    $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'N/A',
-                    $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'N/A',
-                    ucfirst(str_replace('_', ' ', $trabajador->estatus)),
-                    $trabajador->fecha_ingreso->format('d/m/Y'),
-                    $trabajador->telefono ?? '',
-                    $trabajador->email ?? '',
-                    $trabajador->sexo == 'M' ? 'Masculino' : 'Femenino',
-                    $trabajador->edad
-                ]);
-            }
-
-            fclose($file);
-        };
-
-        return response()->stream($callback, 200, $headers);
-    }
-
-    /**
-     * Exportar a PDF
-     */
-    private function exportarPDF($trabajadores)
-    {
-        // Implementar exportación a PDF usando DomPDF o similar
-        // Por ahora redirijo con mensaje
-        
-        return redirect()->back()->with('info', 'Exportación a PDF pendiente de implementar.');
-    }
 }

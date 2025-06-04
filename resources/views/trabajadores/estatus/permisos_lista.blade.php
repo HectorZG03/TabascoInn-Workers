@@ -1,3 +1,4 @@
+
 @extends('layouts.app')
 
 @section('title', 'Gestión de Permisos Laborales - Hotel')
@@ -243,9 +244,10 @@
                                         </span>
                                     </td>
                                     <td>
+                                        {{-- ✅ SECCIÓN CORREGIDA: Sin decimales --}}
                                         @if($permiso->fecha_fin >= now())
                                             <span class="badge bg-success">Activo</span>
-                                            @if($permiso->fecha_fin->diffInDays(now()) <= 3)
+                                            @if($permiso->dias_restantes <= 3 && $permiso->dias_restantes > 0)
                                                 <div class="text-warning small mt-1">
                                                     <i class="bi bi-exclamation-triangle"></i> Próximo a vencer
                                                 </div>
@@ -253,7 +255,7 @@
                                         @else
                                             <span class="badge bg-secondary">Vencido</span>
                                             <div class="text-muted small mt-1">
-                                                Hace {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                Hace {{ $permiso->dias_vencidos }} día{{ $permiso->dias_vencidos != 1 ? 's' : '' }}
                                             </div>
                                         @endif
                                     </td>
@@ -387,24 +389,29 @@
                                                                             </div>
                                                                         </div>
 
+                                                                        {{-- ✅ SECCIÓN CORREGIDA: Estado sin decimales en modal --}}
                                                                         <div class="mb-3">
                                                                             <label class="form-label fw-bold">Estado:</label>
                                                                             <div>
                                                                                 @if($permiso->fecha_fin >= now())
                                                                                     <span class="badge bg-success fs-6">Activo</span>
-                                                                                    @if($permiso->fecha_fin->diffInDays(now()) <= 3)
+                                                                                    @if($permiso->dias_restantes <= 3 && $permiso->dias_restantes > 0)
                                                                                         <div class="text-warning small mt-1">
-                                                                                            <i class="bi bi-exclamation-triangle"></i> Próximo a vencer en {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                            <i class="bi bi-exclamation-triangle"></i> Próximo a vencer en {{ $permiso->dias_restantes }} día{{ $permiso->dias_restantes != 1 ? 's' : '' }}
+                                                                                        </div>
+                                                                                    @elseif($permiso->dias_restantes > 0)
+                                                                                        <div class="text-muted small mt-1">
+                                                                                            Finaliza en {{ $permiso->dias_restantes }} día{{ $permiso->dias_restantes != 1 ? 's' : '' }}
                                                                                         </div>
                                                                                     @else
-                                                                                        <div class="text-muted small mt-1">
-                                                                                            Finaliza en {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                        <div class="text-info small mt-1">
+                                                                                            <i class="bi bi-clock"></i> Finaliza hoy
                                                                                         </div>
                                                                                     @endif
                                                                                 @else
                                                                                     <span class="badge bg-secondary fs-6">Vencido</span>
                                                                                     <div class="text-muted small mt-1">
-                                                                                        Venció hace {{ $permiso->fecha_fin->diffInDays(now()) }} días
+                                                                                        Venció hace {{ $permiso->dias_vencidos }} día{{ $permiso->dias_vencidos != 1 ? 's' : '' }}
                                                                                     </div>
                                                                                 @endif
                                                                             </div>
