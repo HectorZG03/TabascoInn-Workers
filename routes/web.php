@@ -110,6 +110,10 @@ Route::middleware(['auth'])->group(function () {
 
         // ✅ RUTAS DE PERMISOS LABORALES
         Route::post('/{trabajador}/permisos', [PermisosLaboralesController::class, 'store'])->name('permisos.store');
+
+        // ✅ NUEVA RUTA PARA VER HISTORIAL COMPLETO - MOVIDA AQUÍ FUERA DEL GRUPO PERFIL
+        Route::get('/{trabajador}/historial-promociones', [ActPerfilTrabajadorController::class, 'verHistorialCompleto'])
+             ->name('historial-promociones');
        
         // ✅ RUTAS DEL PERFIL AVANZADO - Controlador Separado
         Route::prefix('{trabajador}/perfil')->name('perfil.')->group(function () {
@@ -148,22 +152,26 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/api/estadisticas', [DespidosController::class, 'estadisticas'])->name('estadisticas');
     });
 
-    // ✅ RUTAS DE GESTIÓN DE PERMISOS LABORALES
+    // ✅ RUTAS DE GESTIÓN DE PERMISOS LABORALES - REFACTORIZADAS
     Route::prefix('permisos')->name('permisos.')->group(function () {
-        // Lista de permisos laborales
+        // Lista de permisos y suspensiones
         Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
         
         // Ver detalles de un permiso específico
         Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
         
-        // Finalizar permiso anticipadamente
+        // Finalizar permiso/suspensión anticipadamente
         Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
         
-        // Cancelar permiso (eliminar y reactivar)
+        // Cancelar permiso/suspensión (eliminar y reactivar)
         Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar');
         
         // API para estadísticas
         Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
+        
+        // ✅ NUEVA: API para obtener motivos según tipo de permiso
+        Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])
+            ->name('api.motivos-por-tipo');
         
         // Verificar permisos vencidos (tarea programada)
         Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
@@ -171,5 +179,13 @@ Route::middleware(['auth'])->group(function () {
    
     // ✅ API GENERAL para categorías (para otros formularios)
     Route::get('/api/categorias/{area}', [TrabajadorController::class, 'getCategoriasPorArea'])->name('api.categorias');
-   
+
+    // RUTA OPCIONAL PARA OBTENER TODOS LOS MOTIVOS
+    Route::get('/api/motivos', function() {
+        return response()->json([
+
+            'todos' => \App\Models\PermisosLaborales::getTodosLosMotivos()
+        ]);
+    })->name('api.motivos')->middleware('auth');
+    
 });

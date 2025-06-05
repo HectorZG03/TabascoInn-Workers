@@ -324,8 +324,13 @@
             </div>
         </div>
 
-        <!-- DATOS LABORALES -->
-        <div class="tab-pane fade" id="nav-laborales" role="tabpanel">
+<!-- ✅ REEMPLAZAR LA SECCIÓN DE DATOS LABORALES EN perfil_trabajador.blade.php -->
+
+<!-- DATOS LABORALES -->
+<div class="tab-pane fade" id="nav-laborales" role="tabpanel">
+    <div class="row">
+        <!-- Formulario de Datos Laborales -->
+        <div class="col-md-8">
             <div class="card shadow">
                 <div class="card-header bg-success text-white">
                     <h5 class="mb-0">
@@ -339,7 +344,7 @@
                         
                         <div class="row">
                             <!-- Área -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="id_area" class="form-label">
                                     <i class="bi bi-building"></i> Área *
                                 </label>
@@ -361,7 +366,7 @@
                             </div>
 
                             <!-- Categoría -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="id_categoria" class="form-label">
                                     <i class="bi bi-person-badge"></i> Categoría *
                                 </label>
@@ -381,9 +386,11 @@
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
+                        </div>
 
+                        <div class="row">
                             <!-- Sueldo Diario -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="sueldo_diarios" class="form-label">
                                     <i class="bi bi-cash"></i> Sueldo Diario *
                                 </label>
@@ -399,6 +406,56 @@
                                            required>
                                 </div>
                                 @error('sueldo_diarios')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- ✅ NUEVO: Tipo de Cambio -->
+                            <div class="col-md-6 mb-3">
+                                <label for="tipo_cambio" class="form-label">
+                                    <i class="bi bi-arrow-up-circle"></i> Tipo de Cambio
+                                </label>
+                                <select class="form-select @error('tipo_cambio') is-invalid @enderror" 
+                                        id="tipo_cambio" 
+                                        name="tipo_cambio">
+                                    <option value="">Determinar automáticamente</option>
+                                    <option value="promocion" {{ old('tipo_cambio') == 'promocion' ? 'selected' : '' }}>
+                                        🎉 Promoción
+                                    </option>
+                                    <option value="transferencia" {{ old('tipo_cambio') == 'transferencia' ? 'selected' : '' }}>
+                                        🔄 Transferencia
+                                    </option>
+                                    <option value="aumento_sueldo" {{ old('tipo_cambio') == 'aumento_sueldo' ? 'selected' : '' }}>
+                                        💰 Aumento de Sueldo
+                                    </option>
+                                    <option value="reclasificacion" {{ old('tipo_cambio') == 'reclasificacion' ? 'selected' : '' }}>
+                                        📋 Reclasificación
+                                    </option>
+                                    <option value="ajuste_salarial" {{ old('tipo_cambio') == 'ajuste_salarial' ? 'selected' : '' }}>
+                                        ⚖️ Ajuste Salarial
+                                    </option>
+                                </select>
+                                <small class="text-muted">Si no seleccionas, se determinará automáticamente</small>
+                                @error('tipo_cambio')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="row">
+                            <!-- Motivo del Cambio -->
+                            <div class="col-md-12 mb-3">
+                                <label for="motivo_cambio" class="form-label">
+                                    <i class="bi bi-chat-text"></i> Motivo del Cambio
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('motivo_cambio') is-invalid @enderror" 
+                                       id="motivo_cambio" 
+                                       name="motivo_cambio" 
+                                       value="{{ old('motivo_cambio') }}"
+                                       placeholder="Ej: Promoción por excelente desempeño, Transferencia por necesidades operativas...">
+                                <small class="text-muted">Opcional - Se registrará en el historial de cambios</small>
+                                @error('motivo_cambio')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -451,6 +508,90 @@
                 </div>
             </div>
         </div>
+
+        <!-- ✅ PANEL DE HISTORIAL SIN CRECIMIENTO -->
+        <div class="col-md-4">
+            <div class="card shadow">
+                <div class="card-header bg-info text-white">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h6 class="mb-0">
+                            <i class="bi bi-graph-up-arrow"></i> Historial de Cambios
+                        </h6>
+                        <a href="{{ route('trabajadores.historial-promociones', $trabajador) }}" 
+                           class="btn btn-light btn-sm">
+                            <i class="bi bi-eye"></i> Ver Todo
+                        </a>
+                    </div>
+                </div>
+                <div class="card-body p-2">
+                    @if(isset($statsPromociones) && $statsPromociones['total_cambios'] > 0)
+                        <!-- Estadísticas Rápidas (SIN CRECIMIENTO) -->
+                        <div class="row text-center mb-3">
+                            <div class="col-4">
+                                <div class="text-success fw-bold">{{ $statsPromociones['promociones'] }}</div>
+                                <small class="text-muted">Promociones</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-primary fw-bold">{{ $statsPromociones['transferencias'] }}</div>
+                                <small class="text-muted">Transferencias</small>
+                            </div>
+                            <div class="col-4">
+                                <div class="text-info fw-bold">{{ $statsPromociones['total_cambios'] }}</div>
+                                <small class="text-muted">Total</small>
+                            </div>
+                        </div>
+
+                        <!-- Últimos 3 Cambios -->
+                        <div class="timeline-sm">
+                            @foreach($historialReciente->take(3) as $cambio)
+                                <div class="timeline-item mb-2">
+                                    <div class="d-flex">
+                                        <div class="me-2">
+                                            <span class="badge bg-{{ $cambio->color_tipo_cambio }} rounded-pill p-1">
+                                                @if($cambio->tipo_cambio == 'promocion')
+                                                    <i class="bi bi-arrow-up"></i>
+                                                @elseif($cambio->tipo_cambio == 'transferencia')
+                                                    <i class="bi bi-arrow-left-right"></i>
+                                                @elseif($cambio->tipo_cambio == 'aumento_sueldo')
+                                                    <i class="bi bi-cash"></i>
+                                                @else
+                                                    <i class="bi bi-gear"></i>
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-bold">{{ $cambio->tipo_cambio_texto }}</div>
+                                            <div class="text-muted small">
+                                                {{ $cambio->categoriaNueva->nombre_categoria ?? 'Sin categoría' }}
+                                            </div>
+                                            <div class="text-success small">
+                                                ${{ number_format($cambio->sueldo_nuevo, 2) }}
+                                                @if($cambio->sueldo_anterior)
+                                                    <small class="text-muted">
+                                                        ({{ $cambio->diferencia_sueldo >= 0 ? '+' : '' }}${{ number_format($cambio->diferencia_sueldo, 2) }})
+                                                    </small>
+                                                @endif
+                                            </div>
+                                            <div class="text-muted small">
+                                                {{ $cambio->fecha_cambio->format('d/m/Y') }}
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                @if(!$loop->last)<hr class="my-2">@endif
+                            @endforeach
+                        </div>
+                    @else
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-graph-up fs-2 opacity-50"></i>
+                            <p class="mb-0 small">Sin historial de cambios</p>
+                        </div>
+                    @endif
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
 
         <!-- DOCUMENTOS -->
         <div class="tab-pane fade" id="nav-documentos" role="tabpanel">

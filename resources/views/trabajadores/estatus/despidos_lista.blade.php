@@ -1,6 +1,6 @@
 @extends('layouts.app')
 
-@section('title', 'Lista de Despidos - Hotel')
+@section('title', 'Lista de Bajas - Hotel')
 
 @section('content')
 <div class="container-fluid">
@@ -35,7 +35,7 @@
                 <div class="card-body text-center">
                     <i class="bi bi-people-fill fs-2 text-danger"></i>
                     <h4 class="mt-2 mb-1 text-danger">{{ $stats['total'] }}</h4>
-                    <small class="text-muted">Total Despidos</small>
+                    <small class="text-muted">Total Bajas</small>
                 </div>
             </div>
         </div>
@@ -144,14 +144,14 @@
         </div>
     </div>
 
-    <!-- Tabla de despidos -->
+    <!-- Tabla de bajas -->
     <div class="row">
         <div class="col-12">
             <div class="card shadow">
                 <div class="card-header d-flex justify-content-between align-items-center" style="background-color: #f8f9fa;">
                     <h6 class="mb-0">
                         <i class="bi bi-table"></i> 
-                        Listado de Despidos ({{ $despidos->total() }} registros)
+                        Listado de Bajas ({{ $despidos->total() }} registros)
                     </h6>
                     <small class="text-muted">
                         Mostrando {{ $despidos->firstItem() ?? 0 }} - {{ $despidos->lastItem() ?? 0 }} 
@@ -264,13 +264,13 @@
                                                     </button>
                                                 </div>
 
-                                                <!-- Modal de detalles del despido -->
+                                                <!-- Modal de detalles de la baja -->
                                                 <div class="modal fade" id="modalDetalles{{ $despido->id_baja }}" tabindex="-1">
                                                     <div class="modal-dialog modal-lg">
                                                         <div class="modal-content">
                                                             <div class="modal-header" style="background-color: #be0b0b; color: white;">
                                                                 <h5 class="modal-title">
-                                                                    <i class="bi bi-person-x-fill"></i> Detalles del Despido
+                                                                    <i class="bi bi-person-x-fill"></i> Detalles de la Baja
                                                                 </h5>
                                                                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
                                                             </div>
@@ -315,11 +315,11 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <!-- Información del despido -->
+                                                                    <!-- Información de la baja -->
                                                                     <div class="col-md-6 mb-4">
                                                                         <div class="card border-danger">
                                                                             <div class="card-header bg-danger text-white">
-                                                                                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Datos del Despido</h6>
+                                                                                <h6 class="mb-0"><i class="bi bi-exclamation-triangle"></i> Datos de la Baja</h6>
                                                                             </div>
                                                                             <div class="card-body">
                                                                                 <div class="mb-3">
@@ -362,11 +362,11 @@
                                                                         </div>
                                                                     </div>
 
-                                                                    <!-- Motivo del despido -->
+                                                                    <!-- Motivo de la baja -->
                                                                     <div class="col-12 mb-3">
                                                                         <div class="card border-warning">
                                                                             <div class="card-header bg-warning">
-                                                                                <h6 class="mb-0"><i class="bi bi-chat-text"></i> Motivo del Despido</h6>
+                                                                                <h6 class="mb-0"><i class="bi bi-chat-text"></i> Motivo de la Baja</h6>
                                                                             </div>
                                                                             <div class="card-body">
                                                                                 <div class="bg-light p-3 rounded">
@@ -421,7 +421,7 @@
                                                                 <p>¿Estás seguro de que deseas reactivar a:</p>
                                                                 <div class="alert alert-info">
                                                                     <strong>{{ $despido->trabajador->nombre_completo }}</strong><br>
-                                                                    <small>Esta acción eliminará el registro de despido y cambiará su estado a "Activo"</small>
+                                                                    <small>Esta acción eliminará el registro de baja y cambiará su estado a "Activo"</small>
                                                                 </div>
                                                             </div>
                                                             <div class="modal-footer">
@@ -462,14 +462,14 @@
                         <!-- Estado vacío -->
                         <div class="text-center py-5">
                             <i class="bi bi-inbox fs-1 text-muted"></i>
-                            <h5 class="mt-3 text-muted">No se encontraron despidos</h5>
+                            <h5 class="mt-3 text-muted">No se encontraron bajas</h5>
                             <p class="text-muted mb-0">
                                 @if(request()->hasAny(['search', 'condicion_salida', 'fecha_desde', 'fecha_hasta']))
                                     No hay resultados que coincidan con los filtros aplicados.
                                     <br>
                                     <a href="{{ route('despidos.index') }}" class="btn btn-link">Limpiar filtros</a>
                                 @else
-                                    No hay registros de despidos en el sistema.
+                                    No hay registros de bajas en el sistema.
                                 @endif
                             </p>
                         </div>

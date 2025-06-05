@@ -17,8 +17,8 @@ use Carbon\Carbon;
 
 class TrabajadorController extends Controller
 {
-    /**
-     * Mostrar lista de trabajadores (INDEX)
+/**
+     * Mostrar lista de trabajadores (INDEX) - ✅ OPTIMIZADO
      */
     public function index(Request $request)
     {
@@ -77,7 +77,7 @@ class TrabajadorController extends Controller
                                  ->get();
         }
 
-        // ✅ ESTADÍSTICAS ACTUALIZADAS PARA ENUM
+        // ✅ ESTADÍSTICAS OPTIMIZADAS - SOLO LAS QUE SE USAN EN LA VISTA
         $stats = [
             // Trabajadores activos
             'activos' => Trabajador::where('estatus', 'activo')->count(),
@@ -85,29 +85,19 @@ class TrabajadorController extends Controller
             // Total de trabajadores (excluyendo inactivos)
             'total' => Trabajador::where('estatus', '!=', 'inactivo')->count(),
             
-            // Nuevos trabajadores este mes
-            'nuevos_este_mes' => Trabajador::where('estatus', '!=', 'inactivo')
-                                         ->whereMonth('created_at', now()->month)
-                                         ->whereYear('created_at', now()->year)
-                                         ->count(),
+            // Con permisos temporales
+            'con_permiso' => Trabajador::where('estatus', 'permiso')->count(),
             
-            // En ausencia temporal
-            'en_ausencia' => Trabajador::whereIn('estatus', Trabajador::ESTADOS_TEMPORALES)->count(),
+            // Suspendidos (requieren atención)
+            'suspendidos' => Trabajador::where('estatus', 'suspendido')->count(),
             
-            // Que requieren atención
-            'requieren_atencion' => Trabajador::whereIn('estatus', Trabajador::ESTADOS_CRITICOS)->count(),
+            // En período de prueba
+            'en_prueba' => Trabajador::where('estatus', 'prueba')->count(),
             
-            // Documentos pendientes (solo activos)
-            'documentos_pendientes' => Trabajador::where('estatus', 'activo')
-                                                ->whereHas('documentos', function($q) {
-                                                    $q->where('porcentaje_completado', '<', 100);
-                                                })
-                                                ->count(),
-            
-            // Sin documentos (solo activos)
-            'sin_documentos' => Trabajador::where('estatus', 'activo')
-                                        ->whereDoesntHave('documentos')
-                                        ->count(),
+            // ✅ SOLO EL INACTIVO QUE SE USA EN LA VISTA
+            'por_estado' => [
+                'inactivo' => Trabajador::where('estatus', 'inactivo')->count(),
+            ]
         ];
 
         // ✅ ESTADOS PARA FILTROS

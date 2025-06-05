@@ -41,48 +41,37 @@ class Trabajador extends Model
         'updated_at' => 'datetime',
     ];
 
-    // ✅ CONSTANTES PARA ESTADOS
+    // ✅ CONSTANTES ACTUALIZADAS PARA LOS 5 ESTADOS
     const ESTADOS_PRINCIPALES = [
         'activo' => 'Activo',
         'inactivo' => 'Inactivo',
     ];
 
-    const ESTADOS_AUSENCIAS = [
-        'vacaciones' => 'Vacaciones',
-        'incapacidad_medica' => 'Incapacidad Médica',
-        'licencia_maternidad' => 'Licencia por Maternidad',
-        'licencia_paternidad' => 'Licencia por Paternidad',
-        'licencia_sin_goce' => 'Licencia sin Goce de Sueldo',
-        'permiso_especial' => 'Permiso Especial',
-    ];
-
-    const ESTADOS_ADMINISTRATIVOS = [
+    const ESTADOS_ESPECIALES = [
+        'permiso' => 'Con Permiso',
         'suspendido' => 'Suspendido',
+        'prueba' => 'En Período de Prueba', // ✅ CORREGIDO: era 'a_prueba'
     ];
 
     const TODOS_ESTADOS = [
-        // Estados principales
         'activo' => 'Activo',
         'inactivo' => 'Inactivo',
-        // Ausencias temporales
-        'vacaciones' => 'Vacaciones',
-        'incapacidad_medica' => 'Incapacidad Médica',
-        'licencia_maternidad' => 'Licencia por Maternidad',
-        'licencia_paternidad' => 'Licencia por Paternidad',
-        'licencia_sin_goce' => 'Licencia sin Goce de Sueldo',
-        'permiso_especial' => 'Permiso Especial',
-        // Administrativos
+        'permiso' => 'Con Permiso',
         'suspendido' => 'Suspendido',
+        'prueba' => 'En Período de Prueba', // ✅ CORREGIDO
     ];
 
-    // Estados que permiten que el trabajador regrese
-    const ESTADOS_TEMPORALES = [
-        'vacaciones', 'incapacidad_medica', 'licencia_maternidad', 
-        'licencia_paternidad', 'licencia_sin_goce', 'permiso_especial'
-    ];
+    // Estados que permiten que el trabajador regrese automáticamente
+    const ESTADOS_TEMPORALES = ['permiso'];
 
     // Estados que requieren acción administrativa
     const ESTADOS_CRITICOS = ['suspendido', 'inactivo'];
+
+    // Estados de prueba
+    const ESTADOS_PRUEBA = ['prueba']; // ✅ CORREGIDO
+
+    // Estados que permiten asignar permisos
+    const ESTADOS_PARA_PERMISOS = ['activo'];
 
     // ✅ RELACIONES
     public function fichaTecnica()  
@@ -112,7 +101,51 @@ class Trabajador extends Model
         );
     }
 
-    // ✅ SCOPES ACTUALIZADOS PARA ENUM
+    public function historialPromociones()
+    {
+        return $this->hasMany(HistorialPromocion::class, 'id_trabajador', 'id_trabajador')
+                    ->orderBy('fecha_cambio', 'desc');
+    }
+
+    public function ultimaPromocion()
+    {
+        return $this->hasOne(HistorialPromocion::class, 'id_trabajador', 'id_trabajador')
+                    ->latest('fecha_cambio');
+    }
+
+    public function promociones()
+    {
+        return $this->historialPromociones()
+                    ->where('tipo_cambio', 'promocion');
+    }
+
+    // ✅ RELACIONES CON PERMISOS ACTUALIZADAS
+    public function permisos()
+    {
+        return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
+                    ->orderBy('created_at', 'desc');
+    }
+
+    public function permisosActivos()
+    {
+        return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
+                    ->where('estatus_permiso', 'activo'); // ✅ USAR ESTATUS_PERMISO
+    }
+
+    public function permisoActual()
+    {
+        return $this->hasOne(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
+                    ->where('estatus_permiso', 'activo') // ✅ SOLO ACTIVOS
+                    ->latest('fecha_inicio');
+    }
+
+    public function historialPermisos()
+    {
+        return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
+                    ->orderBy('created_at', 'desc');
+    }
+
+    // ✅ SCOPES ACTUALIZADOS
     public function scopeActivos($query)  
     {
         return $query->where('estatus', 'activo');
@@ -123,9 +156,19 @@ class Trabajador extends Model
         return $query->where('estatus', 'inactivo');
     }
 
-    public function scopeEnAusencia($query)
+    public function scopeConPermiso($query)
     {
-        return $query->whereIn('estatus', self::ESTADOS_TEMPORALES);
+        return $query->where('estatus', 'permiso');
+    }
+
+    public function scopeSuspendidos($query)
+    {
+        return $query->where('estatus', 'suspendido');
+    }
+
+    public function scopeEnPrueba($query)
+    {
+        return $query->where('estatus', 'prueba'); // ✅ CORREGIDO
     }
 
     public function scopeDisponibles($query)
@@ -136,6 +179,11 @@ class Trabajador extends Model
     public function scopeCriticos($query)
     {
         return $query->whereIn('estatus', self::ESTADOS_CRITICOS);
+    }
+
+    public function scopeTemporales($query)
+    {
+        return $query->whereIn('estatus', self::ESTADOS_TEMPORALES);
     }
 
     public function scopePorEstado($query, $estado)
@@ -166,7 +214,7 @@ class Trabajador extends Model
         });
     }
 
-    // ✅ ACCESSORS
+    // ✅ ACCESSORS ACTUALIZADOS
     public function getNombreCompletoAttribute()  
     {
         return trim($this->nombre_trabajador . ' ' . $this->ape_pat . ' ' . $this->ape_mat);
@@ -188,7 +236,6 @@ class Trabajador extends Model
         return (int) Carbon::parse($this->fecha_ingreso)->diffInYears(now());
     }
 
-    // ✅ ACCESSORS PARA ESTADOS
     public function getEstatusTextoAttribute()
     {
         return self::TODOS_ESTADOS[$this->estatus] ?? 'Estado Desconocido';
@@ -199,13 +246,9 @@ class Trabajador extends Model
         $colores = [
             'activo' => 'success',
             'inactivo' => 'secondary',
-            'vacaciones' => 'info',
-            'incapacidad_medica' => 'warning',
-            'licencia_maternidad' => 'primary',
-            'licencia_paternidad' => 'primary',
-            'licencia_sin_goce' => 'warning',
-            'permiso_especial' => 'info',
+            'permiso' => 'info',
             'suspendido' => 'danger',
+            'prueba' => 'warning', // ✅ CORREGIDO
         ];
 
         return $colores[$this->estatus] ?? 'secondary';
@@ -216,19 +259,15 @@ class Trabajador extends Model
         $iconos = [
             'activo' => 'bi-person-check',
             'inactivo' => 'bi-person-x',
-            'vacaciones' => 'bi-calendar-heart',
-            'incapacidad_medica' => 'bi-heart-pulse',
-            'licencia_maternidad' => 'bi-person-hearts',
-            'licencia_paternidad' => 'bi-person-hearts',
-            'licencia_sin_goce' => 'bi-pause-circle',
-            'permiso_especial' => 'bi-clock',
+            'permiso' => 'bi-calendar-event',
             'suspendido' => 'bi-exclamation-triangle',
+            'prueba' => 'bi-clock-history', // ✅ CORREGIDO
         ];
 
         return $iconos[$this->estatus] ?? 'bi-question-circle';
     }
 
-    // ✅ MÉTODOS DE VERIFICACIÓN DE ESTADO
+    // ✅ MÉTODOS DE VERIFICACIÓN DE ESTADO ACTUALIZADOS
     public function estaActivo()
     {
         return $this->estatus === 'activo';
@@ -239,9 +278,19 @@ class Trabajador extends Model
         return $this->estatus === 'inactivo';
     }
 
-    public function estaEnAusencia()
+    public function tienePermiso()
     {
-        return in_array($this->estatus, self::ESTADOS_TEMPORALES);
+        return $this->estatus === 'permiso';
+    }
+
+    public function estaSuspendido()
+    {
+        return $this->estatus === 'suspendido';
+    }
+
+    public function estaEnPrueba()
+    {
+        return $this->estatus === 'prueba'; // ✅ CORREGIDO
     }
 
     public function estaDisponible()
@@ -259,7 +308,35 @@ class Trabajador extends Model
         return in_array($this->estatus, self::ESTADOS_TEMPORALES);
     }
 
-    // ✅ OTROS ACCESSORS EXISTENTES
+    // ✅ MÉTODO PRINCIPAL CORREGIDO - CONSIDERA ESTATUS_PERMISO
+    public function puedeAsignarPermiso()
+    {
+        // 1. El trabajador debe estar activo
+        if (!$this->estaActivo()) {
+            return false;
+        }
+        
+        // 2. No debe tener permisos ACTIVOS
+        $tienePermisoActivo = $this->permisosActivos()->exists();
+        
+        return !$tienePermisoActivo;
+    }
+
+    // ✅ MÉTODO ADICIONAL PARA VERIFICAR PERMISOS ESPECÍFICOS
+    public function tienePermisoActivoEnFechas($fechaInicio, $fechaFin)
+    {
+        return $this->permisosActivos()
+            ->where(function($query) use ($fechaInicio, $fechaFin) {
+                $query->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
+                      ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
+                      ->orWhere(function($q) use ($fechaInicio, $fechaFin) {
+                          $q->where('fecha_inicio', '<=', $fechaInicio)
+                            ->where('fecha_fin', '>=', $fechaFin);
+                      });
+            })->exists();
+    }
+
+    // ✅ ACCESSORS ADICIONALES PARA PERMISOS
     public function getPorcentajeDocumentosAttribute()
     {
         return $this->documentos ? $this->documentos->porcentaje_completado : 0;
@@ -289,7 +366,7 @@ class Trabajador extends Model
             : 'Sin categoría';
     }
 
-    // ✅ MUTATORS
+    // ✅ MUTATORS EXISTENTES
     public function setCurpAttribute($value)
     {
         $this->attributes['curp'] = $value ? strtoupper(trim($value)) : null;
@@ -325,7 +402,7 @@ class Trabajador extends Model
         $this->attributes['antiguedad'] = (int) $value;
     }
 
-    // ✅ MÉTODOS PARA CAMBIAR ESTADO
+    // ✅ MÉTODOS PARA CAMBIAR ESTADO ACTUALIZADOS
     public function activar()
     {
         $this->estatus = 'activo';
@@ -347,15 +424,17 @@ class Trabajador extends Model
         return $this->save();
     }
 
-    public function enviarVacaciones()
+    public function darPermiso()
     {
-        $this->estatus = 'vacaciones';
+        $this->estatus = 'permiso';
+        $this->id_baja = null;
         return $this->save();
     }
 
-    public function ponerEnIncapacidad()
+    public function ponerEnPrueba()
     {
-        $this->estatus = 'incapacidad_medica';
+        $this->estatus = 'prueba'; // ✅ CORREGIDO
+        $this->id_baja = null;
         return $this->save();
     }
 
@@ -377,7 +456,7 @@ class Trabajador extends Model
         return $this->save();
     }
 
-    // ✅ MÉTODO DE UTILIDAD
+    // ✅ MÉTODOS DE UTILIDAD
     public function actualizarAntiguedad()
     {
         if ($this->fecha_ingreso) {
@@ -405,6 +484,8 @@ class Trabajador extends Model
             'es_nuevo' => $this->es_nuevo,
             'puede_regresar' => $this->puedeRegresar(),
             'requiere_atencion' => $this->requiereAtencion(),
+            'puede_asignar_permiso' => $this->puedeAsignarPermiso(),
+            'tiene_permiso_activo' => $this->permisosActivos()->exists(),
             'fecha_creacion' => $this->created_at ? $this->created_at->format('d/m/Y') : null,
         ];
     }

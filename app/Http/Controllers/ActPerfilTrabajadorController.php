@@ -7,6 +7,7 @@ use App\Models\Categoria;
 use App\Models\Trabajador;
 use App\Models\FichaTecnica;
 use App\Models\DocumentoTrabajador;
+use App\Models\HistorialPromocion; // ✅ NUEVA IMPORTACIÓN
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -22,11 +23,13 @@ class ActPerfilTrabajadorController extends Controller
      */
     public function show(Trabajador $trabajador)
     {
-        // Cargar todas las relaciones necesarias
+        // Cargar todas las relaciones necesarias incluyendo historial de promociones
         $trabajador->load([
             'fichaTecnica.categoria.area', 
             'documentos', 
-            'despido'
+            'despido',
+            'historialPromociones.categoriaAnterior.area', // ✅ NUEVA RELACIÓN
+            'historialPromociones.categoriaNueva.area'     // ✅ NUEVA RELACIÓN
         ]);
 
         // Obtener áreas y categorías para formularios
@@ -42,11 +45,19 @@ class ActPerfilTrabajadorController extends Controller
         // Estadísticas del trabajador
         $stats = $this->calcularEstadisticasTrabajador($trabajador);
 
+        // ✅ OBTENER HISTORIAL DE PROMOCIONES RECIENTE
+        $historialReciente = HistorialPromocion::obtenerHistorialTrabajador($trabajador->id_trabajador, 5);
+        
+        // ✅ ESTADÍSTICAS DE PROMOCIONES
+        $statsPromociones = HistorialPromocion::obtenerEstadisticas($trabajador->id_trabajador);
+
         return view('trabajadores.perfil_trabajador', compact(
             'trabajador', 
             'areas', 
             'categorias', 
-            'stats'
+            'stats',
+            'historialReciente',     // ✅ NUEVA VARIABLE
+            'statsPromociones'       // ✅ NUEVA VARIABLE
         ));
     }
 
@@ -125,7 +136,7 @@ class ActPerfilTrabajadorController extends Controller
     }
 
     /**
-     * Actualizar datos laborales (ficha técnica)
+     * Actualizar datos laborales (ficha técnica) ✅ MÉTODO MODIFICADO
      */
     public function updateFichaTecnica(Request $request, Trabajador $trabajador)
     {
@@ -135,11 +146,14 @@ class ActPerfilTrabajadorController extends Controller
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
             'formacion' => 'nullable|string|max:50',
             'grado_estudios' => 'nullable|string|max:50',
+            'motivo_cambio' => 'nullable|string|max:255',
+            'tipo_cambio' => 'nullable|in:promocion,transferencia,aumento_sueldo,reclasificacion,ajuste_salarial', // ✅ NUEVO CAMPO
         ], [
             'id_area.required' => 'Debe seleccionar un área',
             'id_categoria.required' => 'Debe seleccionar una categoría',
             'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
             'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
+            'tipo_cambio.in' => 'El tipo de cambio seleccionado no es válido',
         ]);
 
         // Validar que la categoría pertenezca al área
@@ -154,6 +168,17 @@ class ActPerfilTrabajadorController extends Controller
         DB::beginTransaction();
         
         try {
+            // ✅ OBTENER DATOS ANTERIORES PARA EL HISTORIAL
+            $datosAnteriores = null;
+            if ($trabajador->fichaTecnica) {
+                $datosAnteriores = [
+                    'id_categoria' => $trabajador->fichaTecnica->id_categoria,
+                    'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios,
+                    'formacion' => $trabajador->fichaTecnica->formacion,
+                    'grado_estudios' => $trabajador->fichaTecnica->grado_estudios,
+                ];
+            }
+
             // Actualizar o crear ficha técnica
             if ($trabajador->fichaTecnica) {
                 $trabajador->fichaTecnica->update([
@@ -162,8 +187,9 @@ class ActPerfilTrabajadorController extends Controller
                     'formacion' => $validated['formacion'],
                     'grado_estudios' => $validated['grado_estudios'],
                 ]);
+                $fichaTecnica = $trabajador->fichaTecnica;
             } else {
-                FichaTecnica::create([
+                $fichaTecnica = FichaTecnica::create([
                     'id_trabajador' => $trabajador->id_trabajador,
                     'id_categoria' => $validated['id_categoria'],
                     'sueldo_diarios' => $validated['sueldo_diarios'],
@@ -172,12 +198,54 @@ class ActPerfilTrabajadorController extends Controller
                 ]);
             }
 
+            // ✅ REGISTRAR EN HISTORIAL DE PROMOCIONES
+            $usuarioActual = Auth::user()->email ?? 'Sistema';
+            
+            if ($datosAnteriores === null) {
+                // Es la primera vez que se crea la ficha técnica
+                HistorialPromocion::registrarInicial($trabajador, $fichaTecnica, $usuarioActual);
+            } else {
+                // Verificar si hubo cambios significativos
+                $huboComboio = $this->verificarCambiosSignificativos($datosAnteriores, $validated);
+                
+                if ($huboComboio) {
+                    // ✅ PREPARAR DATOS PARA EL HISTORIAL
+                    $datosHistorial = [
+                        'id_trabajador' => $trabajador->id_trabajador,
+                        'id_categoria_anterior' => $datosAnteriores['id_categoria'],
+                        'id_categoria_nueva' => $validated['id_categoria'],
+                        'sueldo_anterior' => $datosAnteriores['sueldo_diarios'],
+                        'sueldo_nuevo' => $validated['sueldo_diarios'],
+                        'motivo' => $validated['motivo_cambio'] ?? 'Actualización de datos laborales',
+                        'usuario_cambio' => $usuarioActual,
+                        'datos_adicionales' => [
+                            'formacion_anterior' => $datosAnteriores['formacion'],
+                            'formacion_nueva' => $validated['formacion'],
+                            'grado_estudios_anterior' => $datosAnteriores['grado_estudios'],
+                            'grado_estudios_nuevo' => $validated['grado_estudios'],
+                        ]
+                    ];
+
+                    // ✅ USAR TIPO DE CAMBIO MANUAL O AUTOMÁTICO
+                    if (!empty($validated['tipo_cambio'])) {
+                        // Usuario seleccionó un tipo específico
+                        $datosHistorial['tipo_cambio'] = $validated['tipo_cambio'];
+                    }
+                    // Si no se especifica tipo, se determinará automáticamente en el modelo
+
+                    HistorialPromocion::registrarCambio($datosHistorial);
+                }
+            }
+
             DB::commit();
 
             Log::info('Ficha técnica actualizada', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'categoria_id' => $validated['id_categoria'],
-                'usuario' => Auth::user()->email ?? 'Sistema'
+                'categoria_anterior' => $datosAnteriores['id_categoria'] ?? null,
+                'categoria_nueva' => $validated['id_categoria'],
+                'sueldo_anterior' => $datosAnteriores['sueldo_diarios'] ?? null,
+                'sueldo_nuevo' => $validated['sueldo_diarios'],
+                'usuario' => $usuarioActual
             ]);
 
             return back()->with('success', 'Datos laborales actualizados exitosamente');
@@ -192,6 +260,24 @@ class ActPerfilTrabajadorController extends Controller
 
             return back()->withErrors(['error' => 'Error al actualizar los datos laborales: ' . $e->getMessage()]);
         }
+    }
+
+    /**
+     * ✅ NUEVO MÉTODO: Verificar si hubo cambios significativos
+     */
+    private function verificarCambiosSignificativos(array $datosAnteriores, array $datosNuevos): bool
+    {
+        // Cambio de categoría
+        if ($datosAnteriores['id_categoria'] != $datosNuevos['id_categoria']) {
+            return true;
+        }
+        
+        // Cambio de sueldo significativo (más de $0.01)
+        if (abs($datosAnteriores['sueldo_diarios'] - $datosNuevos['sueldo_diarios']) > 0.01) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**
@@ -356,7 +442,22 @@ class ActPerfilTrabajadorController extends Controller
     }
 
     /**
-     * Calcular estadísticas específicas del trabajador
+     * ✅ NUEVA RUTA: Ver historial completo de promociones
+     */
+    public function verHistorialCompleto(Trabajador $trabajador)
+    {
+        $historialCompleto = HistorialPromocion::obtenerHistorialTrabajador($trabajador->id_trabajador);
+        $estadisticas = HistorialPromocion::obtenerEstadisticas($trabajador->id_trabajador);
+        
+        return view('trabajadores.historial_promociones', compact(
+            'trabajador',
+            'historialCompleto',
+            'estadisticas'
+        ));
+    }
+
+    /**
+     * Calcular estadísticas específicas del trabajador ✅ MÉTODO ACTUALIZADO
      */
     private function calcularEstadisticasTrabajador(Trabajador $trabajador)
     {
@@ -370,6 +471,9 @@ class ActPerfilTrabajadorController extends Controller
             'estado_documentos' => $trabajador->documentos ? $trabajador->documentos->estado_texto : 'Sin documentos',
             'ultima_actualizacion' => $trabajador->updated_at->diffForHumans(),
             'es_nuevo' => $trabajador->es_nuevo,
+            // ✅ NUEVAS ESTADÍSTICAS DE PROMOCIONES
+            'total_promociones' => HistorialPromocion::contarPromociones($trabajador->id_trabajador),
+            'ultimo_cambio' => HistorialPromocion::obtenerUltimoCambio($trabajador->id_trabajador),
         ];
 
         return $stats;

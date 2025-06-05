@@ -12,21 +12,43 @@ return new class extends Migration
     public function up(): void
     {
         Schema::create('permisos_laborales', function (Blueprint $table) {
-            $table->id('id_permiso'); // Cambiar el nombre del ID
-
+            // ✅ CAMPO ID PRINCIPAL
+            $table->id('id_permiso');
+            
+            // ✅ RELACIÓN CON TRABAJADOR
             $table->unsignedBigInteger('id_trabajador');
-            $table->string('tipo_permiso', 50);
-            $table->date('fecha_inicio');
-            $table->date('fecha_fin');
-            $table->text('observaciones')->nullable();
-
             $table->foreign('id_trabajador')
                   ->references('id_trabajador')
                   ->on('trabajadores')
-                  ->onDelete('cascade'); // Opcional pero recomendable
-
-            // Si decides mantener timestamps:
-            $table->timestamps(); // Si usas created_at y updated_at
+                  ->onDelete('cascade');
+            
+            // ✅ TIPO DE PERMISO (SOLO 2 OPCIONES)
+            $table->enum('tipo_permiso', ['permiso', 'suspendido']);
+            
+            // ✅ MOTIVO ESPECÍFICO
+            $table->string('motivo', 100);
+            
+            // ✅ FECHAS DEL PERMISO
+            $table->date('fecha_inicio');
+            $table->date('fecha_fin');
+            
+            // ✅ OBSERVACIONES OPCIONALES
+            $table->text('observaciones')->nullable();
+            
+            // ✅ ESTATUS DEL PERMISO
+            $table->enum('estatus_permiso', ['activo', 'finalizado', 'cancelado'])->default('activo');
+            
+            // ✅ TIMESTAMPS
+            $table->timestamps();
+            
+            // ✅ ÍNDICES PARA OPTIMIZACIÓN
+            $table->index('tipo_permiso');
+            $table->index('motivo');
+            $table->index(['tipo_permiso', 'motivo']);
+            $table->index(['fecha_inicio', 'fecha_fin']);
+            $table->index(['id_trabajador', 'fecha_fin']); // Para permisos activos
+            $table->index(['fecha_fin']); // Para verificar vencimientos
+            $table->index('estatus_permiso'); // Nuevo índice útil
         });
     }
 

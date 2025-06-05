@@ -3,7 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
-use Illuminate\Support\Facades\DB; // ✅ AGREGAR ESTA LÍNEA
+use Illuminate\Support\Facades\DB;
 
 return new class extends Migration
 {
@@ -34,20 +34,13 @@ return new class extends Migration
             $table->date('fecha_ingreso')->nullable();
             $table->integer('antiguedad')->default(0); // Años de antigüedad (entero)
             
-            // ✅ ESTADO DEL TRABAJADOR (ENUM)
+            // ✅ ESTADO DEL TRABAJADOR - 5 ESTADOS ÚNICAMENTE
             $table->enum('estatus', [
-                // Estados laborales principales
-                'activo',
-                'inactivo',
-                // Ausencias temporales
-                'vacaciones',
-                'incapacidad_medica',
-                'licencia_maternidad',
-                'licencia_paternidad',
-                'licencia_sin_goce',
-                'permiso_especial',
-                // Situaciones administrativas
-                'suspendido'
+                'activo',      // Trabajador activo
+                'inactivo',    // Trabajador dado de baja
+                'permiso',     // Con permiso temporal
+                'suspendido',  // Suspendido (requiere acción manual)
+                'prueba',      // En período de prueba
             ])->default('activo')->comment('Estado laboral del trabajador');
             
             // ✅ TIMESTAMPS
@@ -58,10 +51,13 @@ return new class extends Migration
             $table->index('fecha_ingreso', 'idx_fecha_ingreso');
             $table->index(['nombre_trabajador', 'ape_pat'], 'idx_nombres');
             $table->index('antiguedad', 'idx_antiguedad');
+            $table->index('curp', 'idx_curp');
+            $table->index('rfc', 'idx_rfc');
+            $table->index('correo', 'idx_correo');
         });
         
         // ✅ COMENTARIO DE LA TABLA
-        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con estados laborales'");
+        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos'");
     }
 
     public function down()
