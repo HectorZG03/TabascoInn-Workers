@@ -28,21 +28,6 @@ Route::middleware(['auth'])->group(function () {
         // Menú principal de configuración
         Route::get('/', [UserController::class, 'configMenu'])->name('config');
         
-        // Perfil personal
-        Route::get('/perfil', [UserController::class, 'profile'])->name('profile');
-        Route::put('/perfil', [UserController::class, 'updateProfile'])->name('profile.update');
-        
-        // Cambio de contraseña
-        Route::get('/seguridad', [UserController::class, 'changePassword'])->name('change-password');
-        Route::put('/seguridad', [UserController::class, 'updatePassword'])->name('password.update');
-        
-        // Preferencias del usuario
-        Route::get('/preferencias', [UserController::class, 'preferences'])->name('preferences');
-        Route::put('/preferencias', [UserController::class, 'updatePreferences'])->name('preferences.update');
-        
-        // Actividad reciente
-        Route::get('/actividad', [UserController::class, 'activity'])->name('activity');
-        
         // Gestión de usuarios (solo para gerencia)
         Route::middleware('check.gerencia')->group(function () {
             Route::get('/usuarios', [UserController::class, 'manageUsers'])->name('manage');
@@ -50,13 +35,6 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // ✅ RUTAS DE AYUDA
-    Route::prefix('ayuda')->name('help.')->group(function () {
-        Route::get('/', [UserController::class, 'helpIndex'])->name('index');
-        Route::get('/manual', [UserController::class, 'manual'])->name('manual');
-        Route::get('/soporte', [UserController::class, 'support'])->name('support');
-    });
-    
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
         ->name('trabajadores.buscar');
@@ -137,19 +115,34 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // ✅ RUTAS DE GESTIÓN DE DESPIDOS
+    // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
+    // Agrega estas rutas en tu archivo routes/web.php
+
+    // Rutas principales de despidos
     Route::prefix('despidos')->name('despidos.')->group(function () {
-        // Lista de despidos
+        // Listar todas las bajas (con filtros por estado)
         Route::get('/', [DespidosController::class, 'index'])->name('index');
         
-        // Ver detalles de un despido específico
+        // Ver detalles de una baja específica
         Route::get('/{despido}', [DespidosController::class, 'show'])->name('show');
         
-        // Cancelar despido (reactivar trabajador)
+        // Cancelar/revertir un despido (mantiene historial)
         Route::delete('/{despido}/cancelar', [DespidosController::class, 'cancelar'])->name('cancelar');
         
-        // API para estadísticas
+        // Estadísticas para dashboard
         Route::get('/api/estadisticas', [DespidosController::class, 'estadisticas'])->name('estadisticas');
+    });
+
+    // Rutas de despidos relacionadas con trabajadores
+    Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
+        // Mostrar formulario de despido
+        Route::get('/{trabajador}/despedir', [DespidosController::class, 'create'])->name('despedir.create');
+        
+        // Procesar despido
+        Route::post('/{trabajador}/despedir', [DespidosController::class, 'store'])->name('despedir.store');
+        
+        // ✅ NUEVO: Obtener historial completo de bajas de un trabajador
+        Route::get('/{trabajador}/historial-despidos', [DespidosController::class, 'historial'])->name('historial.despidos');
     });
 
     // ✅ RUTAS DE GESTIÓN DE PERMISOS LABORALES - REFACTORIZADAS

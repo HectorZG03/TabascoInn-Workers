@@ -41,359 +41,213 @@ class Trabajador extends Model
         'updated_at' => 'datetime',
     ];
 
-    // ✅ CONSTANTES ACTUALIZADAS PARA LOS 5 ESTADOS
-    const ESTADOS_PRINCIPALES = [
+    // ✅ CONSTANTE UTILIZADA EN CONTROLADORES
+    public const TODOS_ESTADOS = [
         'activo' => 'Activo',
-        'inactivo' => 'Inactivo',
-    ];
-
-    const ESTADOS_ESPECIALES = [
-        'permiso' => 'Con Permiso',
+        'permiso' => 'Con Permiso Temporal',
         'suspendido' => 'Suspendido',
-        'prueba' => 'En Período de Prueba', // ✅ CORREGIDO: era 'a_prueba'
+        'prueba' => 'Período de Prueba',
+        'inactivo' => 'Inactivo'
     ];
 
-    const TODOS_ESTADOS = [
-        'activo' => 'Activo',
-        'inactivo' => 'Inactivo',
-        'permiso' => 'Con Permiso',
-        'suspendido' => 'Suspendido',
-        'prueba' => 'En Período de Prueba', // ✅ CORREGIDO
-    ];
-
-    // Estados que permiten que el trabajador regrese automáticamente
-    const ESTADOS_TEMPORALES = ['permiso'];
-
-    // Estados que requieren acción administrativa
-    const ESTADOS_CRITICOS = ['suspendido', 'inactivo'];
-
-    // Estados de prueba
-    const ESTADOS_PRUEBA = ['prueba']; // ✅ CORREGIDO
-
-    // Estados que permiten asignar permisos
-    const ESTADOS_PARA_PERMISOS = ['activo'];
-
-    // ✅ RELACIONES
+    // ✅ RELACIONES UTILIZADAS EN CONTROLADORES
+    
+    /**
+     * Relación con FichaTecnica (muy utilizada)
+     */
     public function fichaTecnica()  
     {
         return $this->hasOne(FichaTecnica::class, 'id_trabajador', 'id_trabajador');
     }
 
+    /**
+     * Relación con Despidos (utilizada en DespidosController)
+     */
     public function despido()
     {
         return $this->hasOne(Despidos::class, 'id_trabajador', 'id_trabajador');
     }
 
+    /**
+     * Relación con DocumentoTrabajador (utilizada en ActPerfilTrabajadorController)
+     */
     public function documentos()
     {
         return $this->hasOne(DocumentoTrabajador::class, 'id_trabajador', 'id_trabajador');
     }
 
-    public function categoria()
-    {
-        return $this->hasOneThrough(
-            Categoria::class,  
-            FichaTecnica::class,  
-            'id_trabajador',
-            'id_categoria',
-            'id_trabajador',
-            'id_categoria'
-        );
-    }
-
+    /**
+     * Relación con HistorialPromocion (utilizada en ActPerfilTrabajadorController)
+     */
     public function historialPromociones()
     {
         return $this->hasMany(HistorialPromocion::class, 'id_trabajador', 'id_trabajador')
                     ->orderBy('fecha_cambio', 'desc');
     }
 
-    public function ultimaPromocion()
+    /**
+     * Relación con TODOS los despidos - historial completo
+     */
+    public function despidos()
     {
-        return $this->hasOne(HistorialPromocion::class, 'id_trabajador', 'id_trabajador')
-                    ->latest('fecha_cambio');
+        return $this->hasMany(Despidos::class, 'id_trabajador', 'id_trabajador');
     }
 
-    public function promociones()
+    /**
+     * Relación con ContactoEmergencia (creada en TrabajadorController)
+     */
+    public function contactosEmergencia()
     {
-        return $this->historialPromociones()
-                    ->where('tipo_cambio', 'promocion');
+        return $this->hasMany(ContactoEmergencia::class, 'id_trabajador', 'id_trabajador');
     }
 
-    // ✅ RELACIONES CON PERMISOS ACTUALIZADAS
-    public function permisos()
-    {
-        return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
-                    ->orderBy('created_at', 'desc');
-    }
-
+    /**
+     * Relación con permisos activos (referenciada en puedeAsignarPermiso)
+     */
     public function permisosActivos()
     {
         return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
-                    ->where('estatus_permiso', 'activo'); // ✅ USAR ESTATUS_PERMISO
+                    ->where('estatus_permiso', 'activo');
     }
 
-    public function permisoActual()
-    {
-        return $this->hasOne(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
-                    ->where('estatus_permiso', 'activo') // ✅ SOLO ACTIVOS
-                    ->latest('fecha_inicio');
-    }
+    // ✅ ACCESSORS UTILIZADOS
 
-    public function historialPermisos()
-    {
-        return $this->hasMany(PermisosLaborales::class, 'id_trabajador', 'id_trabajador')
-                    ->orderBy('created_at', 'desc');
-    }
-
-    // ✅ SCOPES ACTUALIZADOS
-    public function scopeActivos($query)  
-    {
-        return $query->where('estatus', 'activo');
-    }
-
-    public function scopeInactivos($query) 
-    {
-        return $query->where('estatus', 'inactivo');
-    }
-
-    public function scopeConPermiso($query)
-    {
-        return $query->where('estatus', 'permiso');
-    }
-
-    public function scopeSuspendidos($query)
-    {
-        return $query->where('estatus', 'suspendido');
-    }
-
-    public function scopeEnPrueba($query)
-    {
-        return $query->where('estatus', 'prueba'); // ✅ CORREGIDO
-    }
-
-    public function scopeDisponibles($query)
-    {
-        return $query->where('estatus', 'activo');
-    }
-
-    public function scopeCriticos($query)
-    {
-        return $query->whereIn('estatus', self::ESTADOS_CRITICOS);
-    }
-
-    public function scopeTemporales($query)
-    {
-        return $query->whereIn('estatus', self::ESTADOS_TEMPORALES);
-    }
-
-    public function scopePorEstado($query, $estado)
-    {
-        return $query->where('estatus', $estado);
-    }
-
-    public function scopeBuscarPorNombre($query, $nombre) 
-    {
-        return $query->where(function($q) use ($nombre) {
-            $q->where('nombre_trabajador', 'like', "%{$nombre}%")
-              ->orWhere('ape_pat', 'like', "%{$nombre}%")
-              ->orWhere('ape_mat', 'like', "%{$nombre}%");
-        });
-    }
-
-    public function scopePorArea($query, $areaId)
-    {
-        return $query->whereHas('fichaTecnica.categoria.area', function($q) use ($areaId) {
-            $q->where('id_area', $areaId);
-        });
-    }
-
-    public function scopePorCategoria($query, $categoriaId)
-    {
-        return $query->whereHas('fichaTecnica.categoria', function($q) use ($categoriaId) {
-            $q->where('id_categoria', $categoriaId);
-        });
-    }
-
-    // ✅ ACCESSORS ACTUALIZADOS
+    /**
+     * Nombre completo del trabajador (muy utilizado)
+     */
     public function getNombreCompletoAttribute()  
     {
         return trim($this->nombre_trabajador . ' ' . $this->ape_pat . ' ' . $this->ape_mat);
     }
 
+    /**
+     * Edad calculada (utilizada en estadísticas)
+     */
     public function getEdadAttribute()  
     {
-        if (!$this->fecha_nacimiento) {
-            return null;
-        }
-        return Carbon::parse($this->fecha_nacimiento)->age;
+        return $this->fecha_nacimiento ? Carbon::parse($this->fecha_nacimiento)->age : null;
     }
 
-    public function getAntiguedadCalculadaAttribute()
-    {
-        if (!$this->fecha_ingreso) {
-            return 0;
-        }
-        return (int) Carbon::parse($this->fecha_ingreso)->diffInYears(now());
-    }
-
-    public function getEstatusTextoAttribute()
-    {
+    /**
+     * Texto del estatus para mostrar en vistas
+     */
+    public function getEstatusTextoAttribute() 
+    { 
         return self::TODOS_ESTADOS[$this->estatus] ?? 'Estado Desconocido';
     }
 
-    public function getEstatusColorAttribute()
-    {
+    /**
+     * Color del badge para el estatus (usado en vistas)
+     */
+    public function getEstatusColorAttribute() 
+    { 
         $colores = [
             'activo' => 'success',
-            'inactivo' => 'secondary',
-            'permiso' => 'info',
+            'permiso' => 'info', 
             'suspendido' => 'danger',
-            'prueba' => 'warning', // ✅ CORREGIDO
+            'prueba' => 'warning',
+            'inactivo' => 'secondary'
         ];
-
+        
         return $colores[$this->estatus] ?? 'secondary';
     }
 
-    public function getEstatusIconoAttribute()
-    {
+    /**
+     * Ícono para el estatus (usado en vistas)
+     */
+    public function getEstatusIconoAttribute() 
+    { 
         $iconos = [
             'activo' => 'bi-person-check',
-            'inactivo' => 'bi-person-x',
             'permiso' => 'bi-calendar-event',
-            'suspendido' => 'bi-exclamation-triangle',
-            'prueba' => 'bi-clock-history', // ✅ CORREGIDO
+            'suspendido' => 'bi-exclamation-triangle', 
+            'prueba' => 'bi-clock-history',
+            'inactivo' => 'bi-person-x'
         ];
-
-        return $iconos[$this->estatus] ?? 'bi-question-circle';
-    }
-
-    // ✅ MÉTODOS DE VERIFICACIÓN DE ESTADO ACTUALIZADOS
-    public function estaActivo()
-    {
-        return $this->estatus === 'activo';
-    }
-
-    public function estaInactivo()
-    {
-        return $this->estatus === 'inactivo';
-    }
-
-    public function tienePermiso()
-    {
-        return $this->estatus === 'permiso';
-    }
-
-    public function estaSuspendido()
-    {
-        return $this->estatus === 'suspendido';
-    }
-
-    public function estaEnPrueba()
-    {
-        return $this->estatus === 'prueba'; // ✅ CORREGIDO
-    }
-
-    public function estaDisponible()
-    {
-        return $this->estatus === 'activo';
-    }
-
-    public function requiereAtencion()
-    {
-        return in_array($this->estatus, self::ESTADOS_CRITICOS);
-    }
-
-    public function puedeRegresar()
-    {
-        return in_array($this->estatus, self::ESTADOS_TEMPORALES);
-    }
-
-    // ✅ MÉTODO PRINCIPAL CORREGIDO - CONSIDERA ESTATUS_PERMISO
-    public function puedeAsignarPermiso()
-    {
-        // 1. El trabajador debe estar activo
-        if (!$this->estaActivo()) {
-            return false;
-        }
         
-        // 2. No debe tener permisos ACTIVOS
-        $tienePermisoActivo = $this->permisosActivos()->exists();
-        
-        return !$tienePermisoActivo;
+        return $iconos[$this->estatus] ?? 'bi-person';
     }
 
-    // ✅ MÉTODO ADICIONAL PARA VERIFICAR PERMISOS ESPECÍFICOS
-    public function tienePermisoActivoEnFechas($fechaInicio, $fechaFin)
-    {
-        return $this->permisosActivos()
-            ->where(function($query) use ($fechaInicio, $fechaFin) {
-                $query->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
-                      ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])
-                      ->orWhere(function($q) use ($fechaInicio, $fechaFin) {
-                          $q->where('fecha_inicio', '<=', $fechaInicio)
-                            ->where('fecha_fin', '>=', $fechaFin);
-                      });
-            })->exists();
+    // ✅ MÉTODOS DE VERIFICACIÓN UTILIZADOS EN CONTROLADORES Y VISTAS
+
+    /**
+     * Verificar si el trabajador está activo (usado en DespidosController)
+     */
+    public function estaActivo(): bool 
+    { 
+        return $this->estatus === 'activo'; 
     }
 
-    // ✅ ACCESSORS ADICIONALES PARA PERMISOS
-    public function getPorcentajeDocumentosAttribute()
-    {
-        return $this->documentos ? $this->documentos->porcentaje_completado : 0;
+    /**
+     * Verificar si el trabajador está inactivo (usado en DespidosController)
+     */
+    public function estaInactivo(): bool 
+    { 
+        return $this->estatus === 'inactivo'; 
     }
 
-    public function getEsNuevoAttribute()
+    /**
+     * Verificar si tiene despido activo (usado en DespidosController)
+     * Nota: Había un error tipográfico "tieneSpidoActivo" en DespidosController
+     */
+    public function tieneDespidoActivo(): bool
     {
-        return $this->created_at && $this->created_at->diffInDays(now()) <= 30;
+        return $this->despidos()->where('estado', 'activo')->exists();
     }
 
-    public function getSueldoDiarioAttribute()
+    /**
+     * Verificar si puede recibir permisos (usado en PermisosLaboralesController)
+     */
+    public function puedeAsignarPermiso(): bool
     {
-        return $this->fichaTecnica ? $this->fichaTecnica->sueldo_diarios : 0;
+        return $this->estaActivo() && !$this->permisosActivos()->exists();
     }
 
-    public function getNombreAreaAttribute()
+    /**
+     * Verificar si puede regresar de un estado temporal (usado en vistas)
+     */
+    public function puedeRegresar(): bool
     {
-        return $this->fichaTecnica && $this->fichaTecnica->categoria && $this->fichaTecnica->categoria->area 
-            ? $this->fichaTecnica->categoria->area->nombre_area 
-            : 'Sin área';
+        return in_array($this->estatus, ['permiso', 'suspendido']);
     }
 
-    public function getNombreCategoriaAttribute()
+    /**
+     * Verificar si el estado requiere atención (usado en vistas)
+     */
+    public function requiereAtencion(): bool
     {
-        return $this->fichaTecnica && $this->fichaTecnica->categoria 
-            ? $this->fichaTecnica->categoria->nombre_categoria 
-            : 'Sin categoría';
+        return in_array($this->estatus, ['suspendido', 'inactivo']);
     }
 
-    // ✅ MUTATORS EXISTENTES
-    public function setCurpAttribute($value)
-    {
+    // ✅ MUTATORS PARA DATOS LIMPIOS
+
+    public function setCurpAttribute($value) 
+    { 
         $this->attributes['curp'] = $value ? strtoupper(trim($value)) : null;
     }
 
-    public function setRfcAttribute($value)
-    {
+    public function setRfcAttribute($value) 
+    { 
         $this->attributes['rfc'] = $value ? strtoupper(trim($value)) : null;
     }
 
-    public function setCorreoAttribute($value)
-    {
+    public function setCorreoAttribute($value) 
+    { 
         $this->attributes['correo'] = $value ? strtolower(trim($value)) : null;
     }
 
-    public function setNombreTrabajadorAttribute($value)
-    {
+    public function setNombreTrabajadorAttribute($value) 
+    { 
         $this->attributes['nombre_trabajador'] = $value ? ucwords(strtolower(trim($value))) : null;
     }
 
-    public function setApePatAttribute($value)
-    {
+    public function setApePatAttribute($value) 
+    { 
         $this->attributes['ape_pat'] = $value ? ucwords(strtolower(trim($value))) : null;
     }
 
-    public function setApeMatAttribute($value)
-    {
+    public function setApeMatAttribute($value) 
+    { 
         $this->attributes['ape_mat'] = $value ? ucwords(strtolower(trim($value))) : null;
     }
 
@@ -402,91 +256,47 @@ class Trabajador extends Model
         $this->attributes['antiguedad'] = (int) $value;
     }
 
-    // ✅ MÉTODOS PARA CAMBIAR ESTADO ACTUALIZADOS
-    public function activar()
+    // ✅ MÉTODOS AUXILIARES PARA DESPIDOS (utilizados en el propio modelo)
+
+    /**
+     * Contar total de despidos del trabajador
+     */
+    public function totalDespidos()
     {
-        $this->estatus = 'activo';
-        $this->id_baja = null;
-        return $this->save();
+        return $this->despidos()->count();
     }
 
-    public function darDeBaja($motivoId = null)
+    /**
+     * Verificar si tiene múltiples bajas históricas (usado en vistas/controladores)
+     */
+    public function tieneMultiplesBajas(): bool
     {
-        $this->estatus = 'inactivo';
-        $this->id_baja = $motivoId;
-        return $this->save();
+        return $this->totalDespidos() > 1;
     }
 
-    public function suspender($motivoId = null)
+    /**
+     * Obtener resumen de historial de bajas
+     */
+    public function getResumenBajasAttribute()
     {
-        $this->estatus = 'suspendido';
-        $this->id_baja = $motivoId;
-        return $this->save();
-    }
-
-    public function darPermiso()
-    {
-        $this->estatus = 'permiso';
-        $this->id_baja = null;
-        return $this->save();
-    }
-
-    public function ponerEnPrueba()
-    {
-        $this->estatus = 'prueba'; // ✅ CORREGIDO
-        $this->id_baja = null;
-        return $this->save();
-    }
-
-    public function cambiarEstado($nuevoEstado, $motivoId = null)
-    {
-        if (!array_key_exists($nuevoEstado, self::TODOS_ESTADOS)) {
-            throw new \InvalidArgumentException("Estado '{$nuevoEstado}' no es válido");
+        if ($this->totalDespidos() === 0) {
+            return 'Sin historial de bajas';
         }
 
-        $this->estatus = $nuevoEstado;
+        $activos = $this->despidos()->where('estado', 'activo')->count();
+        $cancelados = $this->despidos()->where('estado', 'cancelado')->count();
+        $total = $this->totalDespidos();
+
+        $resumen = "Total: {$total}";
         
-        // Si es un estado crítico, asociar motivo de baja
-        if (in_array($nuevoEstado, self::ESTADOS_CRITICOS)) {
-            $this->id_baja = $motivoId;
-        } else {
-            $this->id_baja = null;
+        if ($activos > 0) {
+            $resumen .= " | Activas: {$activos}";
+        }
+        
+        if ($cancelados > 0) {
+            $resumen .= " | Canceladas: {$cancelados}";
         }
 
-        return $this->save();
-    }
-
-    // ✅ MÉTODOS DE UTILIDAD
-    public function actualizarAntiguedad()
-    {
-        if ($this->fecha_ingreso) {
-            $this->antiguedad = $this->antiguedad_calculada;
-            $this->save();
-        }
-    }
-
-    public function getResumenAttribute()
-    {
-        return [
-            'id' => $this->id_trabajador,
-            'nombre_completo' => $this->nombre_completo,
-            'edad' => $this->edad,
-            'antiguedad' => $this->antiguedad,
-            'estatus' => $this->estatus,
-            'estatus_texto' => $this->estatus_texto,
-            'estatus_color' => $this->estatus_color,
-            'categoria' => $this->nombre_categoria,
-            'area' => $this->nombre_area,
-            'sueldo_diario' => $this->sueldo_diario,
-            'telefono' => $this->telefono,
-            'correo' => $this->correo,
-            'porcentaje_documentos' => $this->porcentaje_documentos,
-            'es_nuevo' => $this->es_nuevo,
-            'puede_regresar' => $this->puedeRegresar(),
-            'requiere_atencion' => $this->requiereAtencion(),
-            'puede_asignar_permiso' => $this->puedeAsignarPermiso(),
-            'tiene_permiso_activo' => $this->permisosActivos()->exists(),
-            'fecha_creacion' => $this->created_at ? $this->created_at->format('d/m/Y') : null,
-        ];
+        return $resumen;
     }
 }

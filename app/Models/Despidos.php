@@ -18,7 +18,8 @@ class Despidos extends Model
 
     protected $keyType = 'int';
 
-    public $timestamps = false;
+    // ✅ HABILITAMOS TIMESTAMPS para auditoria
+    public $timestamps = true;
 
     protected $fillable = [
         'id_trabajador',
@@ -26,46 +27,124 @@ class Despidos extends Model
         'motivo',
         'condicion_salida',
         'observaciones',
+        'estado',
+        'fecha_cancelacion',
+        'motivo_cancelacion',
+        'cancelado_por',
     ];
 
     protected $dates = [
         'fecha_baja',
+        'fecha_cancelacion',
+        'created_at',
+        'updated_at',
     ];
 
     protected $casts = [
         'fecha_baja' => 'datetime',
+        'fecha_cancelacion' => 'datetime',
+        'created_at' => 'datetime',
+        'updated_at' => 'datetime',
     ];
+
+    // ✅ CONSTANTES PARA ESTADOS
+    const ESTADO_ACTIVO = 'activo';
+    const ESTADO_CANCELADO = 'cancelado';
+    
+    const ESTADOS = [
+        self::ESTADO_ACTIVO => 'Activo',
+        self::ESTADO_CANCELADO => 'Cancelado',
+    ];
+
+    // ========================================
+    // RELACIONES
+    // ========================================
 
     public function trabajador()
     {
         return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador');
     }
 
+    public function usuarioCancelacion()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'cancelado_por', 'id');
+    }
+
+    // ========================================
+    // SCOPES
+    // ========================================
+
+    /**
+     * Solo despidos activos (no cancelados)
+     */
+    public function scopeActivos($query)
+    {
+        return $query->where('estado', self::ESTADO_ACTIVO);
+    }
+
+    /**
+     * Solo despidos cancelados
+     */
+    public function scopeCancelados($query)
+    {
+        return $query->where('estado', self::ESTADO_CANCELADO);
+    }
+
+    /**
+     * Despidos por fecha específica
+     */
     public function scopePorFecha($query, $fecha)
     {
         return $query->whereDate('fecha_baja', $fecha);
     }
 
+    /**
+     * Despidos entre fechas
+     */
     public function scopeEntreFechas($query, $fechaInicio, $fechaFin)
     {
         return $query->whereBetween('fecha_baja', [$fechaInicio, $fechaFin]);
     }
 
+    /**
+     * Buscar por motivo
+     */
     public function scopePorMotivo($query, $motivo)
     {
         return $query->where('motivo', 'LIKE', "%{$motivo}%");
     }
 
+    /**
+     * Despidos del mes actual (solo activos)
+     */
     public function scopeDelMesActual($query)
     {
-        return $query->whereMonth('fecha_baja', Carbon::now()->month)
+        return $query->activos()
+                     ->whereMonth('fecha_baja', Carbon::now()->month)
                      ->whereYear('fecha_baja', Carbon::now()->year);
     }
 
+    /**
+     * Despidos del año actual (solo activos)
+     */
     public function scopeDelAnoActual($query)
     {
-        return $query->whereYear('fecha_baja', Carbon::now()->year);
+        return $query->activos()
+                     ->whereYear('fecha_baja', Carbon::now()->year);
     }
+
+    /**
+     * Historial completo de un trabajador
+     */
+    public function scopeHistorialTrabajador($query, $trabajadorId)
+    {
+        return $query->where('id_trabajador', $trabajadorId)
+                     ->orderBy('fecha_baja', 'desc');
+    }
+
+    // ========================================
+    // ATRIBUTOS CALCULADOS
+    // ========================================
 
     public function getDiasDesdeEjecutadoAttribute()
     {
@@ -73,6 +152,21 @@ class Despidos extends Model
             return null;
         }
         return Carbon::parse($this->fecha_baja)->diffInDays(Carbon::now());
+    }
+
+    public function getEsActivoAttribute()
+    {
+        return $this->estado === self::ESTADO_ACTIVO;
+    }
+
+    public function getEsCanceladoAttribute()
+    {
+        return $this->estado === self::ESTADO_CANCELADO;
+    }
+
+    public function getEstadoTextoAttribute()
+    {
+        return self::ESTADOS[$this->estado] ?? 'Desconocido';
     }
 
     public function getResumenAttribute()
@@ -84,8 +178,35 @@ class Despidos extends Model
             'motivo' => $this->motivo,
             'condicion_salida' => $this->condicion_salida,
             'observaciones' => $this->observaciones,
+            'estado' => $this->estado_texto,
             'dias_transcurridos' => $this->dias_desde_ejecutado,
+            'fecha_cancelacion' => $this->fecha_cancelacion?->format('d/m/Y'),
         ];
+    }
+
+    // ========================================
+    // MÉTODOS DE UTILIDAD
+    // ========================================
+
+    /**
+     * Cancelar/revertir el despido
+     */
+    public function cancelar($motivo = null, $usuarioId = null)
+    {
+        $this->update([
+            'estado' => self::ESTADO_CANCELADO,
+            'fecha_cancelacion' => now(),
+            'motivo_cancelacion' => $motivo ?? 'Trabajador reactivado',
+            'cancelado_por' => $usuarioId,
+        ]);
+    }
+
+    /**
+     * Verificar si puede ser cancelado
+     */
+    public function puedeSerCancelado()
+    {
+        return $this->es_activo;
     }
 
     public function esBajaVoluntaria()
@@ -101,7 +222,7 @@ class Despidos extends Model
             }
         }
 
-        return false;
+        return $this->condicion_salida === 'Voluntaria';
     }
 
     public function esDespidoJustificado()
@@ -117,7 +238,7 @@ class Despidos extends Model
             }
         }
 
-        return false;
+        return in_array($this->condicion_salida, ['Despido con Causa', 'Abandono de Trabajo']);
     }
 
     public function getTipoBajaAttribute()
@@ -131,25 +252,60 @@ class Despidos extends Model
         }
     }
 
+    // ========================================
+    // MÉTODOS ESTÁTICOS PARA ESTADÍSTICAS
+    // ========================================
+
+    /**
+     * Estadísticas por mes (solo activos)
+     */
     public static function estadisticasPorMes($año = null)
     {
         $año = $año ?? Carbon::now()->year;
 
-        return static::selectRaw('MONTH(fecha_baja) as mes, COUNT(*) as total')
+        return static::activos()
+                    ->selectRaw('MONTH(fecha_baja) as mes, COUNT(*) as total')
                     ->whereYear('fecha_baja', $año)
                     ->groupBy('mes')
                     ->orderBy('mes')
                     ->get();
     }
 
+    /**
+     * Estadísticas por motivo (solo activos)
+     */
     public static function estadisticasPorMotivo($año = null)
     {
         $año = $año ?? Carbon::now()->year;
 
-        return static::selectRaw('motivo, COUNT(*) as total')
+        return static::activos()
+                    ->selectRaw('motivo, COUNT(*) as total')
                     ->whereYear('fecha_baja', $año)
                     ->groupBy('motivo')
                     ->orderBy('total', 'desc')
+                    ->get();
+    }
+
+    /**
+     * Contar despidos por estado
+     */
+    public static function contarPorEstado()
+    {
+        return static::selectRaw('estado, COUNT(*) as total')
+                    ->groupBy('estado')
+                    ->pluck('total', 'estado')
+                    ->toArray();
+    }
+
+    /**
+     * Obtener trabajadores con múltiples bajas
+     */
+    public static function trabajadoresConMultiplesBajas()
+    {
+        return static::selectRaw('id_trabajador, COUNT(*) as total_bajas')
+                    ->groupBy('id_trabajador')
+                    ->having('total_bajas', '>', 1)
+                    ->orderBy('total_bajas', 'desc')
                     ->get();
     }
 }

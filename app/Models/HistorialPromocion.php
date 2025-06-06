@@ -294,5 +294,4 @@ class HistorialPromocion extends Model
         ];
     }
 
-    // ✅ MÉTODO REMOVIDO - calcularCrecimientoSalarial ya no es necesario
 }
