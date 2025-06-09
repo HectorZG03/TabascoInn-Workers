@@ -19,9 +19,9 @@ use Carbon\Carbon;
 class ActPerfilTrabajadorController extends Controller
 {
     /**
-     * Mostrar perfil completo del trabajador
+     * Mostrar perfil completo del trabajador ✅ CORREGIDO
      */
-        public function show(Trabajador $trabajador)
+    public function show(Trabajador $trabajador)
     {
         $trabajador->load([
             'fichaTecnica.categoria.area', 
@@ -31,20 +31,69 @@ class ActPerfilTrabajadorController extends Controller
             'historialPromociones.categoriaNueva.area'
         ]);
 
-        // ✅ NUEVOS CÁLCULOS OPTIMIZADOS (reemplazar método existente)
+        // ✅ Estadísticas generales (tu método existente)
         $stats = $this->calcularEstadisticasOptimizadas($trabajador);
+
+        // ✅ AGREGAR: Estadísticas específicas de promociones
+        $statsPromociones = [
+            'total_cambios' => $trabajador->historialPromociones()->count(),
+            'promociones' => $trabajador->historialPromociones()->where('tipo_cambio', 'promocion')->count(),
+            'transferencias' => $trabajador->historialPromociones()->where('tipo_cambio', 'transferencia')->count(),
+            'aumentos_sueldo' => $trabajador->historialPromociones()->where('tipo_cambio', 'aumento_sueldo')->count(),
+            'reclasificaciones' => $trabajador->historialPromociones()->where('tipo_cambio', 'reclasificacion')->count(),
+            'ultimo_cambio' => $trabajador->historialPromociones()->latest('fecha_cambio')->first()
+        ];
+
+        // ✅ AGREGAR: Historial reciente (últimos 5 cambios)
+        $historialReciente = $trabajador->historialPromociones()
+            ->with(['categoriaAnterior', 'categoriaNueva'])
+            ->latest('fecha_cambio')
+            ->limit(5)
+            ->get()
+            ->map(function ($promocion) {
+                // Calcular diferencia de sueldo
+                $promocion->diferencia_sueldo = $promocion->sueldo_nuevo - ($promocion->sueldo_anterior ?? 0);
+                
+                // Determinar color según el tipo de cambio
+                $promocion->color_tipo_cambio = match($promocion->tipo_cambio) {
+                    'promocion' => 'success',
+                    'transferencia' => 'primary',
+                    'aumento_sueldo' => 'warning',
+                    'reclasificacion' => 'info',
+                    'ajuste_salarial' => 'secondary',
+                    default => 'light'
+                };
+
+                // Texto legible del tipo de cambio
+                $promocion->tipo_cambio_texto = match($promocion->tipo_cambio) {
+                    'promocion' => 'Promoción',
+                    'transferencia' => 'Transferencia',
+                    'aumento_sueldo' => 'Aumento de Sueldo',
+                    'reclasificacion' => 'Reclasificación',
+                    'ajuste_salarial' => 'Ajuste Salarial',
+                    default => ucfirst(str_replace('_', ' ', $promocion->tipo_cambio))
+                };
+
+                return $promocion;
+            });
 
         $areas = Area::orderBy('nombre_area')->get();
         $categorias = collect();
         
         if ($trabajador->fichaTecnica && $trabajador->fichaTecnica->categoria) {
             $categorias = Categoria::where('id_area', $trabajador->fichaTecnica->categoria->id_area)
-                                 ->orderBy('nombre_categoria')
-                                 ->get();
+                                ->orderBy('nombre_categoria')
+                                ->get();
         }
 
+        // ✅ CORREGIR: Pasar las variables que necesita la vista
         return view('trabajadores.perfil_trabajador', compact(
-            'trabajador', 'areas', 'categorias', 'stats'
+            'trabajador', 
+            'areas', 
+            'categorias', 
+            'stats',
+            'statsPromociones',    // ← NUEVA VARIABLE
+            'historialReciente'    // ← NUEVA VARIABLE
         ));
     }
 
