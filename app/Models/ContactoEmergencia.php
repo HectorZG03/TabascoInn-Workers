@@ -14,9 +14,7 @@ class ContactoEmergencia extends Model
 
     protected $fillable = [
         'id_trabajador',
-        'nombre_contacto',
-        'apellido_paterno',
-        'apellido_materno',
+        'nombre_completo',
         'parentesco',
         'telefono_principal',
         'telefono_secundario',

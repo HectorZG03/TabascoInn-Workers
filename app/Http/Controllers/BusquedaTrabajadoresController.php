@@ -126,8 +126,10 @@ class BusquedaTrabajadoresController extends Controller
         $perPage = $request->get('per_page', 15);
         $perPage = in_array($perPage, [15, 25, 50, 100]) ? $perPage : 15;
 
-        // Paginar resultados manteniendo TODOS los parámetros de la query
-        return $query->paginate($perPage)->withQueryString();
+        return $query->orderBy('nombre_trabajador')
+                     ->orderBy('ape_pat')
+                     ->paginate($perPage)
+                     ->withQueryString();
     }
 
     /**
@@ -135,18 +137,13 @@ class BusquedaTrabajadoresController extends Controller
      */
     private function calcularEstadisticas($trabajadores)
     {
-        return [
-            'activos' => $trabajadores->where('estatus', 'activo')->count(),
-            'en_ausencia' => $trabajadores->whereIn('estatus', [
-                'vacaciones', 
-                'incapacidad_medica', 
-                'licencia_maternidad', 
-                'licencia_paternidad', 
-                'licencia_sin_goce', 
-                'permiso_especial'
-            ])->count(),
-            'inactivos' => $trabajadores->whereIn('estatus', ['despedido', 'retirado'])->count()
-        ];
+            return [
+                'activos' => $trabajadores->where('estatus', 'activo')->count(),
+                'en_ausencia' => $trabajadores->whereIn('estatus', [
+                    'permiso', 'suspendido', 'prueba'
+                ])->count(),
+                'inactivos' => $trabajadores->where('estatus', 'inactivo')->count()
+            ];
     }
 
     /**

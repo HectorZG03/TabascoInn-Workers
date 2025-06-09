@@ -21,18 +21,19 @@ class ActPerfilTrabajadorController extends Controller
     /**
      * Mostrar perfil completo del trabajador
      */
-    public function show(Trabajador $trabajador)
+        public function show(Trabajador $trabajador)
     {
-        // Cargar todas las relaciones necesarias incluyendo historial de promociones
         $trabajador->load([
             'fichaTecnica.categoria.area', 
             'documentos', 
             'despido',
-            'historialPromociones.categoriaAnterior.area', // ✅ NUEVA RELACIÓN
-            'historialPromociones.categoriaNueva.area'     // ✅ NUEVA RELACIÓN
+            'historialPromociones.categoriaAnterior.area',
+            'historialPromociones.categoriaNueva.area'
         ]);
 
-        // Obtener áreas y categorías para formularios
+        // ✅ NUEVOS CÁLCULOS OPTIMIZADOS (reemplazar método existente)
+        $stats = $this->calcularEstadisticasOptimizadas($trabajador);
+
         $areas = Area::orderBy('nombre_area')->get();
         $categorias = collect();
         
@@ -42,23 +43,48 @@ class ActPerfilTrabajadorController extends Controller
                                  ->get();
         }
 
-        // Estadísticas del trabajador
-        $stats = $this->calcularEstadisticasTrabajador($trabajador);
-
-        // ✅ OBTENER HISTORIAL DE PROMOCIONES RECIENTE
-        $historialReciente = HistorialPromocion::obtenerHistorialTrabajador($trabajador->id_trabajador, 5);
-        
-        // ✅ ESTADÍSTICAS DE PROMOCIONES
-        $statsPromociones = HistorialPromocion::obtenerEstadisticas($trabajador->id_trabajador);
-
         return view('trabajadores.perfil_trabajador', compact(
-            'trabajador', 
-            'areas', 
-            'categorias', 
-            'stats',
-            'historialReciente',     // ✅ NUEVA VARIABLE
-            'statsPromociones'       // ✅ NUEVA VARIABLE
+            'trabajador', 'areas', 'categorias', 'stats'
         ));
+    }
+
+    /**
+     * ✅ NUEVO MÉTODO OPTIMIZADO - usar este en lugar del existente
+     */
+    private function calcularEstadisticasOptimizadas(Trabajador $trabajador): array
+    {
+        // Cálculos que antes estaban en el modelo
+        $edad = $trabajador->fecha_nacimiento 
+            ? \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age 
+            : null;
+
+        $antiguedad = \Carbon\Carbon::parse($trabajador->fecha_ingreso)->diffInYears(now());
+        
+        $antiguedadTexto = match($antiguedad) {
+            0 => 'Nuevo',
+            1 => '1 año',
+            default => "$antiguedad años"
+        };
+
+        return [
+            // ✅ Calculado en controlador (más eficiente)
+            'edad' => $edad,
+            'antiguedad_texto' => $antiguedadTexto,
+            
+            // ✅ Mantener desde modelo/relaciones (por ahora)
+            'porcentaje_documentos' => $trabajador->documentos?->porcentaje_completado ?? 0,
+            'documentos_faltantes' => $trabajador->documentos 
+                ? count($trabajador->documentos->documentos_faltantes) 
+                : count(DocumentoTrabajador::TODOS_DOCUMENTOS),
+            'documentos_basicos_completos' => $trabajador->documentos?->documentos_basicos_completos ?? false,
+            'estado_documentos' => $trabajador->documentos?->estado_texto ?? 'Sin documentos',
+            'ultima_actualizacion' => $trabajador->updated_at->diffForHumans(),
+            'es_nuevo' => $antiguedad === 0,
+            
+            // ✅ Conteos optimizados
+            'total_promociones' => $trabajador->historialPromociones()->count(),
+            'ultimo_cambio' => $trabajador->historialPromociones()->first(),
+        ];
     }
 
     /**

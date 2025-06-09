@@ -64,7 +64,6 @@
         </div>
     @endif
 
-
     <!-- ✅ ESTADÍSTICAS ACTUALIZADAS PARA 5 ESTADOS -->
     <div class="row mb-4">
         <!-- Trabajadores Activos -->
@@ -169,8 +168,6 @@
             </div>
         </div>
     </div>
-
-
 
     <!-- Filtros y Búsqueda -->
     <div class="card shadow mb-4">
@@ -370,14 +367,9 @@
                                     </td>
                                     <td>
                                         <div class="small">
+                                            {{-- ✅ USAR DATOS CALCULADOS EN EL CONTROLADOR --}}
                                             <div class="fw-medium">
-                                                @if($trabajador->antiguedad == 0)
-                                                    Nuevo
-                                                @elseif($trabajador->antiguedad == 1)
-                                                    1 año
-                                                @else
-                                                    {{ $trabajador->antiguedad }} años
-                                                @endif
+                                                {{ $trabajador->antiguedad_texto ?? 'N/A' }}
                                             </div>
                                             <div class="text-muted">
                                                 {{ $trabajador->fecha_ingreso ? $trabajador->fecha_ingreso->format('d/m/Y') : 'N/A' }}
@@ -468,155 +460,143 @@
             @endif
         </div>
         
-       {{-- ✅ SECCIÓN DE PAGINACIÓN MEJORADA --}}
-
-    <!-- Paginación Mejorada -->
-    @if($trabajadores->hasPages())
-        <div class="card-footer bg-light">
-            <div class="row align-items-center">
-                <!-- Información de registros -->
-                <div class="col-md-6">
-                    <div class="d-flex align-items-center text-muted small">
-                        <i class="bi bi-info-circle me-2"></i>
-                        <span>
-                            Mostrando 
-                            <strong class="text-primary">{{ $trabajadores->firstItem() }}</strong> 
-                            a 
-                            <strong class="text-primary">{{ $trabajadores->lastItem() }}</strong> 
-                            de 
-                            <strong class="text-primary">{{ $trabajadores->total() }}</strong> 
-                            trabajadores
-                        </span>
+        <!-- Paginación Mejorada -->
+        @if($trabajadores->hasPages())
+            <div class="card-footer bg-light">
+                <div class="row align-items-center">
+                    <!-- Información de registros -->
+                    <div class="col-md-6">
+                        <div class="d-flex align-items-center text-muted small">
+                            <i class="bi bi-info-circle me-2"></i>
+                            <span>
+                                Mostrando 
+                                <strong class="text-primary">{{ $trabajadores->firstItem() }}</strong> 
+                                a 
+                                <strong class="text-primary">{{ $trabajadores->lastItem() }}</strong> 
+                                de 
+                                <strong class="text-primary">{{ $trabajadores->total() }}</strong> 
+                                trabajadores
+                            </span>
+                        </div>
+                        
+                        <!-- Información adicional en pantallas grandes -->
+                        <div class="d-none d-lg-block mt-1">
+                            <small class="text-muted">
+                                Página {{ $trabajadores->currentPage() }} de {{ $trabajadores->lastPage() }}
+                                @if(request()->hasAny(['search', 'estatus', 'area', 'categoria']))
+                                    <span class="badge bg-info ms-2">
+                                        <i class="bi bi-funnel"></i> Filtros aplicados
+                                    </span>
+                                @endif
+                            </small>
+                        </div>
                     </div>
                     
-                    <!-- Información adicional en pantallas grandes -->
-                    <div class="d-none d-lg-block mt-1">
-                        <small class="text-muted">
-                            Página {{ $trabajadores->currentPage() }} de {{ $trabajadores->lastPage() }}
-                            @if(request()->hasAny(['search', 'estatus', 'area', 'categoria']))
-                                <span class="badge bg-info ms-2">
-                                    <i class="bi bi-funnel"></i> Filtros aplicados
-                                </span>
-                            @endif
-                        </small>
-                    </div>
-                </div>
-                
-                <!-- Controles de paginación -->
-                <div class="col-md-6">
-                    <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0">
-                        <!-- Paginación personalizada -->
-                        <nav aria-label="Navegación de trabajadores">
-                            <ul class="pagination pagination-sm mb-0">
-                                {{-- Ir a primera página --}}
-                                @if ($trabajadores->currentPage() > 3)
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->url(1) }}" title="Primera página">
-                                            <i class="bi bi-chevron-double-left"></i>
-                                        </a>
-                                    </li>
-                                @endif
-                                
-                                {{-- Página anterior --}}
-                                @if ($trabajadores->onFirstPage())
-                                    <li class="page-item disabled">
-                                        <span class="page-link">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </span>
-                                    </li>
-                                @else
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->previousPageUrl() }}" rel="prev" title="Página anterior">
-                                            <i class="bi bi-chevron-left"></i>
-                                        </a>
-                                    </li>
-                                @endif
-
-                                {{-- Números de página --}}
-                                @php
-                                    $currentPage = $trabajadores->currentPage();
-                                    $lastPage = $trabajadores->lastPage();
-                                    $startPage = max(1, $currentPage - 2);
-                                    $endPage = min($lastPage, $currentPage + 2);
-                                @endphp
-
-                                @if($startPage > 1)
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->url(1) }}">1</a>
-                                    </li>
-                                    @if($startPage > 2)
-                                        <li class="page-item disabled">
-                                            <span class="page-link">...</span>
+                    <!-- Controles de paginación -->
+                    <div class="col-md-6">
+                        <div class="d-flex justify-content-md-end justify-content-center mt-2 mt-md-0">
+                            <!-- Paginación personalizada -->
+                            <nav aria-label="Navegación de trabajadores">
+                                <ul class="pagination pagination-sm mb-0">
+                                    {{-- Ir a primera página --}}
+                                    @if ($trabajadores->currentPage() > 3)
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $trabajadores->url(1) }}" title="Primera página">
+                                                <i class="bi bi-chevron-double-left"></i>
+                                            </a>
                                         </li>
                                     @endif
-                                @endif
-
-                                @for ($page = $startPage; $page <= $endPage; $page++)
-                                    @if ($page == $currentPage)
-                                        <li class="page-item active">
+                                    
+                                    {{-- Página anterior --}}
+                                    @if ($trabajadores->onFirstPage())
+                                        <li class="page-item disabled">
                                             <span class="page-link">
-                                                {{ $page }}
-                                                <span class="visually-hidden">(actual)</span>
+                                                <i class="bi bi-chevron-left"></i>
                                             </span>
                                         </li>
                                     @else
                                         <li class="page-item">
-                                            <a class="page-link" href="{{ $trabajadores->url($page) }}">{{ $page }}</a>
+                                            <a class="page-link" href="{{ $trabajadores->previousPageUrl() }}" rel="prev" title="Página anterior">
+                                                <i class="bi bi-chevron-left"></i>
+                                            </a>
                                         </li>
                                     @endif
-                                @endfor
 
-                                @if($endPage < $lastPage)
-                                    @if($endPage < $lastPage - 1)
+                                    {{-- Números de página --}}
+                                    @php
+                                        $currentPage = $trabajadores->currentPage();
+                                        $lastPage = $trabajadores->lastPage();
+                                        $startPage = max(1, $currentPage - 2);
+                                        $endPage = min($lastPage, $currentPage + 2);
+                                    @endphp
+
+                                    @if($startPage > 1)
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $trabajadores->url(1) }}">1</a>
+                                        </li>
+                                        @if($startPage > 2)
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        @endif
+                                    @endif
+
+                                    @for ($page = $startPage; $page <= $endPage; $page++)
+                                        @if ($page == $currentPage)
+                                            <li class="page-item active">
+                                                <span class="page-link">
+                                                    {{ $page }}
+                                                    <span class="visually-hidden">(actual)</span>
+                                                </span>
+                                            </li>
+                                        @else
+                                            <li class="page-item">
+                                                <a class="page-link" href="{{ $trabajadores->url($page) }}">{{ $page }}</a>
+                                            </li>
+                                        @endif
+                                    @endfor
+
+                                    @if($endPage < $lastPage)
+                                        @if($endPage < $lastPage - 1)
+                                            <li class="page-item disabled">
+                                                <span class="page-link">...</span>
+                                            </li>
+                                        @endif
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $trabajadores->url($lastPage) }}">{{ $lastPage }}</a>
+                                        </li>
+                                    @endif
+
+                                    {{-- Página siguiente --}}
+                                    @if ($trabajadores->hasMorePages())
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $trabajadores->nextPageUrl() }}" rel="next" title="Página siguiente">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </a>
+                                        </li>
+                                    @else
                                         <li class="page-item disabled">
-                                            <span class="page-link">...</span>
+                                            <span class="page-link">
+                                                <i class="bi bi-chevron-right"></i>
+                                            </span>
                                         </li>
                                     @endif
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->url($lastPage) }}">{{ $lastPage }}</a>
-                                    </li>
-                                @endif
-
-                                {{-- Página siguiente --}}
-                                @if ($trabajadores->hasMorePages())
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->nextPageUrl() }}" rel="next" title="Página siguiente">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </a>
-                                    </li>
-                                @else
-                                    <li class="page-item disabled">
-                                        <span class="page-link">
-                                            <i class="bi bi-chevron-right"></i>
-                                        </span>
-                                    </li>
-                                @endif
-                                
-                                {{-- Ir a última página --}}
-                                @if ($trabajadores->currentPage() < $lastPage - 2)
-                                    <li class="page-item">
-                                        <a class="page-link" href="{{ $trabajadores->url($lastPage) }}" title="Última página">
-                                            <i class="bi bi-chevron-double-right"></i>
-                                        </a>
-                                    </li>
-                                @endif
-                            </ul>
-                        </nav>
+                                    
+                                    {{-- Ir a última página --}}
+                                    @if ($trabajadores->currentPage() < $lastPage - 2)
+                                        <li class="page-item">
+                                            <a class="page-link" href="{{ $trabajadores->url($lastPage) }}" title="Última página">
+                                                <i class="bi bi-chevron-double-right"></i>
+                                            </a>
+                                        </li>
+                                    @endif
+                                </ul>
+                            </nav>
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-
-    {{-- JavaScript para cambiar elementos por página --}}
-    <script>
-    function changePerPage(perPage) {
-        const url = new URL(window.location);
-        url.searchParams.set('per_page', perPage);
-        url.searchParams.delete('page'); // Resetear a página 1
-        window.location.href = url.toString();
-    }
-    </script>
-@endif
+        @endif
     </div>
 </div>
 

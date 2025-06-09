@@ -16,19 +16,24 @@ use Carbon\Carbon;
 class TrabajadorController extends Controller
 {
     /**
-     * Mostrar lista de trabajadores (INDEX) - ✅ OPTIMIZADO
+     * ✅ SOLUCIÓN AL ERROR: Calcular antiguedad en el controlador
      */
     public function index(Request $request)
     {
-        $query = Trabajador::with(['fichaTecnica.categoria.area'])
-                          ->where('estatus', '!=', 'inactivo'); // Excluir inactivos por defecto
+        // ✅ QUERY OPTIMIZADA con cálculo de antigüedad en base de datos
+        $query = Trabajador::select([
+                'trabajadores.*',
+                // ✅ Calcular antigüedad directamente en SQL (evita errores de tipo)
+                DB::raw('COALESCE(TIMESTAMPDIFF(YEAR, fecha_ingreso, CURDATE()), 0) as antiguedad_calculada')
+            ])
+            ->with(['fichaTecnica.categoria.area'])
+            ->where('estatus', '!=', 'inactivo');
 
-        // ✅ FILTRO POR ESTADO
+        // Filtros existentes
         if ($request->filled('estatus')) {
             $query->where('estatus', $request->estatus);
         }
 
-        // Filtros existentes
         if ($request->filled('area')) {
             $query->whereHas('fichaTecnica.categoria.area', function($q) use ($request) {
                 $q->where('id_area', $request->area);
@@ -52,27 +57,17 @@ class TrabajadorController extends Controller
             });
         }
 
-        // Ordenamiento
-        $orderBy = $request->get('order_by', 'created_at');
-        $orderDirection = $request->get('order_direction', 'desc');
-        
-        $allowedOrderFields = ['nombre_trabajador', 'ape_pat', 'fecha_ingreso', 'created_at', 'updated_at', 'estatus'];
-        if (!in_array($orderBy, $allowedOrderFields)) {
-            $orderBy = 'created_at';
-        }
-
-        $trabajadores = $query->orderBy($orderBy, $orderDirection)
+        $trabajadores = $query->orderBy('created_at', 'desc')
                              ->paginate(12)
                              ->withQueryString();
 
-        // Para los filtros
-        $areas = Area::orderBy('nombre_area')->get();
-        $categorias = collect();
-        
-        if ($request->filled('area')) {
-            $categorias = Categoria::where('id_area', $request->area)
-                                 ->orderBy('nombre_categoria')
-                                 ->get();
+        // ✅ PROCESAR DATOS DESPUÉS DE LA CONSULTA para evitar errores
+        foreach ($trabajadores as $trabajador) {
+            // ✅ Asegurar que antiguedad_calculada sea entero
+            $trabajador->antiguedad_calculada = (int) ($trabajador->antiguedad_calculada ?? 0);
+            
+            // ✅ Calcular texto de antigüedad en el controlador
+            $trabajador->antiguedad_texto = $this->calcularAntiguedadTexto($trabajador->antiguedad_calculada);
         }
 
         // ✅ ESTADÍSTICAS OPTIMIZADAS
@@ -87,14 +82,25 @@ class TrabajadorController extends Controller
             ]
         ];
 
+        $areas = Area::orderBy('nombre_area')->get();
+        $categorias = collect();
         $estados = Trabajador::TODOS_ESTADOS;
+
         return view('trabajadores.lista_trabajadores', compact(
-            'trabajadores', 
-            'areas', 
-            'categorias', 
-            'stats',
-            'estados'
+            'trabajadores', 'areas', 'categorias', 'stats', 'estados'
         ));
+    }
+
+    /**
+     * ✅ HELPER: Calcular texto de antigüedad de forma segura
+     */
+    private function calcularAntiguedadTexto(int $antiguedad): string
+    {
+        return match($antiguedad) {
+            0 => 'Nuevo',
+            1 => '1 año',
+            default => "$antiguedad años"
+        };
     }
     
     /**
@@ -107,12 +113,12 @@ class TrabajadorController extends Controller
         return view('trabajadores.crear_trabajador', compact('areas'));
     }
 
-    /**
-     * Guardar nuevo trabajador (STORE) - ✅ SIN DOCUMENTOS
+/**
+     * ✅ STORE CORREGIDO: Crear trabajador con contacto usando nombre_completo
      */
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES SIN DOCUMENTOS
+        // ✅ VALIDACIONES CORREGIDAS PARA CONTACTO
         $validated = $request->validate([
             // Datos personales
             'nombre_trabajador' => 'required|string|max:50',
@@ -135,17 +141,14 @@ class TrabajadorController extends Controller
             'grado_estudios' => 'nullable|string|max:50',
             'estatus' => 'nullable|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
 
-            // ✅ CONTACTO DE EMERGENCIA - CAMPOS CORRECTOS DEL FORMULARIO
-            'contacto_nombre' => 'nullable|string|max:50',
-            'contacto_apellido_paterno' => 'nullable|string|max:50',
-            'contacto_apellido_materno' => 'nullable|string|max:50',
+            // ✅ CONTACTO CORREGIDO - Validación condicional
+            'contacto_nombre_completo' => 'nullable|string|max:150',
             'contacto_parentesco' => 'nullable|string|max:50',
             'contacto_telefono_principal' => 'nullable|string|size:10',
             'contacto_telefono_secundario' => 'nullable|string|size:10',
-            'contacto_correo' => 'nullable|email|max:100',
             'contacto_direccion' => 'nullable|string|max:500',
-            'contacto_notas' => 'nullable|string|max:1000',
         ], [
+            // Mensajes de validación existentes...
             'nombre_trabajador.required' => 'El nombre es obligatorio',
             'ape_pat.required' => 'El apellido paterno es obligatorio',
             'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
@@ -160,8 +163,11 @@ class TrabajadorController extends Controller
             'id_categoria.required' => 'Debe seleccionar una categoría',
             'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
             'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
-            'contacto_telefono_principal.size' => 'El teléfono debe tener 10 dígitos',
-            'contacto_telefono_secundario.size' => 'El teléfono debe tener 10 dígitos',
+            
+            // ✅ MENSAJES CORREGIDOS PARA CONTACTO
+            'contacto_nombre_completo.max' => 'El nombre completo no debe exceder 150 caracteres',
+            'contacto_telefono_principal.size' => 'El teléfono principal debe tener 10 dígitos',
+            'contacto_telefono_secundario.size' => 'El teléfono secundario debe tener 10 dígitos',
         ]);
 
         // Validar relación área-categoría
@@ -177,6 +183,9 @@ class TrabajadorController extends Controller
         DB::beginTransaction();
         
         try {
+            // ✅ CALCULAR ANTIGÜEDAD DE FORMA SEGURA
+            $antiguedadCalculada = (int) Carbon::parse($validated['fecha_ingreso'])->diffInYears(now());
+
             // 1️⃣ CREAR TRABAJADOR
             $trabajador = Trabajador::create([
                 'nombre_trabajador' => $validated['nombre_trabajador'],
@@ -190,13 +199,14 @@ class TrabajadorController extends Controller
                 'correo' => $validated['correo'],
                 'direccion' => $validated['direccion'],
                 'fecha_ingreso' => $validated['fecha_ingreso'],
-                'antiguedad' => (int) Carbon::parse($validated['fecha_ingreso'])->diffInYears(now()),
+                'antiguedad' => $antiguedadCalculada,
                 'estatus' => $validated['estatus'] ?? 'activo',
             ]);
 
             Log::info('✅ Trabajador creado', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'estatus' => $trabajador->estatus
+                'estatus' => $trabajador->estatus,
+                'antiguedad' => $antiguedadCalculada
             ]);
 
             // 2️⃣ CREAR FICHA TÉCNICA
@@ -210,44 +220,37 @@ class TrabajadorController extends Controller
 
             Log::info('✅ Ficha técnica creada', ['ficha_id' => $fichaTecnica->id]);
 
-            // 3️⃣ CREAR CONTACTO DE EMERGENCIA (SI SE PROPORCIONÓ)
-            // ✅ VERIFICAR SI AL MENOS EL NOMBRE ESTÁ PRESENTE
-            if ($request->filled('contacto_nombre')) {
-                // ✅ CONSTRUIR NOMBRE COMPLETO
-                $nombreCompleto = trim($validated['contacto_nombre']);
-                if ($validated['contacto_apellido_paterno']) {
-                    $nombreCompleto .= ' ' . trim($validated['contacto_apellido_paterno']);
-                }
-                if ($validated['contacto_apellido_materno']) {
-                    $nombreCompleto .= ' ' . trim($validated['contacto_apellido_materno']);
-                }
-
+            // 3️⃣ ✅ CREAR CONTACTO DE EMERGENCIA (VALIDACIÓN CORREGIDA)
+            if ($request->filled('contacto_nombre_completo') && !empty(trim($validated['contacto_nombre_completo']))) {
                 $contacto = ContactoEmergencia::create([
                     'id_trabajador' => $trabajador->id_trabajador,
-                    'nombre_completo' => $nombreCompleto,
+                    'nombre_completo' => trim($validated['contacto_nombre_completo']),
                     'parentesco' => $validated['contacto_parentesco'],
                     'telefono_principal' => $validated['contacto_telefono_principal'],
                     'telefono_secundario' => $validated['contacto_telefono_secundario'],
-                    'correo' => $validated['contacto_correo'],
                     'direccion' => $validated['contacto_direccion'],
-                    'notas' => $validated['contacto_notas'],
                 ]);
                 
                 Log::info('✅ Contacto de emergencia creado', [
                     'trabajador_id' => $trabajador->id_trabajador,
                     'contacto_id' => $contacto->id_contacto,
-                    'nombre_completo' => $nombreCompleto
+                    'nombre_completo' => $contacto->nombre_completo
                 ]);
             }
 
             DB::commit();
 
-            $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente con estado: {$trabajador->estatus_texto}";
+            $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente";
+            if ($request->filled('contacto_nombre_completo')) {
+                $mensaje .= " con contacto de emergencia";
+            }
+            $mensaje .= " con estado: {$trabajador->estatus_texto}";
 
             Log::info('🎉 Trabajador creado exitosamente', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'usuario' => Auth::user()->email ?? 'Sistema',
-                'estatus' => $trabajador->estatus
+                'estatus' => $trabajador->estatus,
+                'tiene_contacto' => $request->filled('contacto_nombre_completo')
             ]);
 
             return redirect()->route('trabajadores.index')
