@@ -27,6 +27,10 @@ class Trabajador extends Model
         'ape_pat',
         'ape_mat',
         'fecha_nacimiento',
+        // ✅ NUEVOS: Campos de ubicación
+        'lugar_nacimiento',
+        'estado_actual',
+        'ciudad_actual',
         'curp',
         'rfc',
         'no_nss',
@@ -53,4 +57,41 @@ class Trabajador extends Model
         'prueba' => 'Período de Prueba',
         'inactivo' => 'Inactivo'
     ];
+
+    // ✅ NUEVAS: Constantes para estados de México
+    public const ESTADOS_MEXICO = [
+        'Aguascalientes' => 'Aguascalientes',
+        'Baja California' => 'Baja California',
+        'Baja California Sur' => 'Baja California Sur',
+        'Campeche' => 'Campeche',
+        'Chiapas' => 'Chiapas',
+        'Chihuahua' => 'Chihuahua',
+        'Ciudad de México' => 'Ciudad de México',
+        'Coahuila' => 'Coahuila',
+        'Colima' => 'Colima',
+        'Durango' => 'Durango',
+        'Estado de México' => 'Estado de México',
+        'Guanajuato' => 'Guanajuato',
+        'Guerrero' => 'Guerrero',
+        'Hidalgo' => 'Hidalgo',
+        'Jalisco' => 'Jalisco',
+        'Michoacán' => 'Michoacán',
+        'Morelos' => 'Morelos',
+        'Nayarit' => 'Nayarit',
+        'Nuevo León' => 'Nuevo León',
+        'Oaxaca' => 'Oaxaca',
+        'Puebla' => 'Puebla',
+        'Querétaro' => 'Querétaro',
+        'Quintana Roo' => 'Quintana Roo',
+        'San Luis Potosí' => 'San Luis Potosí',
+        'Sinaloa' => 'Sinaloa',
+        'Sonora' => 'Sonora',
+        'Tabasco' => 'Tabasco',
+        'Tamaulipas' => 'Tamaulipas',
+        'Tlaxcala' => 'Tlaxcala',
+        'Veracruz' => 'Veracruz',
+        'Yucatán' => 'Yucatán',
+        'Zacatecas' => 'Zacatecas',
+    ];
+
 }

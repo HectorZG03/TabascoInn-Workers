@@ -54,4 +54,27 @@ trait TieneHelpersTemporales
     {
         return $this->despidos()->where('estado', 'cancelado')->count();
     }
+
+    
+    // ✅ NUEVA: Helper para obtener ubicación completa actual
+    public function getUbicacionActualAttribute(): string
+    {
+        $ubicacion = [];
+        
+        if ($this->ciudad_actual) {
+            $ubicacion[] = $this->ciudad_actual;
+        }
+        
+        if ($this->estado_actual) {
+            $ubicacion[] = $this->estado_actual;
+        }
+        
+        return implode(', ', $ubicacion) ?: 'No especificada';
+    }
+
+    // ✅ NUEVA: Helper para obtener lugar de nacimiento formateado
+    public function getLugarNacimientoFormateadoAttribute(): string
+    {
+        return $this->lugar_nacimiento ?: 'No especificado';
+    }
 }

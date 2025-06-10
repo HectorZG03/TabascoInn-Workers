@@ -71,6 +71,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Nombres y Apellidos -->
                         <div class="row">
                             <!-- Nombre -->
                             <div class="col-md-4 mb-3">
@@ -123,6 +124,7 @@
                             </div>
                         </div>
 
+                        <!-- Fecha de Nacimiento y Documentos -->
                         <div class="row">
                             <!-- Fecha de Nacimiento -->
                             <div class="col-md-4 mb-3">
@@ -182,6 +184,7 @@
                             </div>
                         </div>
 
+                        <!-- NSS, Teléfono y Correo -->
                         <div class="row">
                             <!-- NSS -->
                             <div class="col-md-4 mb-3">
@@ -237,11 +240,12 @@
                             </div>
                         </div>
 
+                        <!-- ✅ UBICACIÓN: Dirección Actual, Lugar de Nacimiento y Fecha de Ingreso -->
                         <div class="row">
-                            <!-- Dirección -->
-                            <div class="col-md-8 mb-3">
+                            <!-- Dirección Actual -->
+                            <div class="col-md-4 mb-3">
                                 <label for="direccion" class="form-label">
-                                    <i class="bi bi-geo-alt"></i> Dirección
+                                    <i class="bi bi-geo-alt-fill"></i> Dirección Actual
                                 </label>
                                 <input type="text" 
                                        class="form-control @error('direccion') is-invalid @enderror" 
@@ -249,7 +253,26 @@
                                        name="direccion" 
                                        value="{{ old('direccion') }}" 
                                        placeholder="Calle, número, colonia">
+                                <div class="form-text">Dirección donde vive actualmente</div>
                                 @error('direccion')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Lugar de Nacimiento -->
+                            <div class="col-md-4 mb-3">
+                                <label for="lugar_nacimiento" class="form-label">
+                                    <i class="bi bi-geo"></i> Lugar de Nacimiento
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('lugar_nacimiento') is-invalid @enderror" 
+                                       id="lugar_nacimiento" 
+                                       name="lugar_nacimiento" 
+                                       value="{{ old('lugar_nacimiento') }}" 
+                                       placeholder="Ciudad, Estado"
+                                       maxlength="100">
+                                <div class="form-text">Ejemplo: Villahermosa, Tabasco</div>
+                                @error('lugar_nacimiento')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -272,6 +295,48 @@
                                 @enderror
                             </div>
                         </div>
+
+                        <!-- ✅ UBICACIÓN ACTUAL: Estado y Ciudad -->
+                        <div class="row">
+                            <!-- Estado Actual -->
+                            <div class="col-md-6 mb-3">
+                                <label for="estado_actual" class="form-label">
+                                    <i class="bi bi-map"></i> Estado Actual
+                                </label>
+                                <select class="form-select @error('estado_actual') is-invalid @enderror" 
+                                        id="estado_actual" 
+                                        name="estado_actual">
+                                    <option value="">Seleccionar estado...</option>
+                                    @foreach(\App\Models\Trabajador::ESTADOS_MEXICO as $valor => $texto)
+                                        <option value="{{ $valor }}" {{ old('estado_actual') == $valor ? 'selected' : '' }}>
+                                            {{ $texto }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">Estado donde vive actualmente</div>
+                                @error('estado_actual')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Ciudad Actual -->
+                            <div class="col-md-6 mb-3">
+                                <label for="ciudad_actual" class="form-label">
+                                    <i class="bi bi-building"></i> Ciudad Actual
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('ciudad_actual') is-invalid @enderror" 
+                                       id="ciudad_actual" 
+                                       name="ciudad_actual" 
+                                       value="{{ old('ciudad_actual') }}" 
+                                       placeholder="Ciudad donde vive"
+                                       maxlength="50">
+                                <div class="form-text">Ciudad donde reside actualmente</div>
+                                @error('ciudad_actual')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
                     </div>
                 </div>
 
@@ -283,6 +348,7 @@
                         </h5>
                     </div>
                     <div class="card-body">
+                        <!-- Área, Categoría y Sueldo -->
                         <div class="row">
                             <!-- Área -->
                             <div class="col-md-4 mb-3">
@@ -345,6 +411,7 @@
                             </div>
                         </div>
 
+                        <!-- Formación, Estudios y Estado -->
                         <div class="row">
                             <!-- Formación -->
                             <div class="col-md-4 mb-3">
@@ -410,6 +477,64 @@
                                     </small>
                                 </div>
                                 @error('estatus')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- ✅ NUEVOS: Horas de Trabajo y Turno -->
+                        <div class="row">
+                            <!-- Horas de Trabajo -->
+                            <div class="col-md-6 mb-3">
+                                <label for="horas_trabajo" class="form-label">
+                                    <i class="bi bi-clock"></i> Horas de Trabajo por Día
+                                </label>
+                                <div class="input-group">
+                                    <input type="number" 
+                                           class="form-control @error('horas_trabajo') is-invalid @enderror" 
+                                           id="horas_trabajo" 
+                                           name="horas_trabajo" 
+                                           value="{{ old('horas_trabajo') }}" 
+                                           placeholder="8"
+                                           step="0.5"
+                                           min="1"
+                                           max="24">
+                                    <span class="input-group-text">hrs</span>
+                                </div>
+                                <div class="form-text">Ejemplo: 8 (jornada completa), 6 (tiempo parcial)</div>
+                                @error('horas_trabajo')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Turno -->
+                            <div class="col-md-6 mb-3">
+                                <label for="turno" class="form-label">
+                                    <i class="bi bi-sun"></i> Turno de Trabajo
+                                </label>
+                                <select class="form-select @error('turno') is-invalid @enderror" 
+                                        id="turno" 
+                                        name="turno">
+                                    <option value="">Seleccionar turno...</option>
+                                    @foreach(\App\Models\FichaTecnica::TURNOS_DISPONIBLES as $valor => $texto)
+                                        <option value="{{ $valor }}" 
+                                                {{ old('turno') == $valor ? 'selected' : '' }}
+                                                data-icon="{{ 
+                                                    $valor === 'diurno' ? 'sun' : 
+                                                    ($valor === 'nocturno' ? 'moon' : 'clock') 
+                                                }}">
+                                            {{ $texto }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                <div class="form-text">
+                                    <small class="text-muted">
+                                        <i class="bi bi-sun text-warning"></i> Diurno: 6:00-18:00 |
+                                        <i class="bi bi-moon text-info"></i> Nocturno: 18:00-6:00 |
+                                        <i class="bi bi-clock text-secondary"></i> Mixto: Rotativo
+                                    </small>
+                                </div>
+                                @error('turno')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
@@ -541,6 +666,8 @@
                     </div>
                 </div>
 
+
+
                 <!-- Botones de Acción -->
                 <div class="card shadow">
                     <div class="card-body">
@@ -590,19 +717,45 @@
                                 <small class="text-muted">Edad</small>
                             </div>
                         </div>
+
+                        <hr>
+
+                        <!-- ✅ NUEVA: Vista previa de ubicación -->
+                        <div class="row text-center">
+                            <div class="col-12 mb-2">
+                                <i class="bi bi-geo-alt text-info"></i>
+                                <div class="fw-bold text-info" id="preview-ubicacion">No especificada</div>
+                                <small class="text-muted">Ubicación Actual</small>
+                            </div>
+                        </div>
+
+                        <!-- ✅ NUEVA: Vista previa de horario -->
+                        <div class="row text-center">
+                            <div class="col-6">
+                                <i class="bi bi-clock text-warning"></i>
+                                <div class="fw-bold text-warning" id="preview-horas">-- hrs</div>
+                                <small class="text-muted">Horas/Día</small>
+                            </div>
+                            <div class="col-6">
+                                <i class="bi bi-sun text-primary"></i>
+                                <div class="fw-bold text-primary" id="preview-turno">--</div>
+                                <small class="text-muted">Turno</small>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
         </div>
     </form>
 
-    {{-- ✅ INCLUIR MODAL DESDE ARCHIVO SEPARADO --}}
-    @include('trabajadores.modales.contrato')
-
 </div>
 
-{{-- ✅ SCRIPTS EXTERNOS --}}
+{{-- ✅ INCLUIR MODAL DESDE ARCHIVO SEPARADO - DEBE IR ANTES DE LOS SCRIPTS --}}
+@include('trabajadores.modales.contrato')
+
+{{-- ✅ SCRIPTS EXTERNOS EN ORDEN CORRECTO --}}
 @vite('resources/js/app.js')
+<script src="{{ asset('js/crear_trabajador.js') }}"></script>
 <script src="{{ asset('js/contrato-modal.js') }}"></script>
 <style src="{{ asset('css/dashboard.css') }}"></style>
 

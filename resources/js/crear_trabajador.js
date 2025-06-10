@@ -92,6 +92,52 @@ document.addEventListener('DOMContentLoaded', function() {
         } else {
             document.getElementById('preview-edad').textContent = '-- años';
         }
+
+        // ✅ NUEVAS: Vista previa de ubicación y horario
+        actualizarVistaUbicacion();
+        actualizarVistaHorario();
+    }
+
+    // ✅ NUEVA: Actualizar vista previa de ubicación
+    function actualizarVistaUbicacion() {
+        const ciudad = document.getElementById('ciudad_actual')?.value || '';
+        const estado = document.getElementById('estado_actual')?.value || '';
+        const previewUbicacion = document.getElementById('preview-ubicacion');
+        
+        if (previewUbicacion) {
+            if (ciudad && estado) {
+                previewUbicacion.textContent = `${ciudad}, ${estado}`;
+            } else if (ciudad || estado) {
+                previewUbicacion.textContent = ciudad || estado;
+            } else {
+                previewUbicacion.textContent = 'No especificada';
+            }
+        }
+    }
+    
+    // ✅ NUEVA: Actualizar vista previa de horario
+    function actualizarVistaHorario() {
+        const horas = document.getElementById('horas_trabajo')?.value || '';
+        const turno = document.getElementById('turno')?.value || '';
+        const previewHoras = document.getElementById('preview-horas');
+        const previewTurno = document.getElementById('preview-turno');
+        
+        if (previewHoras) {
+            previewHoras.textContent = horas ? `${horas} hrs` : '-- hrs';
+        }
+        
+        if (previewTurno) {
+            if (turno) {
+                const turnos = {
+                    'diurno': 'Diurno',
+                    'nocturno': 'Nocturno', 
+                    'mixto': 'Mixto'
+                };
+                previewTurno.textContent = turnos[turno] || turno;
+            } else {
+                previewTurno.textContent = '--';
+            }
+        }
     }
 
     // Event listeners para vista previa
@@ -99,6 +145,15 @@ document.addEventListener('DOMContentLoaded', function() {
         const element = document.getElementById(id);
         if (element) {
             element.addEventListener('input', actualizarVistaPrevia);
+        }
+    });
+    
+    // ✅ Event listeners para nuevos campos de ubicación y horario
+    ['ciudad_actual', 'estado_actual', 'horas_trabajo', 'turno'].forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', actualizarVistaPrevia);
+            element.addEventListener('change', actualizarVistaPrevia);
         }
     });
     
@@ -161,23 +216,9 @@ document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ Formulario limpiado exitosamente');
     }
 
-    // ✅ MEJORAR EXPERIENCIA DE ENVÍO
-    const btnGuardar = document.getElementById('btnGuardar');
+    // ❌ REMOVIDO: Event listener del formulario que causaba conflicto
+    // El ContratoModal ya maneja el envío del formulario
     
-    if (form && btnGuardar) {
-        form.addEventListener('submit', function(e) {
-            // Deshabilitar botón para evitar doble envío
-            btnGuardar.disabled = true;
-            btnGuardar.innerHTML = '<i class="bi bi-hourglass-split"></i> Guardando...';
-            
-            // Re-habilitar si hay error (el navegador no redirige)
-            setTimeout(() => {
-                btnGuardar.disabled = false;
-                btnGuardar.innerHTML = '<i class="bi bi-save"></i> Guardar Trabajador';
-            }, 3000);
-        });
-    }
-
     // ✅ BOTÓN MANUAL PARA LIMPIAR FORMULARIO (opcional)
     const btnLimpiar = document.createElement('button');
     btnLimpiar.type = 'button';
@@ -186,8 +227,13 @@ document.addEventListener('DOMContentLoaded', function() {
     btnLimpiar.onclick = limpiarFormulario;
     
     // Insertar botón antes del botón cancelar
-    const btnCancelar = document.querySelector('a[href*="trabajadores.crear_trabajador"]');
+    const btnCancelar = document.querySelector('a[href*="trabajadores.index"]');
     if (btnCancelar) {
         btnCancelar.parentNode.insertBefore(btnLimpiar, btnCancelar);
     }
+
+    // ✅ INICIALIZAR VISTA PREVIA AL CARGAR
+    actualizarVistaPrevia();
+    
+    console.log('✅ crear_trabajador.js cargado correctamente');
 });

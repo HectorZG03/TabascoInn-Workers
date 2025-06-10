@@ -25,12 +25,23 @@ class FichaTecnica extends Model
         'sueldo_diarios',
         'formacion',
         'grado_estudios',
+        // ✅ NUEVOS: Campos laborales
+        'horas_trabajo',
+        'turno',
     ];
 
     protected $dates = [];
 
     protected $casts = [
         'sueldo_diarios' => 'decimal:2',
+        'horas_trabajo' => 'decimal:2', // ✅ NUEVO: Cast para horas de trabajo
+    ];
+
+    // ✅ NUEVAS: Constantes para turnos
+    public const TURNOS_DISPONIBLES = [
+        'diurno' => 'Diurno',
+        'nocturno' => 'Nocturno',
+        'mixto' => 'Mixto/Rotativo',
     ];
 
     public function trabajador()
@@ -57,9 +68,8 @@ class FichaTecnica extends Model
 
     public function scopeSueldoMayorA($query, $cantidad)
     {
-        return $query->where('sueldo_diarios', '>', $cantidad); // ✅ Corregir nombre
+        return $query->where('sueldo_diarios', '>', $cantidad);
     }
-
 
     public function scopePorGradoEstudios($query, $grado)
     {
@@ -71,14 +81,41 @@ class FichaTecnica extends Model
         return $query->where('formacion', $formacion);
     }
 
-    public function getSueldoMensualAttribute()
+    // ✅ NUEVOS: Scopes para campos laborales
+    public function scopePorTurno($query, $turno)
     {
-        return $this->sueldo_diarios * 30;
+        return $query->where('turno', $turno);
     }
 
-    public function getSueldoAnualAttribute()
+    public function scopePorHorasTrabajo($query, $horas)
     {
-        return $this->sueldo_diarios * 365;
+        return $query->where('horas_trabajo', $horas);
+    }
+
+
+
+    // ✅ NUEVO: Obtener texto del turno
+    public function getTurnoTextoAttribute()
+    {
+        return self::TURNOS_DISPONIBLES[$this->turno] ?? 'No especificado';
+    }
+
+    // ✅ NUEVO: Obtener horas formateadas
+    public function getHorasTrabajoFormateadasAttribute()
+    {
+        if (!$this->horas_trabajo) {
+            return 'No especificadas';
+        }
+        
+        // Convertir decimal a horas y minutos
+        $horas = floor($this->horas_trabajo);
+        $minutos = ($this->horas_trabajo - $horas) * 60;
+        
+        if ($minutos > 0) {
+            return sprintf('%d:%02d hrs', $horas, $minutos);
+        }
+        
+        return $horas . ' hrs';
     }
 
     public function estaCompleta()
@@ -86,7 +123,9 @@ class FichaTecnica extends Model
         return !empty($this->sueldo_diarios) &&
                !empty($this->formacion) &&
                !empty($this->grado_estudios) &&
-               !empty($this->id_categoria);
+               !empty($this->id_categoria) &&
+               !empty($this->horas_trabajo) && // ✅ NUEVO: Incluir horas de trabajo
+               !empty($this->turno);           // ✅ NUEVO: Incluir turno
     }
 
     public function getResumenAttribute()
@@ -95,10 +134,11 @@ class FichaTecnica extends Model
             'trabajador' => $this->trabajador->nombre_completo ?? 'Sin asignar',
             'categoria' => $this->categoria->nombre_categoria ?? 'Sin categoría',
             'area' => $this->categoria->area->nombre_area ?? 'Sin área',
-            'sueldo_diario' => $this->sueldo_diarios, // ✅ Corregir aquí también
-            'sueldo_mensual' => $this->sueldo_mensual,
+            'sueldo_diario' => $this->sueldo_diarios, // ✅ Solo sueldo diario
             'formacion' => $this->formacion,
             'estudios' => $this->grado_estudios,
+            'horas_trabajo' => $this->horas_trabajo_formateadas, // ✅ NUEVO
+            'turno' => $this->turno_texto, // ✅ NUEVO
             'completa' => $this->estaCompleta()
         ];
     }

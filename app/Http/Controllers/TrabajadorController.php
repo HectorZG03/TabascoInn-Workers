@@ -120,11 +120,18 @@ class TrabajadorController extends Controller
     {
         // ✅ VALIDACIONES CORREGIDAS - Coinciden con el frontend
         $validated = $request->validate([
-            // Datos personales (sin cambios)
+            // Datos personales básicos
             'nombre_trabajador' => 'required|string|max:50',
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
             'fecha_nacimiento' => 'required|date|before:-18 years',
+            
+            // ✅ NUEVOS: Datos de ubicación
+            'lugar_nacimiento' => 'nullable|string|max:100',
+            'estado_actual' => 'nullable|string|max:50',
+            'ciudad_actual' => 'nullable|string|max:50',
+            
+            // Identificadores oficiales
             'curp' => 'required|string|size:18|unique:trabajadores,curp',
             'rfc' => 'required|string|size:13|unique:trabajadores,rfc',
             'no_nss' => 'nullable|string|max:11',
@@ -133,13 +140,17 @@ class TrabajadorController extends Controller
             'direccion' => 'nullable|string|max:255',
             'fecha_ingreso' => 'required|date|before_or_equal:today',
             
-            // Datos laborales (sin cambios)
+            // Datos laborales
             'id_area' => 'required|exists:area,id_area',
             'id_categoria' => 'required|exists:categoria,id_categoria',
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
             'formacion' => 'nullable|string|max:50',
             'grado_estudios' => 'nullable|string|max:50',
             'estatus' => 'nullable|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
+            
+            // ✅ NUEVOS: Datos laborales específicos
+            'horas_trabajo' => 'nullable|numeric|min:1|max:24',
+            'turno' => 'nullable|in:diurno,nocturno,mixto',
 
             // ✅ CORREGIDO: Datos del contrato que coinciden con el frontend
             'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
@@ -154,10 +165,17 @@ class TrabajadorController extends Controller
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
         ], [
-            // Mensajes existentes...
+            // Mensajes datos personales
             'nombre_trabajador.required' => 'El nombre es obligatorio',
             'ape_pat.required' => 'El apellido paterno es obligatorio',
             'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
+            
+            // ✅ NUEVOS: Mensajes para ubicación
+            'lugar_nacimiento.max' => 'El lugar de nacimiento no debe exceder 100 caracteres',
+            'estado_actual.max' => 'El estado actual no debe exceder 50 caracteres',
+            'ciudad_actual.max' => 'La ciudad actual no debe exceder 50 caracteres',
+            
+            // Mensajes identificadores
             'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
             'curp.unique' => 'Este CURP ya está registrado',
             'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
@@ -166,9 +184,17 @@ class TrabajadorController extends Controller
             'correo.unique' => 'Este correo ya está registrado',
             'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
             'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
+            
+            // Mensajes datos laborales
             'id_categoria.required' => 'Debe seleccionar una categoría',
             'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
             'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
+            
+            // ✅ NUEVOS: Mensajes para campos laborales específicos
+            'horas_trabajo.numeric' => 'Las horas de trabajo deben ser un número',
+            'horas_trabajo.min' => 'Las horas de trabajo deben ser al menos 1',
+            'horas_trabajo.max' => 'Las horas de trabajo no pueden exceder 24',
+            'turno.in' => 'El turno debe ser: diurno, nocturno o mixto',
             
             // ✅ CORREGIDO: Mensajes para contrato que coinciden con el frontend
             'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria',
@@ -207,6 +233,11 @@ class TrabajadorController extends Controller
                 'ape_pat' => $validated['ape_pat'],
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $validated['fecha_nacimiento'],
+                // ✅ NUEVOS: Campos de ubicación
+                'lugar_nacimiento' => $validated['lugar_nacimiento'],
+                'estado_actual' => $validated['estado_actual'],
+                'ciudad_actual' => $validated['ciudad_actual'],
+                // Identificadores oficiales
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
                 'no_nss' => $validated['no_nss'],
@@ -230,6 +261,9 @@ class TrabajadorController extends Controller
                 'sueldo_diarios' => $validated['sueldo_diarios'],
                 'formacion' => $validated['formacion'],
                 'grado_estudios' => $validated['grado_estudios'],
+                // ✅ NUEVOS: Campos laborales específicos
+                'horas_trabajo' => $validated['horas_trabajo'],
+                'turno' => $validated['turno'],
             ]);
 
             Log::info('✅ Ficha técnica creada', ['ficha_id' => $fichaTecnica->id]);

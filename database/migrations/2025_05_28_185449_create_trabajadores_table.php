@@ -20,6 +20,11 @@ return new class extends Migration
             $table->string('ape_mat', 50)->nullable();
             $table->date('fecha_nacimiento')->nullable();
             
+            // ✅ NUEVOS: Datos de nacimiento y ubicación actual
+            $table->string('lugar_nacimiento', 100)->nullable()->comment('Ciudad y estado de nacimiento');
+            $table->string('estado_actual', 50)->nullable()->comment('Estado donde vive actualmente');
+            $table->string('ciudad_actual', 50)->nullable()->comment('Ciudad donde vive actualmente');
+            
             // ✅ IDENTIFICADORES OFICIALES
             $table->string('curp', 18)->nullable()->unique();
             $table->string('rfc', 13)->nullable()->unique();
@@ -28,7 +33,7 @@ return new class extends Migration
             // ✅ DATOS DE CONTACTO
             $table->string('telefono', 10)->nullable();
             $table->string('correo', 55)->nullable()->unique();
-            $table->string('direccion', 255)->nullable();
+            $table->string('direccion', 255)->nullable()->comment('Dirección actual completa');
             
             // ✅ DATOS LABORALES
             $table->date('fecha_ingreso')->nullable();
@@ -54,10 +59,11 @@ return new class extends Migration
             $table->index('curp', 'idx_curp');
             $table->index('rfc', 'idx_rfc');
             $table->index('correo', 'idx_correo');
+            $table->index(['estado_actual', 'ciudad_actual'], 'idx_ubicacion_actual');
         });
         
         // ✅ COMENTARIO DE LA TABLA
-        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos'");
+        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos y datos de ubicación'");
     }
 
     public function down()

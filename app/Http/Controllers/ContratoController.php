@@ -14,12 +14,12 @@ use Illuminate\Support\Str;
 class ContratoController extends Controller
 {
     /**
-     * ✅ LIMPIO: Generar preview del contrato - SIN validación de duración
+     * ✅ MEJORADO: Generar preview del contrato - CON todos los campos necesarios
      */
     public function generarPreview(Request $request)
     {
         $request->validate([
-            // ✅ DATOS DEL TRABAJADOR - Solo los campos que realmente se usan
+            // ✅ DATOS DEL TRABAJADOR - Incluir TODOS los campos que usa la vista
             'nombre_trabajador' => 'required|string|max:50',
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
@@ -31,15 +31,26 @@ class ContratoController extends Controller
             'correo' => 'nullable|email|max:100',
             'no_nss' => 'nullable|string|max:20',
             
-            // ✅ DATOS DEL CONTRATO - Solo 3 campos necesarios (SIN duracion)
+            // ✅ NUEVOS: Campos de ubicación
+            'lugar_nacimiento' => 'nullable|string|max:100',
+            'estado_actual' => 'nullable|string|max:50',
+            'ciudad_actual' => 'nullable|string|max:50',
+            
+            // ✅ NUEVOS: Campos para ficha técnica temporal
+            'sueldo_diarios' => 'nullable|numeric|min:0',
+            'categoria_nombre' => 'nullable|string|max:100',
+            'area_nombre' => 'nullable|string|max:100',
+            'horas_trabajo' => 'nullable|numeric|min:1|max:24',
+            'turno' => 'nullable|in:diurno,nocturno,mixto',
+            
+            // ✅ DATOS DEL CONTRATO
             'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
             'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
             'tipo_duracion' => 'required|in:dias,meses',
-            // ✅ ELIMINADO: 'duracion' => 'nullable|integer|min:1',
         ]);
 
         try {
-            // Crear objeto trabajador temporal
+            // ✅ MEJORADO: Crear objeto trabajador temporal CON TODOS LOS CAMPOS
             $trabajadorTemp = (object) [
                 'nombre_trabajador' => $request->nombre_trabajador,
                 'ape_pat' => $request->ape_pat,
@@ -52,6 +63,25 @@ class ContratoController extends Controller
                 'telefono' => $request->telefono,
                 'correo' => $request->correo,
                 'no_nss' => $request->no_nss,
+                
+                // ✅ NUEVOS: Campos de ubicación que usa la vista
+                'lugar_nacimiento' => $request->lugar_nacimiento,
+                'estado_actual' => $request->estado_actual,
+                'ciudad_actual' => $request->ciudad_actual,
+                
+                // ✅ MEJORADO: Objeto fichaTecnica temporal con datos reales
+                'fichaTecnica' => (object) [
+                    'categoria' => (object) [
+                        'nombre_categoria' => $request->categoria_nombre ?? 'CATEGORÍA PREVIEW',
+                        'area' => (object) [
+                            'nombre_area' => $request->area_nombre ?? 'ÁREA PREVIEW'
+                        ]
+                    ],
+                    'sueldo_diarios' => $request->sueldo_diarios ?? 0,
+                    'horas_trabajo' => $request->horas_trabajo ?? 8,
+                    'turno' => $request->turno ?? 'diurno',
+                    'turno_texto' => $this->getTurnoTexto($request->turno ?? 'diurno')
+                ]
             ];
 
             // Calcular duración automáticamente
@@ -60,14 +90,18 @@ class ContratoController extends Controller
             
             $duracionCalculada = $this->calcularDuracion($fechaInicio, $fechaFin, $request->tipo_duracion);
             
-            // Generar PDF temporal
-            $pdf = PDF::loadView('formatos.contrato', [
+            // ✅ NUEVO: Convertir salario a texto
+            $salarioTexto = $this->numeroATexto($request->sueldo_diarios ?? 0);
+            
+            // ✅ GENERAR PDF temporal CON TODAS LAS VARIABLES
+            $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajadorTemp,
                 'fecha_inicio' => $fechaInicio->format('d/m/Y'),
                 'fecha_fin' => $fechaFin->format('d/m/Y'),
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $request->tipo_duracion,
-                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion)
+                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
+                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
             ]);
 
             // Guardar archivo temporal
@@ -101,6 +135,7 @@ class ContratoController extends Controller
         } catch (\Exception $e) {
             Log::error('💥 Error al generar contrato preview', [
                 'error' => $e->getMessage(),
+                'line' => $e->getLine(),
                 'trabajador' => $request->nombre_trabajador . ' ' . $request->ape_pat
             ]);
 
@@ -112,15 +147,23 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ LIMPIO: Generar contrato definitivo
+     * ✅ MEJORADO: Generar contrato definitivo con carga de relaciones
      */
     public function generarDefinitivo($trabajador, $datosContrato)
     {
         try {
+            // ✅ NUEVO: Cargar relaciones necesarias si no están cargadas
+            if (!$trabajador->relationLoaded('fichaTecnica')) {
+                $trabajador->load(['fichaTecnica.categoria.area']);
+            }
+
             $fechaInicio = \Carbon\Carbon::parse($datosContrato['fecha_inicio_contrato']);
             $fechaFin = \Carbon\Carbon::parse($datosContrato['fecha_fin_contrato']);
             
             $duracionCalculada = $this->calcularDuracion($fechaInicio, $fechaFin, $datosContrato['tipo_duracion']);
+            
+            // ✅ NUEVO: Convertir salario a texto
+            $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
             // Generar PDF final
             $pdf = PDF::loadView('formatos.contrato', [
@@ -129,7 +172,8 @@ class ContratoController extends Controller
                 'fecha_fin' => $fechaFin->format('d/m/Y'),
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $datosContrato['tipo_duracion'],
-                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $datosContrato['tipo_duracion'])
+                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $datosContrato['tipo_duracion']),
+                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
             ]);
 
             // Guardar archivo definitivo
@@ -167,7 +211,7 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ LIMPIO: Generar contrato individual (formulario separado) - SIN validación duracion
+     * ✅ MEJORADO: Generar contrato individual con carga de relaciones
      */
     public function generar(Request $request, Trabajador $trabajador)
     {
@@ -178,10 +222,16 @@ class ContratoController extends Controller
         ]);
 
         try {
+            // ✅ NUEVO: Cargar relaciones necesarias
+            $trabajador->load(['fichaTecnica.categoria.area']);
+
             $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio);
             $fechaFin = \Carbon\Carbon::parse($request->fecha_fin);
             
             $duracionCalculada = $this->calcularDuracion($fechaInicio, $fechaFin, $request->tipo_duracion);
+            
+            // ✅ NUEVO: Convertir salario a texto
+            $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
             // Generar PDF
             $pdf = PDF::loadView('formatos.contrato', [
@@ -190,7 +240,8 @@ class ContratoController extends Controller
                 'fecha_fin' => $fechaFin->format('d/m/Y'),
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $request->tipo_duracion,
-                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion)
+                'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
+                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
             ]);
 
             // Guardar archivo
@@ -223,7 +274,63 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ NUEVO: Método centralizado para calcular duración
+     * ✅ NUEVO: Método para convertir número a texto (salario)
+     */
+    private function numeroATexto($numero)
+    {
+        if (!$numero || $numero == 0) {
+            return 'CERO PESOS';
+        }
+
+        $unidades = [
+            '', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
+            'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'
+        ];
+
+        $decenas = [
+            '', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'
+        ];
+
+        $centenas = [
+            '', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 
+            'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'
+        ];
+
+        $numero = intval($numero); // Convertir a entero (sin centavos por simplicidad)
+
+        if ($numero < 20) {
+            return $unidades[$numero] . ' PESOS';
+        } elseif ($numero < 100) {
+            $dec = intval($numero / 10);
+            $uni = $numero % 10;
+            return $decenas[$dec] . ($uni > 0 ? ' Y ' . $unidades[$uni] : '') . ' PESOS';
+        } elseif ($numero < 1000) {
+            $cen = intval($numero / 100);
+            $resto = $numero % 100;
+            $centena = ($numero == 100) ? 'CIEN' : $centenas[$cen];
+            return $centena . ($resto > 0 ? ' ' . $this->numeroATexto($resto) : ' PESOS');
+        }
+
+        // Para números mayores, simplificar
+        return number_format($numero, 2) . ' PESOS';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto del turno
+     */
+    private function getTurnoTexto($turno)
+    {
+        $turnos = [
+            'diurno' => 'DIURNO',
+            'nocturno' => 'NOCTURNO',
+            'mixto' => 'MIXTO/ROTATIVO'
+        ];
+
+        return $turnos[$turno] ?? 'A ASIGNAR';
+    }
+
+    /**
+     * ✅ MÉTODO CENTRALIZADO: Calcular duración
      */
     private function calcularDuracion(\Carbon\Carbon $fechaInicio, \Carbon\Carbon $fechaFin, string $tipo): int
     {
@@ -349,6 +456,9 @@ class ContratoController extends Controller
      */
     public function crear(Trabajador $trabajador)
     {
+        // ✅ NUEVO: Cargar relaciones necesarias
+        $trabajador->load(['fichaTecnica.categoria.area']);
+        
         return view('contratos.crear', compact('trabajador'));
     }
 }
