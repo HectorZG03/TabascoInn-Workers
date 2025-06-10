@@ -23,86 +23,51 @@ class ActPerfilTrabajadorController extends Controller
      */
     public function show(Trabajador $trabajador)
     {
+        // ✅ Una sola carga de relaciones optimizada
         $trabajador->load([
             'fichaTecnica.categoria.area', 
             'documentos', 
             'despido',
-            'historialPromociones.categoriaAnterior.area',
-            'historialPromociones.categoriaNueva.area'
+            'historialPromociones' => function($query) {
+                $query->with(['categoriaAnterior', 'categoriaNueva'])
+                      ->latest('fecha_cambio');
+            }
         ]);
 
-        // ✅ Estadísticas generales (tu método existente)
-        $stats = $this->calcularEstadisticasOptimizadas($trabajador);
+        // ✅ Calcular todas las estadísticas en un solo método
+        $stats = $this->calcularTodasLasEstadisticas($trabajador);
 
-        // ✅ AGREGAR: Estadísticas específicas de promociones
-        $statsPromociones = [
-            'total_cambios' => $trabajador->historialPromociones()->count(),
-            'promociones' => $trabajador->historialPromociones()->where('tipo_cambio', 'promocion')->count(),
-            'transferencias' => $trabajador->historialPromociones()->where('tipo_cambio', 'transferencia')->count(),
-            'aumentos_sueldo' => $trabajador->historialPromociones()->where('tipo_cambio', 'aumento_sueldo')->count(),
-            'reclasificaciones' => $trabajador->historialPromociones()->where('tipo_cambio', 'reclasificacion')->count(),
-            'ultimo_cambio' => $trabajador->historialPromociones()->latest('fecha_cambio')->first()
-        ];
-
-        // ✅ AGREGAR: Historial reciente (últimos 5 cambios)
-        $historialReciente = $trabajador->historialPromociones()
-            ->with(['categoriaAnterior', 'categoriaNueva'])
-            ->latest('fecha_cambio')
-            ->limit(5)
-            ->get()
-            ->map(function ($promocion) {
-                // Calcular diferencia de sueldo
-                $promocion->diferencia_sueldo = $promocion->sueldo_nuevo - ($promocion->sueldo_anterior ?? 0);
-                
-                // Determinar color según el tipo de cambio
-                $promocion->color_tipo_cambio = match($promocion->tipo_cambio) {
-                    'promocion' => 'success',
-                    'transferencia' => 'primary',
-                    'aumento_sueldo' => 'warning',
-                    'reclasificacion' => 'info',
-                    'ajuste_salarial' => 'secondary',
-                    default => 'light'
-                };
-
-                // Texto legible del tipo de cambio
-                $promocion->tipo_cambio_texto = match($promocion->tipo_cambio) {
-                    'promocion' => 'Promoción',
-                    'transferencia' => 'Transferencia',
-                    'aumento_sueldo' => 'Aumento de Sueldo',
-                    'reclasificacion' => 'Reclasificación',
-                    'ajuste_salarial' => 'Ajuste Salarial',
-                    default => ucfirst(str_replace('_', ' ', $promocion->tipo_cambio))
-                };
-
-                return $promocion;
-            });
-
+        // ✅ Obtener datos para formularios
         $areas = Area::orderBy('nombre_area')->get();
         $categorias = collect();
         
         if ($trabajador->fichaTecnica && $trabajador->fichaTecnica->categoria) {
             $categorias = Categoria::where('id_area', $trabajador->fichaTecnica->categoria->id_area)
-                                ->orderBy('nombre_categoria')
-                                ->get();
+                                 ->orderBy('nombre_categoria')
+                                 ->get();
         }
 
-        // ✅ CORREGIR: Pasar las variables que necesita la vista
+        // ✅ Extraer datos específicos de las estadísticas
+        $statsPromociones = $stats['promociones'];
+        $historialReciente = $stats['historial_reciente'];
+
         return view('trabajadores.perfil_trabajador', compact(
             'trabajador', 
             'areas', 
             'categorias', 
             'stats',
-            'statsPromociones',    // ← NUEVA VARIABLE
-            'historialReciente'    // ← NUEVA VARIABLE
+            'statsPromociones',
+            'historialReciente'
         ));
     }
 
+    
     /**
-     * ✅ NUEVO MÉTODO OPTIMIZADO - usar este en lugar del existente
+     * ✅ MÉTODO UNIFICADO - Reemplaza ambos métodos anteriores
      */
-    private function calcularEstadisticasOptimizadas(Trabajador $trabajador): array
+    private function calcularTodasLasEstadisticas(Trabajador $trabajador): array
     {
-        // Cálculos que antes estaban en el modelo
+        // ✅ Cálculos básicos
         $edad = $trabajador->fecha_nacimiento 
             ? \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age 
             : null;
@@ -115,12 +80,48 @@ class ActPerfilTrabajadorController extends Controller
             default => "$antiguedad años"
         };
 
+        // ✅ Obtener historial una sola vez (ya está cargado)
+        $historialPromociones = $trabajador->historialPromociones;
+        
+        // ✅ Procesar historial reciente
+        $historialReciente = $historialPromociones->take(5)->map(function ($promocion) {
+            $promocion->diferencia_sueldo = $promocion->sueldo_nuevo - ($promocion->sueldo_anterior ?? 0);
+            
+            $promocion->color_tipo_cambio = match($promocion->tipo_cambio) {
+                'promocion' => 'success',
+                'transferencia' => 'primary',
+                'aumento_sueldo' => 'warning',
+                'reclasificacion' => 'info',
+                'ajuste_salarial' => 'secondary',
+                default => 'light'
+            };
+
+            $promocion->tipo_cambio_texto = match($promocion->tipo_cambio) {
+                'promocion' => 'Promoción',
+                'transferencia' => 'Transferencia',
+                'aumento_sueldo' => 'Aumento de Sueldo',
+                'reclasificacion' => 'Reclasificación',
+                'ajuste_salarial' => 'Ajuste Salarial',
+                default => ucfirst(str_replace('_', ' ', $promocion->tipo_cambio))
+            };
+
+            return $promocion;
+        });
+
+        // ✅ Estadísticas de promociones
+        $statsPromociones = [
+            'total_cambios' => $historialPromociones->count(),
+            'promociones' => $historialPromociones->where('tipo_cambio', 'promocion')->count(),
+            'transferencias' => $historialPromociones->where('tipo_cambio', 'transferencia')->count(),
+            'aumentos_sueldo' => $historialPromociones->where('tipo_cambio', 'aumento_sueldo')->count(),
+            'reclasificaciones' => $historialPromociones->where('tipo_cambio', 'reclasificacion')->count(),
+            'ultimo_cambio' => $historialPromociones->first()
+        ];
+
         return [
-            // ✅ Calculado en controlador (más eficiente)
+            // Estadísticas generales
             'edad' => $edad,
             'antiguedad_texto' => $antiguedadTexto,
-            
-            // ✅ Mantener desde modelo/relaciones (por ahora)
             'porcentaje_documentos' => $trabajador->documentos?->porcentaje_completado ?? 0,
             'documentos_faltantes' => $trabajador->documentos 
                 ? count($trabajador->documentos->documentos_faltantes) 
@@ -130,11 +131,17 @@ class ActPerfilTrabajadorController extends Controller
             'ultima_actualizacion' => $trabajador->updated_at->diffForHumans(),
             'es_nuevo' => $antiguedad === 0,
             
-            // ✅ Conteos optimizados
-            'total_promociones' => $trabajador->historialPromociones()->count(),
-            'ultimo_cambio' => $trabajador->historialPromociones()->first(),
+            // Datos de promociones organizados
+            'promociones' => $statsPromociones,
+            'historial_reciente' => $historialReciente,
+            
+            // Mantener compatibilidad
+            'total_promociones' => $statsPromociones['total_cambios'],
+            'ultimo_cambio' => $statsPromociones['ultimo_cambio'],
         ];
     }
+
+
 
     /**
      * Actualizar datos básicos del trabajador
@@ -529,29 +536,6 @@ class ActPerfilTrabajadorController extends Controller
             'historialCompleto',
             'estadisticas'
         ));
-    }
-
-    /**
-     * Calcular estadísticas específicas del trabajador ✅ MÉTODO ACTUALIZADO
-     */
-    private function calcularEstadisticasTrabajador(Trabajador $trabajador)
-    {
-        $stats = [
-            'antiguedad_texto' => $trabajador->antiguedad == 0 ? 'Nuevo' : 
-                                ($trabajador->antiguedad == 1 ? '1 año' : "{$trabajador->antiguedad} años"),
-            'edad' => $trabajador->edad,
-            'porcentaje_documentos' => $trabajador->documentos ? $trabajador->documentos->porcentaje_completado : 0,
-            'documentos_faltantes' => $trabajador->documentos ? count($trabajador->documentos->documentos_faltantes) : count(DocumentoTrabajador::TODOS_DOCUMENTOS),
-            'documentos_basicos_completos' => $trabajador->documentos ? $trabajador->documentos->documentos_basicos_completos : false,
-            'estado_documentos' => $trabajador->documentos ? $trabajador->documentos->estado_texto : 'Sin documentos',
-            'ultima_actualizacion' => $trabajador->updated_at->diffForHumans(),
-            'es_nuevo' => $trabajador->es_nuevo,
-            // ✅ NUEVAS ESTADÍSTICAS DE PROMOCIONES
-            'total_promociones' => HistorialPromocion::contarPromociones($trabajador->id_trabajador),
-            'ultimo_cambio' => HistorialPromocion::obtenerUltimoCambio($trabajador->id_trabajador),
-        ];
-
-        return $stats;
     }
 
     /**

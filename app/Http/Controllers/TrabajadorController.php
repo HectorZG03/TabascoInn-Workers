@@ -113,14 +113,14 @@ class TrabajadorController extends Controller
         return view('trabajadores.crear_trabajador', compact('areas'));
     }
 
-/**
-     * ✅ STORE CORREGIDO: Crear trabajador con contacto usando nombre_completo
+    /**
+     * ✅ STORE ACTUALIZADO Y CORREGIDO: Crear trabajador CON contrato
      */
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES CORREGIDAS PARA CONTACTO
+        // ✅ VALIDACIONES CORREGIDAS - Coinciden con el frontend
         $validated = $request->validate([
-            // Datos personales
+            // Datos personales (sin cambios)
             'nombre_trabajador' => 'required|string|max:50',
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
@@ -133,7 +133,7 @@ class TrabajadorController extends Controller
             'direccion' => 'nullable|string|max:255',
             'fecha_ingreso' => 'required|date|before_or_equal:today',
             
-            // Datos laborales
+            // Datos laborales (sin cambios)
             'id_area' => 'required|exists:area,id_area',
             'id_categoria' => 'required|exists:categoria,id_categoria',
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
@@ -141,14 +141,20 @@ class TrabajadorController extends Controller
             'grado_estudios' => 'nullable|string|max:50',
             'estatus' => 'nullable|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
 
-            // ✅ CONTACTO CORREGIDO - Validación condicional
+            // ✅ CORREGIDO: Datos del contrato que coinciden con el frontend
+            'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
+            'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
+            'tipo_duracion' => 'required|in:dias,meses',
+            // ✅ ELIMINADO: 'duracion_meses' => 'required|integer|min:1|max:120',
+
+            // Contacto (sin cambios)
             'contacto_nombre_completo' => 'nullable|string|max:150',
             'contacto_parentesco' => 'nullable|string|max:50',
             'contacto_telefono_principal' => 'nullable|string|size:10',
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
         ], [
-            // Mensajes de validación existentes...
+            // Mensajes existentes...
             'nombre_trabajador.required' => 'El nombre es obligatorio',
             'ape_pat.required' => 'El apellido paterno es obligatorio',
             'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
@@ -164,13 +170,22 @@ class TrabajadorController extends Controller
             'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
             'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
             
-            // ✅ MENSAJES CORREGIDOS PARA CONTACTO
+            // ✅ CORREGIDO: Mensajes para contrato que coinciden con el frontend
+            'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria',
+            'fecha_inicio_contrato.after_or_equal' => 'La fecha de inicio del contrato no puede ser pasada',
+            'fecha_fin_contrato.required' => 'La fecha de fin del contrato es obligatoria',
+            'fecha_fin_contrato.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
+            'tipo_duracion.required' => 'El tipo de duración del contrato es obligatorio',
+            'tipo_duracion.in' => 'El tipo de duración debe ser "dias" o "meses"',
+            // ✅ ELIMINADO: Mensajes de duracion_meses
+            
+            // Contacto (sin cambios)
             'contacto_nombre_completo.max' => 'El nombre completo no debe exceder 150 caracteres',
             'contacto_telefono_principal.size' => 'El teléfono principal debe tener 10 dígitos',
             'contacto_telefono_secundario.size' => 'El teléfono secundario debe tener 10 dígitos',
         ]);
 
-        // Validar relación área-categoría
+        // Validar relación área-categoría (sin cambios)
         $categoria = Categoria::where('id_categoria', $validated['id_categoria'])
                              ->where('id_area', $validated['id_area'])
                              ->first();
@@ -183,10 +198,10 @@ class TrabajadorController extends Controller
         DB::beginTransaction();
         
         try {
-            // ✅ CALCULAR ANTIGÜEDAD DE FORMA SEGURA
+            // ✅ CALCULAR ANTIGÜEDAD
             $antiguedadCalculada = (int) Carbon::parse($validated['fecha_ingreso'])->diffInYears(now());
 
-            // 1️⃣ CREAR TRABAJADOR
+            // 1️⃣ CREAR TRABAJADOR (sin cambios)
             $trabajador = Trabajador::create([
                 'nombre_trabajador' => $validated['nombre_trabajador'],
                 'ape_pat' => $validated['ape_pat'],
@@ -205,11 +220,10 @@ class TrabajadorController extends Controller
 
             Log::info('✅ Trabajador creado', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'estatus' => $trabajador->estatus,
-                'antiguedad' => $antiguedadCalculada
+                'estatus' => $trabajador->estatus
             ]);
 
-            // 2️⃣ CREAR FICHA TÉCNICA
+            // 2️⃣ CREAR FICHA TÉCNICA (sin cambios)
             $fichaTecnica = FichaTecnica::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'id_categoria' => $validated['id_categoria'],
@@ -220,7 +234,7 @@ class TrabajadorController extends Controller
 
             Log::info('✅ Ficha técnica creada', ['ficha_id' => $fichaTecnica->id]);
 
-            // 3️⃣ ✅ CREAR CONTACTO DE EMERGENCIA (VALIDACIÓN CORREGIDA)
+            // 3️⃣ CREAR CONTACTO DE EMERGENCIA (sin cambios)
             if ($request->filled('contacto_nombre_completo') && !empty(trim($validated['contacto_nombre_completo']))) {
                 $contacto = ContactoEmergencia::create([
                     'id_trabajador' => $trabajador->id_trabajador,
@@ -231,26 +245,56 @@ class TrabajadorController extends Controller
                     'direccion' => $validated['contacto_direccion'],
                 ]);
                 
-                Log::info('✅ Contacto de emergencia creado', [
-                    'trabajador_id' => $trabajador->id_trabajador,
-                    'contacto_id' => $contacto->id_contacto,
-                    'nombre_completo' => $contacto->nombre_completo
-                ]);
+                Log::info('✅ Contacto de emergencia creado', ['contacto_id' => $contacto->id_contacto]);
             }
 
+            // 4️⃣ ✅ CORREGIDO: GENERAR CONTRATO DEFINITIVO con datos correctos
+            $contratoController = new ContratoController();
+            $contrato = $contratoController->generarDefinitivo($trabajador, [
+                'fecha_inicio_contrato' => $validated['fecha_inicio_contrato'],
+                'fecha_fin_contrato' => $validated['fecha_fin_contrato'],
+                'tipo_duracion' => $validated['tipo_duracion'],
+            ]);
+
+            Log::info('✅ Contrato generado', [
+                'contrato_id' => $contrato->id_contrato,
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_duracion' => $validated['tipo_duracion']
+            ]);
+
+            // 5️⃣ ✅ LIMPIAR ARCHIVOS TEMPORALES (opcional)
+            $contratoController->limpiarArchivosTemporales();
+
             DB::commit();
+
+            // ✅ MENSAJE ACTUALIZADO con duración calculada automáticamente
+            $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
+            $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
+            
+            // Calcular duración para el mensaje
+            if ($validated['tipo_duracion'] === 'dias') {
+                $duracion = $fechaInicio->diffInDays($fechaFin);
+                $duracionTexto = $duracion . ' ' . ($duracion === 1 ? 'día' : 'días');
+            } else {
+                $duracion = $fechaInicio->diffInMonths($fechaFin);
+                if ($fechaInicio->copy()->addMonths($duracion)->lt($fechaFin)) {
+                    $duracion++;
+                }
+                $duracionTexto = $duracion . ' ' . ($duracion === 1 ? 'mes' : 'meses');
+            }
 
             $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente";
             if ($request->filled('contacto_nombre_completo')) {
                 $mensaje .= " con contacto de emergencia";
             }
-            $mensaje .= " con estado: {$trabajador->estatus_texto}";
+            $mensaje .= " y contrato generado (duración: {$duracionTexto} hasta {$fechaFin->format('d/m/Y')})";
 
-            Log::info('🎉 Trabajador creado exitosamente', [
+            Log::info('🎉 Trabajador y contrato creados exitosamente', [
                 'trabajador_id' => $trabajador->id_trabajador,
+                'contrato_id' => $contrato->id_contrato,
                 'usuario' => Auth::user()->email ?? 'Sistema',
                 'estatus' => $trabajador->estatus,
-                'tiene_contacto' => $request->filled('contacto_nombre_completo')
+                'duracion_contrato' => $duracionTexto
             ]);
 
             return redirect()->route('trabajadores.index')
@@ -259,7 +303,7 @@ class TrabajadorController extends Controller
         } catch (\Exception $e) {
             DB::rollback();
             
-            Log::error('💥 Error crítico al crear trabajador', [
+            Log::error('💥 Error crítico al crear trabajador y contrato', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
@@ -267,7 +311,7 @@ class TrabajadorController extends Controller
                 'request_data' => $request->except(['_token'])
             ]);
 
-            $mensajeError = 'Error al crear el trabajador: ' . $e->getMessage();
+            $mensajeError = 'Error al crear el trabajador y su contrato: ' . $e->getMessage();
 
             return back()->withErrors(['error' => $mensajeError])
                         ->withInput();

@@ -2,7 +2,7 @@
 
 namespace App\Models\Traits\Trabajador;
 
-use App\Models\{FichaTecnica, Despidos, DocumentoTrabajador, HistorialPromocion, ContactoEmergencia, PermisosLaborales};
+use App\Models\{FichaTecnica, Despidos, DocumentoTrabajador, HistorialPromocion, ContactoEmergencia, PermisosLaborales, ContratoTrabajador};
 
 trait TieneRelaciones
 {
@@ -39,6 +39,11 @@ trait TieneRelaciones
     public function permisosActivos()
     {
         return $this->hasMany(PermisosLaborales::class, 'id_trabajador')->where('estatus_permiso', 'activo');
+    }
+
+    public function contratos()
+    {
+        return $this->hasMany(ContratoTrabajador::class, 'id_trabajador');
     }
 
 }

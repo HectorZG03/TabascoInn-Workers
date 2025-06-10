@@ -6,6 +6,7 @@ use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
 use App\Http\Controllers\PermisosLaboralesController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
+use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
@@ -113,6 +114,7 @@ Route::middleware(['auth'])->group(function () {
             // API para categorías por área (AJAX) - Específico para perfil
             Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
         });
+
     });
 
     // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
@@ -180,5 +182,15 @@ Route::middleware(['auth'])->group(function () {
             'todos' => \App\Models\PermisosLaborales::getTodosLosMotivos()
         ]);
     })->name('api.motivos')->middleware('auth');
+
+    // Rutas AJAX para contratos durante creación
+    Route::prefix('ajax/contratos')->name('ajax.contratos.')->group(function () {
+        // Generar preview del contrato (sin guardar trabajador aún)
+        Route::post('/preview', [ContratoController::class, 'generarPreview'])->name('preview');
+        
+        // Descargar contrato temporal
+        Route::get('/preview-download/{hash}', [ContratoController::class, 'descargarPreview'])->name('preview.download');
+    });
+
     
 });
