@@ -114,11 +114,11 @@ class TrabajadorController extends Controller
     }
 
     /**
-     * ✅ STORE ACTUALIZADO: Crear trabajador CON horarios - VALIDACIÓN CORREGIDA PARA LARAVEL 12
+     * ✅ STORE ACTUALIZADO: Crear trabajador CON horarios, días laborables y beneficiario
      */
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES ACTUALIZADAS PARA LARAVEL 12 - Campos de horario corregidos
+        // ✅ VALIDACIONES ACTUALIZADAS PARA LARAVEL 12 - Incluye nuevos campos
         $validated = $request->validate([
             // Datos personales básicos (sin cambios)
             'nombre_trabajador' => 'required|string|max:50',
@@ -149,13 +149,11 @@ class TrabajadorController extends Controller
             'hora_salida' => [
                 'required',
                 'date_format:H:i',
-                // ✅ Validación personalizada para Laravel 12
                 function ($attribute, $value, $fail) use ($request) {
                     if ($request->filled('hora_entrada') && $request->filled('hora_salida')) {
                         $entrada = Carbon::parse($request->hora_entrada);
                         $salida = Carbon::parse($request->hora_salida);
                         
-                        // Si la salida es antes que la entrada, asumir que cruza medianoche
                         if ($salida->lte($entrada)) {
                             $salida->addDay();
                         }
@@ -163,12 +161,32 @@ class TrabajadorController extends Controller
                         $diferencia = $entrada->diffInMinutes($salida);
                         $horas = $diferencia / 60;
                         
-                        // Validar rango razonable (1-16 horas)
                         if ($horas < 1 || $horas > 16) {
                             $fail('El horario debe estar entre 1 y 16 horas. Calculado: ' . round($horas, 2) . ' horas.');
                         }
                     }
                 }
+            ],
+            
+            // ✅ NUEVOS: Validación de días laborables
+            'dias_laborables' => [
+                'required',
+                'array',
+                'min:1',
+                'max:7'
+            ],
+            'dias_laborables.*' => [
+                'string',
+                'in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA))
+            ],
+            
+            // ✅ NUEVOS: Validación de beneficiario (opcional, simplificado)
+            'beneficiario_nombre' => 'nullable|string|max:150',
+            'beneficiario_parentesco' => [
+                'nullable',
+                'string',
+                'in:' . implode(',', array_keys(FichaTecnica::PARENTESCOS_BENEFICIARIO)),
+                'required_with:beneficiario_nombre'
             ],
             
             // Datos del contrato (sin cambios)
@@ -183,7 +201,7 @@ class TrabajadorController extends Controller
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
         ], [
-            // Mensajes básicos
+            // Mensajes básicos (mantener los existentes)
             'nombre_trabajador.required' => 'El nombre es obligatorio.',
             'ape_pat.required' => 'El apellido paterno es obligatorio.',
             'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria.',
@@ -203,11 +221,22 @@ class TrabajadorController extends Controller
             'sueldo_diarios.required' => 'El sueldo diario es obligatorio.',
             'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0.',
             
-            // ✅ CORREGIDO: Mensajes para campos de horario
+            // Horarios
             'hora_entrada.required' => 'La hora de entrada es obligatoria.',
             'hora_entrada.date_format' => 'La hora de entrada debe tener el formato HH:MM (ej: 08:00)',
             'hora_salida.required' => 'La hora de salida es obligatoria.',
             'hora_salida.date_format' => 'La hora de salida debe tener el formato HH:MM (ej: 17:00)',
+            
+            // ✅ NUEVOS: Mensajes para días laborables
+            'dias_laborables.required' => 'Debe seleccionar al menos un día laborable.',
+            'dias_laborables.min' => 'Debe seleccionar al menos un día laborable.',
+            'dias_laborables.max' => 'No puede seleccionar más de 7 días.',
+            'dias_laborables.*.in' => 'Día laborable no válido.',
+            
+            // ✅ NUEVOS: Mensajes para beneficiario (simplificado)
+            'beneficiario_nombre.max' => 'El nombre del beneficiario no puede exceder 150 caracteres.',
+            'beneficiario_parentesco.required_with' => 'El parentesco es obligatorio cuando se especifica un beneficiario.',
+            'beneficiario_parentesco.in' => 'Parentesco no válido.',
             
             // Contratos
             'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria.',
@@ -217,11 +246,18 @@ class TrabajadorController extends Controller
             'tipo_duracion.required' => 'Debe especificar el tipo de duración.',
         ]);
 
+        // ✅ Validación adicional: días laborables únicos
+        $diasLaborables = $validated['dias_laborables'];
+        if (count($diasLaborables) !== count(array_unique($diasLaborables))) {
+            return back()->withErrors(['dias_laborables' => 'No puede seleccionar el mismo día más de una vez'])
+                        ->withInput();
+        }
+
         // Validar relación área-categoría (sin cambios)
         $categoria = Categoria::where('id_categoria', $validated['id_categoria'])
-                             ->where('id_area', $validated['id_area'])
-                             ->first();
-                             
+                            ->where('id_area', $validated['id_area'])
+                            ->first();
+                            
         if (!$categoria) {
             return back()->withErrors(['id_categoria' => 'La categoría no pertenece al área seleccionada'])
                         ->withInput();
@@ -258,7 +294,7 @@ class TrabajadorController extends Controller
                 'estatus' => $trabajador->estatus
             ]);
 
-            // 2️⃣ ✅ CREAR FICHA TÉCNICA CON CÁLCULOS AUTOMÁTICOS MEJORADOS
+            // 2️⃣ ✅ CREAR FICHA TÉCNICA CON NUEVOS CAMPOS
             $entrada = Carbon::parse($validated['hora_entrada']);
             $salida = Carbon::parse($validated['hora_salida']);
             
@@ -270,7 +306,13 @@ class TrabajadorController extends Controller
             // Calcular horas trabajadas con mayor precisión
             $horasCalculadas = round($entrada->diffInMinutes($salida) / 60, 2);
             
-            // Calcular turno automáticamente usando las constantes del modelo
+            // ✅ NUEVO: Calcular días de descanso automáticamente
+            $diasDescanso = FichaTecnica::calcularDiasDescanso($diasLaborables);
+            
+            // ✅ NUEVO: Calcular horas semanales
+            $horasSemanales = round($horasCalculadas * count($diasLaborables), 2);
+            
+            // Calcular turno automáticamente
             $horaEntradaStr = $entrada->format('H:i');
             $horaSalidaOriginal = Carbon::parse($validated['hora_salida'])->format('H:i');
             
@@ -280,7 +322,7 @@ class TrabajadorController extends Controller
                 $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
                 $turnoCalculado = 'diurno';
             } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || 
-                     $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                    $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
                 $turnoCalculado = 'nocturno';
             }
             
@@ -294,14 +336,27 @@ class TrabajadorController extends Controller
                 'hora_salida' => $validated['hora_salida'],
                 'horas_trabajo' => $horasCalculadas,
                 'turno' => $turnoCalculado,
+                // ✅ NUEVOS: Días laborables y descanso
+                'dias_laborables' => $diasLaborables,
+                'dias_descanso' => $diasDescanso,
+                'horas_semanales' => $horasSemanales,
+                // ✅ NUEVOS: Beneficiario (si se proporcionó, simplificado)
+                'beneficiario_nombre' => $validated['beneficiario_nombre'],
+                'beneficiario_parentesco' => $validated['beneficiario_parentesco'],
             ]);
 
-            Log::info('✅ Ficha técnica creada con horarios', [
+            Log::info('✅ Ficha técnica creada con horarios completos', [
                 'ficha_id' => $fichaTecnica->id,
                 'entrada' => $validated['hora_entrada'],
                 'salida' => $validated['hora_salida'],
                 'horas_calculadas' => $horasCalculadas,
-                'turno_calculado' => $turnoCalculado
+                'turno_calculado' => $turnoCalculado,
+                'dias_laborables' => $diasLaborables,
+                'dias_descanso' => $diasDescanso,
+                'horas_semanales' => $horasSemanales,
+                'beneficiario' => $validated['beneficiario_nombre'] ? 
+                            "{$validated['beneficiario_nombre']} ({$validated['beneficiario_parentesco']})" : 
+                            'Sin beneficiario'
             ]);
 
             // 3️⃣ CREAR CONTACTO DE EMERGENCIA (sin cambios)
@@ -331,7 +386,7 @@ class TrabajadorController extends Controller
 
             DB::commit();
 
-            // ✅ MENSAJE MEJORADO CON INFORMACIÓN DE HORARIOS
+            // ✅ MENSAJE MEJORADO CON NUEVA INFORMACIÓN
             $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
             $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
             
@@ -347,21 +402,36 @@ class TrabajadorController extends Controller
             }
 
             $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente";
+            
             if ($request->filled('contacto_nombre_completo')) {
                 $mensaje .= " con contacto de emergencia";
             }
             
-            // ✅ NUEVO: Incluir información de horarios en el mensaje
-            $mensaje .= " con horario {$validated['hora_entrada']} - {$validated['hora_salida']} ({$horasCalculadas} hrs, turno {$turnoCalculado})";
-            $mensaje .= " y contrato generado (duración: {$duracionTexto} hasta {$fechaFin->format('d/m/Y')})";
+            // ✅ NUEVO: Incluir información de horarios completos
+            $diasTexto = collect($diasLaborables)->map(function($dia) {
+                return FichaTecnica::DIAS_SEMANA[$dia];
+            })->join(', ');
+            
+            $mensaje .= " con horario {$validated['hora_entrada']} - {$validated['hora_salida']}";
+            $mensaje .= " ({$horasCalculadas}h/día, {$horasSemanales}h/semana)";
+            $mensaje .= " trabajando: {$diasTexto}";
+            $mensaje .= " (turno {$turnoCalculado})";
+            
+            if ($validated['beneficiario_nombre']) {
+                $parentesco = $validated['beneficiario_parentesco'] ? 
+                            " ({$validated['beneficiario_parentesco']})" : '';
+                $mensaje .= " y beneficiario: {$validated['beneficiario_nombre']}{$parentesco}";
+            }
+            
+            $mensaje .= ". Contrato generado (duración: {$duracionTexto} hasta {$fechaFin->format('d/m/Y')})";
 
             return redirect()->route('trabajadores.index')
-                           ->with('success', $mensaje);
+                        ->with('success', $mensaje);
 
         } catch (\Exception $e) {
             DB::rollback();
             
-            Log::error('💥 Error crítico al crear trabajador y contrato', [
+            Log::error('💥 Error crítico al crear trabajador completo', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile(),
@@ -369,7 +439,7 @@ class TrabajadorController extends Controller
                 'request_data' => $request->except(['_token'])
             ]);
 
-            return back()->withErrors(['error' => 'Error al crear el trabajador y su contrato: ' . $e->getMessage()])
+            return back()->withErrors(['error' => 'Error al crear el trabajador: ' . $e->getMessage()])
                         ->withInput();
         }
     }

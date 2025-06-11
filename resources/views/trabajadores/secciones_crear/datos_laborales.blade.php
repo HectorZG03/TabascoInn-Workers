@@ -106,6 +106,126 @@
             </div>
         </div>
 
+        <!-- ✅ NUEVA SECCIÓN: Días Laborables -->
+        <div class="row">
+            <div class="col-12 mb-3">
+                <label class="form-label">
+                    <i class="bi bi-calendar-week"></i> Días Laborables *
+                </label>
+                <div class="border rounded p-3 bg-light">
+                    <div class="row">
+                        @foreach(\App\Models\FichaTecnica::DIAS_SEMANA as $valor => $texto)
+                            <div class="col-md-3 col-6 mb-2">
+                                <div class="form-check">
+                                    <input class="form-check-input" 
+                                           type="checkbox" 
+                                           id="dia_{{ $valor }}" 
+                                           name="dias_laborables[]" 
+                                           value="{{ $valor }}"
+                                           {{ in_array($valor, old('dias_laborables', [])) ? 'checked' : '' }}>
+                                    <label class="form-check-label" for="dia_{{ $valor }}">
+                                        {{ $texto }}
+                                    </label>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+                    
+                    <!-- Botones de selección rápida -->
+                    <div class="mt-3 pt-2 border-top">
+                        <small class="text-muted">Selección rápida:</small>
+                        <div class="btn-group btn-group-sm ms-2" role="group">
+                            <button type="button" class="btn btn-outline-primary" id="btn-lunes-viernes">
+                                Lun-Vie
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="btn-lunes-sabado">
+                                Lun-Sáb
+                            </button>
+                            <button type="button" class="btn btn-outline-primary" id="btn-todos-dias">
+                                Todos
+                            </button>
+                            <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-dias">
+                                Limpiar
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                @error('dias_laborables')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+                @error('dias_laborables.*')
+                    <div class="text-danger small mt-1">{{ $message }}</div>
+                @enderror
+            </div>
+        </div>
+
+        <!-- ✅ NUEVA SECCIÓN: Beneficiario Principal -->
+        <div class="row">
+            <div class="col-12">
+                <div class="card border-info mb-3">
+                    <div class="card-header bg-info text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-person-heart"></i> Beneficiario Principal (Para Contrato)
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row">
+                            <!-- Nombre del Beneficiario -->
+                            <div class="col-md-6 mb-3">
+                                <label for="beneficiario_nombre" class="form-label">
+                                    <i class="bi bi-person"></i> Nombre Completo
+                                </label>
+                                <input type="text" 
+                                       class="form-control @error('beneficiario_nombre') is-invalid @enderror" 
+                                       id="beneficiario_nombre" 
+                                       name="beneficiario_nombre" 
+                                       value="{{ old('beneficiario_nombre') }}" 
+                                       placeholder="Nombre del beneficiario"
+                                       maxlength="150">
+                                <div class="form-text">Persona que aparecerá en el contrato</div>
+                                @error('beneficiario_nombre')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <!-- Parentesco -->
+                            <div class="col-md-6 mb-3">
+                                <label for="beneficiario_parentesco" class="form-label">
+                                    <i class="bi bi-people"></i> Parentesco
+                                </label>
+                                <select class="form-select @error('beneficiario_parentesco') is-invalid @enderror" 
+                                        id="beneficiario_parentesco" 
+                                        name="beneficiario_parentesco">
+                                    <option value="">Seleccionar parentesco...</option>
+                                    @foreach(\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO as $valor => $texto)
+                                        <option value="{{ $valor }}" {{ old('beneficiario_parentesco') == $valor ? 'selected' : '' }}>
+                                            {{ $texto }}
+                                        </option>
+                                    @endforeach
+                                </select>
+                                @error('beneficiario_parentesco')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Nota informativa -->
+                        <div class="row">
+                            <div class="col-12">
+                                <div class="alert alert-info mb-0">
+                                    <small>
+                                        <i class="bi bi-info-circle"></i> 
+                                        <strong>Nota:</strong> Este beneficiario aparecerá en el contrato laboral. 
+                                        Puedes dejarlo vacío y completarlo después si es necesario.
+                                    </small>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
         <!-- Formación, Estudios y Estado -->
         <div class="row">
             <!-- Formación -->
@@ -176,5 +296,131 @@
                 @enderror
             </div>
         </div>
+
+        <!-- ✅ NUEVA SECCIÓN: Resumen Calculado -->
+        <div class="row mt-3">
+            <div class="col-12">
+                <div class="card border-success">
+                    <div class="card-header bg-light">
+                        <h6 class="mb-0 text-success">
+                            <i class="bi bi-calculator"></i> Resumen Automático
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-3">
+                                <div class="h5 text-primary mb-0" id="horas-diarias">-</div>
+                                <small class="text-muted">Horas/día</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h5 text-success mb-0" id="horas-semanales">-</div>
+                                <small class="text-muted">Horas/semana</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h5 text-info mb-0" id="dias-laborables-count">-</div>
+                                <small class="text-muted">Días laborables</small>
+                            </div>
+                            <div class="col-md-3">
+                                <div class="h5 text-warning mb-0" id="turno-calculado">-</div>
+                                <small class="text-muted">Turno</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- ✅ SCRIPT ESPECÍFICO PARA DÍAS LABORABLES -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Botones de selección rápida de días
+    const btnLunesViernes = document.getElementById('btn-lunes-viernes');
+    const btnLunesSabado = document.getElementById('btn-lunes-sabado');
+    const btnTodosDias = document.getElementById('btn-todos-dias');
+    const btnLimpiarDias = document.getElementById('btn-limpiar-dias');
+    
+    const diasCheckboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+    
+    btnLunesViernes.addEventListener('click', function() {
+        limpiarDias();
+        ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].forEach(dia => {
+            const checkbox = document.getElementById(`dia_${dia}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        calcularResumen();
+    });
+    
+    btnLunesSabado.addEventListener('click', function() {
+        limpiarDias();
+        ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'].forEach(dia => {
+            const checkbox = document.getElementById(`dia_${dia}`);
+            if (checkbox) checkbox.checked = true;
+        });
+        calcularResumen();
+    });
+    
+    btnTodosDias.addEventListener('click', function() {
+        diasCheckboxes.forEach(checkbox => checkbox.checked = true);
+        calcularResumen();
+    });
+    
+    btnLimpiarDias.addEventListener('click', function() {
+        limpiarDias();
+        calcularResumen();
+    });
+    
+    function limpiarDias() {
+        diasCheckboxes.forEach(checkbox => checkbox.checked = false);
+    }
+    
+    // Calcular resumen automático
+    function calcularResumen() {
+        const horaEntrada = document.getElementById('hora_entrada').value;
+        const horaSalida = document.getElementById('hora_salida').value;
+        const diasSeleccionados = Array.from(diasCheckboxes).filter(cb => cb.checked).length;
+        
+        let horasDiarias = 0;
+        let turno = '-';
+        
+        if (horaEntrada && horaSalida) {
+            const entrada = new Date(`1970-01-01T${horaEntrada}:00`);
+            let salida = new Date(`1970-01-01T${horaSalida}:00`);
+            
+            // Si cruza medianoche
+            if (salida <= entrada) {
+                salida.setDate(salida.getDate() + 1);
+            }
+            
+            horasDiarias = (salida - entrada) / (1000 * 60 * 60);
+            
+            // Calcular turno
+            if (horaEntrada >= '06:00' && horaSalida <= '18:00') {
+                turno = 'Diurno';
+            } else if (horaEntrada >= '18:00' || horaSalida <= '06:00') {
+                turno = 'Nocturno';
+            } else {
+                turno = 'Mixto';
+            }
+        }
+        
+        const horasSemanales = horasDiarias * diasSeleccionados;
+        
+        document.getElementById('horas-diarias').textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) : '-';
+        document.getElementById('horas-semanales').textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) : '-';
+        document.getElementById('dias-laborables-count').textContent = diasSeleccionados || '-';
+        document.getElementById('turno-calculado').textContent = turno;
+    }
+    
+    // Event listeners para recalcular
+    document.getElementById('hora_entrada').addEventListener('change', calcularResumen);
+    document.getElementById('hora_salida').addEventListener('change', calcularResumen);
+    diasCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', calcularResumen);
+    });
+    
+    // Calcular inicial
+    calcularResumen();
+});
+</script>

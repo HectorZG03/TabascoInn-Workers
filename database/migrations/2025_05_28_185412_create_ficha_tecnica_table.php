@@ -35,6 +35,15 @@ return new class extends Migration
                 'mixto'     // Turno mixto/rotativo
             ])->nullable()->comment('Turno de trabajo del empleado');
             
+            // ✅ NUEVOS: DÍAS LABORABLES Y DESCANSO
+            $table->json('dias_laborables')->nullable()->comment('Días de la semana que trabaja: ["lunes","martes","miercoles","jueves","viernes"]');
+            $table->json('dias_descanso')->nullable()->comment('Días de descanso: ["sabado","domingo"]');
+            $table->decimal('horas_semanales', 5, 2)->nullable()->comment('Total de horas por semana (calculado automáticamente)');
+            
+            // ✅ NUEVOS: BENEFICIARIO PRINCIPAL (PARA CONTRATO) - SIMPLIFICADO
+            $table->string('beneficiario_nombre', 150)->nullable()->comment('Nombre completo del beneficiario principal');
+            $table->string('beneficiario_parentesco', 50)->nullable()->comment('Parentesco del beneficiario (esposa, hijo, padre, etc.)');
+            
             // ✅ TIMESTAMPS: OBLIGATORIOS PARA LARAVEL
             $table->timestamps();
             
@@ -44,6 +53,7 @@ return new class extends Migration
             $table->index('turno', 'idx_ficha_turno');
             $table->index('horas_trabajo', 'idx_ficha_horas_trabajo');
             $table->index(['turno', 'horas_trabajo'], 'idx_ficha_turno_horas');
+            $table->index('beneficiario_parentesco', 'idx_ficha_beneficiario');
         });
     }
 

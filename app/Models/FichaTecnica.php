@@ -5,8 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Carbon\Carbon;
-use Illuminate\Support\Facades\Log; // ✅ Agregado
-
+use Illuminate\Support\Facades\Log;
 
 class FichaTecnica extends Model
 {
@@ -29,15 +28,26 @@ class FichaTecnica extends Model
         // ✅ CALCULADOS: Se llenan automáticamente
         'horas_trabajo',
         'turno',
+        // ✅ NUEVOS: Días laborables y descanso
+        'dias_laborables',
+        'dias_descanso', 
+        'horas_semanales',
+        // ✅ NUEVOS: Beneficiario principal (simplificado)
+        'beneficiario_nombre',
+        'beneficiario_parentesco',
     ];
 
     // ✅ OPTIMIZADO PARA LARAVEL 12: Mejor casting
     protected $casts = [
         'sueldo_diarios' => 'decimal:2',
         'horas_trabajo' => 'decimal:2',
+        'horas_semanales' => 'decimal:2',
         // ✅ MEJOR: Cast de tiempo sin datetime para Laravel 12
         'hora_entrada' => 'datetime:H:i',
         'hora_salida' => 'datetime:H:i',
+        // ✅ NUEVOS: JSON para días
+        'dias_laborables' => 'array',
+        'dias_descanso' => 'array',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -49,6 +59,39 @@ class FichaTecnica extends Model
         'mixto' => 'Mixto/Rotativo',
     ];
 
+    // ✅ NUEVOS: Días de la semana disponibles
+    public const DIAS_SEMANA = [
+        'lunes' => 'Lunes',
+        'martes' => 'Martes',
+        'miercoles' => 'Miércoles',
+        'jueves' => 'Jueves',
+        'viernes' => 'Viernes',
+        'sabado' => 'Sábado',
+        'domingo' => 'Domingo',
+    ];
+
+    // ✅ NUEVOS: Horarios de trabajo más comunes
+    public const HORARIOS_COMUNES = [
+        'tiempo_completo' => ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
+        'seis_dias' => ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'],
+        'rotativo' => ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'],
+    ];
+
+    // ✅ NUEVOS: Parentescos válidos para beneficiarios
+    public const PARENTESCOS_BENEFICIARIO = [
+        'esposo' => 'Esposo',
+        'esposa' => 'Esposa',
+        'hijo' => 'Hijo',
+        'hija' => 'Hija',
+        'padre' => 'Padre',
+        'madre' => 'Madre',
+        'hermano' => 'Hermano',
+        'hermana' => 'Hermana',
+        'abuelo' => 'Abuelo',
+        'abuela' => 'Abuela',
+        'otro' => 'Otro',
+    ];
+
     // ✅ CONSTANTES PARA CLASIFICACIÓN DE TURNOS (usadas en controlador)
     public const HORARIO_DIURNO_INICIO = '06:00';
     public const HORARIO_DIURNO_FIN = '18:00';
@@ -58,6 +101,7 @@ class FichaTecnica extends Model
     // ✅ RANGOS DE HORAS VÁLIDAS
     public const HORAS_MINIMAS = 1;
     public const HORAS_MAXIMAS = 16;
+    public const HORAS_SEMANALES_MAXIMAS = 112; // 16 horas x 7 días
 
     // ===== RELACIONES =====
     public function trabajador()
@@ -113,6 +157,68 @@ class FichaTecnica extends Model
             
             return $this->horas_trabajo ?? 0;
         }
+    }
+
+    /**
+     * ✅ NUEVO: Calcular horas semanales automáticamente
+     */
+    public function getHorasSemanalesCalculadasAttribute()
+    {
+        $horasDiarias = $this->horas_trabajadas_calculadas;
+        $diasLaborables = $this->dias_laborables ?? [];
+        
+        return round($horasDiarias * count($diasLaborables), 2);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener días laborables formateados
+     */
+    public function getDiasLaborablesTextoAttribute()
+    {
+        if (!$this->dias_laborables) {
+            return 'No especificado';
+        }
+
+        $dias = collect($this->dias_laborables)->map(function($dia) {
+            return self::DIAS_SEMANA[$dia] ?? $dia;
+        });
+
+        return $dias->join(', ');
+    }
+
+    /**
+     * ✅ NUEVO: Obtener días de descanso formateados
+     */
+    public function getDiasDescansoTextoAttribute()
+    {
+        if (!$this->dias_descanso) {
+            return 'No especificado';
+        }
+
+        $dias = collect($this->dias_descanso)->map(function($dia) {
+            return self::DIAS_SEMANA[$dia] ?? $dia;
+        });
+
+        return $dias->join(', ');
+    }
+
+    /**
+     * ✅ NUEVO: Obtener información completa del beneficiario (simplificado)
+     */
+    public function getBeneficiarioCompletoAttribute()
+    {
+        if (!$this->beneficiario_nombre) {
+            return 'No especificado';
+        }
+
+        $info = $this->beneficiario_nombre;
+        
+        if ($this->beneficiario_parentesco) {
+            $parentesco = self::PARENTESCOS_BENEFICIARIO[$this->beneficiario_parentesco] ?? $this->beneficiario_parentesco;
+            $info .= " ({$parentesco})";
+        }
+
+        return $info;
     }
 
     /**
@@ -178,111 +284,75 @@ class FichaTecnica extends Model
     }
 
     /**
-     * ✅ NUEVO: Obtener descripción del turno con horarios
+     * ✅ NUEVO: Obtener descripción completa del horario
      */
-    public function getTurnoDescripcionAttribute()
+    public function getHorarioCompletoAttribute()
     {
-        $turno = $this->turno_calculado;
         $horario = $this->horario_formateado;
+        $diasLaborables = $this->dias_laborables_texto;
+        $horasSemanales = $this->horas_semanales_calculadas;
         
-        return match($turno) {
-            'diurno' => "Diurno ({$horario})",
-            'nocturno' => "Nocturno ({$horario})",
-            'mixto' => "Mixto ({$horario})",
-            default => "Sin especificar ({$horario})"
-        };
+        return "{$horario} | {$diasLaborables} | {$horasSemanales}h/sem";
     }
 
     /**
-     * ✅ NUEVO: Validar si el horario es válido
+     * ✅ NUEVO: Validar si los días laborables son válidos
      */
-    public function getEsHorarioValidoAttribute()
+    public function getEsDiasValidosAttribute()
     {
-        $horas = $this->horas_trabajadas_calculadas;
-        return $horas >= self::HORAS_MINIMAS && $horas <= self::HORAS_MAXIMAS;
-    }
-
-    /**
-     * ✅ NUEVO: Obtener sueldo formateado
-     */
-    public function getSueldoFormateadoAttribute()
-    {
-        return $this->sueldo_diarios ? '$' . number_format($this->sueldo_diarios, 2) : '$0.00';
+        $diasLaborables = $this->dias_laborables ?? [];
+        $diasDescanso = $this->dias_descanso ?? [];
+        
+        // No debe haber días duplicados
+        $todosDias = array_merge($diasLaborables, $diasDescanso);
+        return count($todosDias) === count(array_unique($todosDias)) && count($diasLaborables) > 0;
     }
 
     // ===== MÉTODOS ESTÁTICOS =====
 
     /**
-     * ✅ NUEVO: Calcular horas entre dos horarios (método estático)
+     * ✅ NUEVO: Calcular días de descanso automáticamente
      */
-    public static function calcularHorasEntre($horaEntrada, $horaSalida)
+    public static function calcularDiasDescanso(array $diasLaborables)
     {
-        try {
-            $entrada = Carbon::parse($horaEntrada);
-            $salida = Carbon::parse($horaSalida);
-            
-            if ($salida->lte($entrada)) {
-                $salida->addDay();
-            }
-            
-            return round($entrada->diffInMinutes($salida) / 60, 2);
-        } catch (\Exception $e) {
-            return 0;
-        }
+        $todosDias = array_keys(self::DIAS_SEMANA);
+        return array_values(array_diff($todosDias, $diasLaborables));
     }
 
     /**
-     * ✅ NUEVO: Determinar turno según horarios (método estático)
+     * ✅ NUEVO: Validar datos de beneficiario (simplificado)
      */
-    public static function determinarTurno($horaEntrada, $horaSalida)
+    public static function validarBeneficiario($nombre, $parentesco)
     {
-        try {
-            $entrada = Carbon::parse($horaEntrada);
-            $salida = Carbon::parse($horaSalida);
-            
-            $inicioMatutino = Carbon::parse(self::HORARIO_DIURNO_INICIO);
-            $finMatutino = Carbon::parse(self::HORARIO_DIURNO_FIN);
-            $inicioNocturno = Carbon::parse(self::HORARIO_NOCTURNO_INICIO);
-            
-            if ($salida->lte($entrada)) {
-                return 'nocturno';
-            }
-            
-            if ($entrada->gte($inicioMatutino) && $salida->lte($finMatutino)) {
-                return 'diurno';
-            } elseif ($entrada->gte($inicioNocturno) || $salida->lte($inicioMatutino)) {
-                return 'nocturno';
-            } else {
-                return 'mixto';
-            }
-        } catch (\Exception $e) {
-            return 'mixto';
-        }
+        return [
+            'valido' => !empty($nombre) && !empty($parentesco),
+            'errores' => []
+        ];
     }
 
     // ===== SCOPES PARA LARAVEL 12 =====
 
     /**
-     * ✅ NUEVO: Scope para filtrar por turno
+     * ✅ NUEVO: Scope para filtrar por días específicos
      */
-    public function scopeTurno($query, $turno)
+    public function scopeTrabajaDia($query, $dia)
     {
-        return $query->where('turno', $turno);
+        return $query->whereJsonContains('dias_laborables', $dia);
     }
 
     /**
-     * ✅ NUEVO: Scope para filtrar por rango de horas
+     * ✅ NUEVO: Scope para trabajadores de tiempo completo
      */
-    public function scopeHorasEntre($query, $minHoras, $maxHoras)
+    public function scopeTiempoCompleto($query)
     {
-        return $query->whereBetween('horas_trabajo', [$minHoras, $maxHoras]);
+        return $query->where('horas_semanales', '>=', 40);
     }
 
     /**
-     * ✅ NUEVO: Scope para horarios válidos
+     * ✅ NUEVO: Scope para trabajadores con beneficiario
      */
-    public function scopeHorariosValidos($query)
+    public function scopeConBeneficiario($query)
     {
-        return $query->whereBetween('horas_trabajo', [self::HORAS_MINIMAS, self::HORAS_MAXIMAS]);
+        return $query->whereNotNull('beneficiario_nombre');
     }
 }
