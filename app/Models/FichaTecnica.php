@@ -355,4 +355,4 @@ class FichaTecnica extends Model
     {
         return $query->whereNotNull('beneficiario_nombre');
     }
-}
+}x
