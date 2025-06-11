@@ -47,7 +47,7 @@
                                     <small class="text-muted">Sueldo Diario</small>
                                 </div>
                                 <div class="col-4">
-                                    <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] }}%</div>
+                                    <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
                                     <small class="text-muted">Documentos</small>
                                 </div>
                             </div>
@@ -84,27 +84,30 @@
         </div>
     </div>
 
-    <!-- ✅ ALERTAS CENTRALIZADAS -->
-    @include('trabajadores.secciones_perfil.alerts')
+    <!-- ✅ CONTENIDO DE LAS PESTAÑAS -->
+    <div class="row">
+        <div class="col-12">
+            <div class="tab-content" id="nav-tabContent">
+                <!-- Pestaña de Datos Personales -->
+                <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
+                    @include('trabajadores.secciones_perfil.datos_personales')
+                </div>
 
-    <!-- ✅ CONTENIDO DE LAS PESTAÑAS MODULARIZADO -->
-    <div class="tab-content" id="nav-tabContent">
-        
-        <!-- DATOS PERSONALES -->
-        <div class="tab-pane fade show active" id="nav-datos" role="tabpanel">
-            @include('trabajadores.secciones_perfil.datos_personales')
-        </div>
+                <!-- Pestaña de Datos Laborales -->
+                <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
+                    @include('trabajadores.secciones_perfil.datos_laborales')
+                </div>
 
-        <!-- DATOS LABORALES -->
-        <div class="tab-pane fade" id="nav-laborales" role="tabpanel">
-            @include('trabajadores.secciones_perfil.datos_laborales')
-        </div>
-
-        <!-- DOCUMENTOS -->
-        <div class="tab-pane fade" id="nav-documentos" role="tabpanel">
-            @include('trabajadores.secciones_perfil.documentos')
+                <!-- Pestaña de Documentos -->
+                <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
+                    @include('trabajadores.secciones_perfil.documentos')
+                </div>
+            </div>
         </div>
     </div>
+
+    <!-- ✅ ALERTAS DESPUÉS DEL CONTENIDO -->
+    @include('components.alertas')
 </div>
 
 {{-- ✅ MODALES SEPARADOS --}}

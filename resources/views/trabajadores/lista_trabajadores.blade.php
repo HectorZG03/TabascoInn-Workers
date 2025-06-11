@@ -28,41 +28,7 @@
         </div>
     </div>
 
-    <!-- Alertas -->
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill"></i>
-            <strong>¡Éxito!</strong> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if (session('error'))
-        <div class="alert alert-danger alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <strong>Error:</strong> {{ session('error') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
-
-    @if (session('warning'))
-    <div class="alert alert-warning alert-dismissible fade show" role="alert">
-            <i class="bi bi-exclamation-triangle-fill"></i>
-            <strong>Advertencia:</strong> {{ session('warning') }}
-            
-            @if (session('errores_detalle'))
-                <hr>
-                <h6>Detalles de errores:</h6>
-                <ul class="mb-0">
-                    @foreach (session('errores_detalle') as $error)
-                        <li>{{ $error }}</li>
-                    @endforeach
-                </ul>
-            @endif
-            
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
+    @include('components.alertas')
 
     <!-- ✅ ESTADÍSTICAS ACTUALIZADAS PARA 5 ESTADOS -->
     <div class="row mb-4">

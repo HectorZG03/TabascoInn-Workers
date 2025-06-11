@@ -114,24 +114,20 @@ class TrabajadorController extends Controller
     }
 
     /**
-     * ✅ STORE ACTUALIZADO Y CORREGIDO: Crear trabajador CON contrato
+     * ✅ STORE ACTUALIZADO: Crear trabajador CON horarios - VALIDACIÓN CORREGIDA PARA LARAVEL 12
      */
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES CORREGIDAS - Coinciden con el frontend
+        // ✅ VALIDACIONES ACTUALIZADAS PARA LARAVEL 12 - Campos de horario corregidos
         $validated = $request->validate([
-            // Datos personales básicos
+            // Datos personales básicos (sin cambios)
             'nombre_trabajador' => 'required|string|max:50',
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
             'fecha_nacimiento' => 'required|date|before:-18 years',
-            
-            // ✅ NUEVOS: Datos de ubicación
             'lugar_nacimiento' => 'nullable|string|max:100',
             'estado_actual' => 'nullable|string|max:50',
             'ciudad_actual' => 'nullable|string|max:50',
-            
-            // Identificadores oficiales
             'curp' => 'required|string|size:18|unique:trabajadores,curp',
             'rfc' => 'required|string|size:13|unique:trabajadores,rfc',
             'no_nss' => 'nullable|string|max:11',
@@ -140,7 +136,7 @@ class TrabajadorController extends Controller
             'direccion' => 'nullable|string|max:255',
             'fecha_ingreso' => 'required|date|before_or_equal:today',
             
-            // Datos laborales
+            // Datos laborales básicos (sin cambios)
             'id_area' => 'required|exists:area,id_area',
             'id_categoria' => 'required|exists:categoria,id_categoria',
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
@@ -148,16 +144,38 @@ class TrabajadorController extends Controller
             'grado_estudios' => 'nullable|string|max:50',
             'estatus' => 'nullable|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
             
-            // ✅ NUEVOS: Datos laborales específicos
-            'horas_trabajo' => 'nullable|numeric|min:1|max:24',
-            'turno' => 'nullable|in:diurno,nocturno,mixto',
-
-            // ✅ CORREGIDO: Datos del contrato que coinciden con el frontend
+            // ✅ CORREGIDO: Validación de horarios para Laravel 12
+            'hora_entrada' => 'required|date_format:H:i',
+            'hora_salida' => [
+                'required',
+                'date_format:H:i',
+                // ✅ Validación personalizada para Laravel 12
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->filled('hora_entrada') && $request->filled('hora_salida')) {
+                        $entrada = Carbon::parse($request->hora_entrada);
+                        $salida = Carbon::parse($request->hora_salida);
+                        
+                        // Si la salida es antes que la entrada, asumir que cruza medianoche
+                        if ($salida->lte($entrada)) {
+                            $salida->addDay();
+                        }
+                        
+                        $diferencia = $entrada->diffInMinutes($salida);
+                        $horas = $diferencia / 60;
+                        
+                        // Validar rango razonable (1-16 horas)
+                        if ($horas < 1 || $horas > 16) {
+                            $fail('El horario debe estar entre 1 y 16 horas. Calculado: ' . round($horas, 2) . ' horas.');
+                        }
+                    }
+                }
+            ],
+            
+            // Datos del contrato (sin cambios)
             'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
             'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
             'tipo_duracion' => 'required|in:dias,meses',
-            // ✅ ELIMINADO: 'duracion_meses' => 'required|integer|min:1|max:120',
-
+            
             // Contacto (sin cambios)
             'contacto_nombre_completo' => 'nullable|string|max:150',
             'contacto_parentesco' => 'nullable|string|max:50',
@@ -165,50 +183,38 @@ class TrabajadorController extends Controller
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
         ], [
-            // Mensajes datos personales
-            'nombre_trabajador.required' => 'El nombre es obligatorio',
-            'ape_pat.required' => 'El apellido paterno es obligatorio',
-            'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
+            // Mensajes básicos
+            'nombre_trabajador.required' => 'El nombre es obligatorio.',
+            'ape_pat.required' => 'El apellido paterno es obligatorio.',
+            'fecha_nacimiento.required' => 'La fecha de nacimiento es obligatoria.',
+            'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años.',
+            'curp.required' => 'La CURP es obligatoria.',
+            'curp.size' => 'La CURP debe tener exactamente 18 caracteres.',
+            'curp.unique' => 'Esta CURP ya está registrada.',
+            'rfc.required' => 'El RFC es obligatorio.',
+            'rfc.size' => 'El RFC debe tener exactamente 13 caracteres.',
+            'rfc.unique' => 'Este RFC ya está registrado.',
+            'telefono.required' => 'El teléfono es obligatorio.',
+            'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos.',
+            'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria.',
+            'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura.',
+            'id_area.required' => 'Debe seleccionar un área.',
+            'id_categoria.required' => 'Debe seleccionar una categoría.',
+            'sueldo_diarios.required' => 'El sueldo diario es obligatorio.',
+            'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0.',
             
-            // ✅ NUEVOS: Mensajes para ubicación
-            'lugar_nacimiento.max' => 'El lugar de nacimiento no debe exceder 100 caracteres',
-            'estado_actual.max' => 'El estado actual no debe exceder 50 caracteres',
-            'ciudad_actual.max' => 'La ciudad actual no debe exceder 50 caracteres',
+            // ✅ CORREGIDO: Mensajes para campos de horario
+            'hora_entrada.required' => 'La hora de entrada es obligatoria.',
+            'hora_entrada.date_format' => 'La hora de entrada debe tener el formato HH:MM (ej: 08:00)',
+            'hora_salida.required' => 'La hora de salida es obligatoria.',
+            'hora_salida.date_format' => 'La hora de salida debe tener el formato HH:MM (ej: 17:00)',
             
-            // Mensajes identificadores
-            'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
-            'curp.unique' => 'Este CURP ya está registrado',
-            'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
-            'rfc.unique' => 'Este RFC ya está registrado',
-            'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos',
-            'correo.unique' => 'Este correo ya está registrado',
-            'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
-            'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
-            
-            // Mensajes datos laborales
-            'id_categoria.required' => 'Debe seleccionar una categoría',
-            'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
-            'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
-            
-            // ✅ NUEVOS: Mensajes para campos laborales específicos
-            'horas_trabajo.numeric' => 'Las horas de trabajo deben ser un número',
-            'horas_trabajo.min' => 'Las horas de trabajo deben ser al menos 1',
-            'horas_trabajo.max' => 'Las horas de trabajo no pueden exceder 24',
-            'turno.in' => 'El turno debe ser: diurno, nocturno o mixto',
-            
-            // ✅ CORREGIDO: Mensajes para contrato que coinciden con el frontend
-            'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria',
-            'fecha_inicio_contrato.after_or_equal' => 'La fecha de inicio del contrato no puede ser pasada',
-            'fecha_fin_contrato.required' => 'La fecha de fin del contrato es obligatoria',
-            'fecha_fin_contrato.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
-            'tipo_duracion.required' => 'El tipo de duración del contrato es obligatorio',
-            'tipo_duracion.in' => 'El tipo de duración debe ser "dias" o "meses"',
-            // ✅ ELIMINADO: Mensajes de duracion_meses
-            
-            // Contacto (sin cambios)
-            'contacto_nombre_completo.max' => 'El nombre completo no debe exceder 150 caracteres',
-            'contacto_telefono_principal.size' => 'El teléfono principal debe tener 10 dígitos',
-            'contacto_telefono_secundario.size' => 'El teléfono secundario debe tener 10 dígitos',
+            // Contratos
+            'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria.',
+            'fecha_inicio_contrato.after_or_equal' => 'El contrato no puede iniciar antes de hoy.',
+            'fecha_fin_contrato.required' => 'La fecha de fin del contrato es obligatoria.',
+            'fecha_fin_contrato.after' => 'La fecha de fin debe ser posterior al inicio.',
+            'tipo_duracion.required' => 'Debe especificar el tipo de duración.',
         ]);
 
         // Validar relación área-categoría (sin cambios)
@@ -233,11 +239,9 @@ class TrabajadorController extends Controller
                 'ape_pat' => $validated['ape_pat'],
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $validated['fecha_nacimiento'],
-                // ✅ NUEVOS: Campos de ubicación
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
-                // Identificadores oficiales
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
                 'no_nss' => $validated['no_nss'],
@@ -254,19 +258,51 @@ class TrabajadorController extends Controller
                 'estatus' => $trabajador->estatus
             ]);
 
-            // 2️⃣ CREAR FICHA TÉCNICA (sin cambios)
+            // 2️⃣ ✅ CREAR FICHA TÉCNICA CON CÁLCULOS AUTOMÁTICOS MEJORADOS
+            $entrada = Carbon::parse($validated['hora_entrada']);
+            $salida = Carbon::parse($validated['hora_salida']);
+            
+            // Si cruza medianoche
+            if ($salida->lte($entrada)) {
+                $salida->addDay();
+            }
+            
+            // Calcular horas trabajadas con mayor precisión
+            $horasCalculadas = round($entrada->diffInMinutes($salida) / 60, 2);
+            
+            // Calcular turno automáticamente usando las constantes del modelo
+            $horaEntradaStr = $entrada->format('H:i');
+            $horaSalidaOriginal = Carbon::parse($validated['hora_salida'])->format('H:i');
+            
+            $turnoCalculado = 'mixto'; // Default
+            
+            if ($horaEntradaStr >= FichaTecnica::HORARIO_DIURNO_INICIO && 
+                $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
+                $turnoCalculado = 'diurno';
+            } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || 
+                     $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                $turnoCalculado = 'nocturno';
+            }
+            
             $fichaTecnica = FichaTecnica::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'id_categoria' => $validated['id_categoria'],
                 'sueldo_diarios' => $validated['sueldo_diarios'],
                 'formacion' => $validated['formacion'],
                 'grado_estudios' => $validated['grado_estudios'],
-                // ✅ NUEVOS: Campos laborales específicos
-                'horas_trabajo' => $validated['horas_trabajo'],
-                'turno' => $validated['turno'],
+                'hora_entrada' => $validated['hora_entrada'],
+                'hora_salida' => $validated['hora_salida'],
+                'horas_trabajo' => $horasCalculadas,
+                'turno' => $turnoCalculado,
             ]);
 
-            Log::info('✅ Ficha técnica creada', ['ficha_id' => $fichaTecnica->id]);
+            Log::info('✅ Ficha técnica creada con horarios', [
+                'ficha_id' => $fichaTecnica->id,
+                'entrada' => $validated['hora_entrada'],
+                'salida' => $validated['hora_salida'],
+                'horas_calculadas' => $horasCalculadas,
+                'turno_calculado' => $turnoCalculado
+            ]);
 
             // 3️⃣ CREAR CONTACTO DE EMERGENCIA (sin cambios)
             if ($request->filled('contacto_nombre_completo') && !empty(trim($validated['contacto_nombre_completo']))) {
@@ -282,7 +318,7 @@ class TrabajadorController extends Controller
                 Log::info('✅ Contacto de emergencia creado', ['contacto_id' => $contacto->id_contacto]);
             }
 
-            // 4️⃣ ✅ CORREGIDO: GENERAR CONTRATO DEFINITIVO con datos correctos
+            // 4️⃣ GENERAR CONTRATO (sin cambios)
             $contratoController = new ContratoController();
             $contrato = $contratoController->generarDefinitivo($trabajador, [
                 'fecha_inicio_contrato' => $validated['fecha_inicio_contrato'],
@@ -290,22 +326,15 @@ class TrabajadorController extends Controller
                 'tipo_duracion' => $validated['tipo_duracion'],
             ]);
 
-            Log::info('✅ Contrato generado', [
-                'contrato_id' => $contrato->id_contrato,
-                'trabajador_id' => $trabajador->id_trabajador,
-                'tipo_duracion' => $validated['tipo_duracion']
-            ]);
-
-            // 5️⃣ ✅ LIMPIAR ARCHIVOS TEMPORALES (opcional)
+            // 5️⃣ LIMPIAR ARCHIVOS TEMPORALES
             $contratoController->limpiarArchivosTemporales();
 
             DB::commit();
 
-            // ✅ MENSAJE ACTUALIZADO con duración calculada automáticamente
+            // ✅ MENSAJE MEJORADO CON INFORMACIÓN DE HORARIOS
             $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
             $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
             
-            // Calcular duración para el mensaje
             if ($validated['tipo_duracion'] === 'dias') {
                 $duracion = $fechaInicio->diffInDays($fechaFin);
                 $duracionTexto = $duracion . ' ' . ($duracion === 1 ? 'día' : 'días');
@@ -321,15 +350,10 @@ class TrabajadorController extends Controller
             if ($request->filled('contacto_nombre_completo')) {
                 $mensaje .= " con contacto de emergencia";
             }
+            
+            // ✅ NUEVO: Incluir información de horarios en el mensaje
+            $mensaje .= " con horario {$validated['hora_entrada']} - {$validated['hora_salida']} ({$horasCalculadas} hrs, turno {$turnoCalculado})";
             $mensaje .= " y contrato generado (duración: {$duracionTexto} hasta {$fechaFin->format('d/m/Y')})";
-
-            Log::info('🎉 Trabajador y contrato creados exitosamente', [
-                'trabajador_id' => $trabajador->id_trabajador,
-                'contrato_id' => $contrato->id_contrato,
-                'usuario' => Auth::user()->email ?? 'Sistema',
-                'estatus' => $trabajador->estatus,
-                'duracion_contrato' => $duracionTexto
-            ]);
 
             return redirect()->route('trabajadores.index')
                            ->with('success', $mensaje);
@@ -345,9 +369,7 @@ class TrabajadorController extends Controller
                 'request_data' => $request->except(['_token'])
             ]);
 
-            $mensajeError = 'Error al crear el trabajador y su contrato: ' . $e->getMessage();
-
-            return back()->withErrors(['error' => $mensajeError])
+            return back()->withErrors(['error' => 'Error al crear el trabajador y su contrato: ' . $e->getMessage()])
                         ->withInput();
         }
     }

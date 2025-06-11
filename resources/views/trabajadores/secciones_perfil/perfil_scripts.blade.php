@@ -54,17 +54,8 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ✅ AUTO-HIDE ALERTS
-    setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert:not(.alert-persistent)');
-        alerts.forEach(alert => {
-            if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
-            }
-        });
-    }, 5000);
-
+    // ❌ ELIMINADO: AUTO-HIDE ALERTS (ya manejado por components.alertas)
+    
     // ✅ VALIDACIÓN DE FORMULARIOS
     const forms = document.querySelectorAll('form');
     forms.forEach(form => {
