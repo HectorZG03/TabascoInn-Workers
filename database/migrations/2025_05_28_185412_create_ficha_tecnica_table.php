@@ -41,7 +41,7 @@ return new class extends Migration
             $table->decimal('horas_semanales', 5, 2)->nullable()->comment('Total de horas por semana (calculado automáticamente)');
             
             // ✅ NUEVOS: BENEFICIARIO PRINCIPAL (PARA CONTRATO) - SIMPLIFICADO
-            $table->string('beneficiario_nombre', 150)->nullable()->comment('Nombre completo del beneficiario principal');
+            $table->string('beneficiario_nombre', 150)->nullable()->comment('Nombre completo del beneficiario de su seguro');
             $table->string('beneficiario_parentesco', 50)->nullable()->comment('Parentesco del beneficiario (esposa, hijo, padre, etc.)');
             
             // ✅ TIMESTAMPS: OBLIGATORIOS PARA LARAVEL

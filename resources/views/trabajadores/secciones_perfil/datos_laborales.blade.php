@@ -1,426 +1,304 @@
-<!-- ✅ SECCIÓN: DATOS LABORALES -->
-<div class="card shadow mb-4">
-    <div class="card-header bg-success text-white">
-        <h5 class="mb-0">
-            <i class="bi bi-briefcase-fill"></i> Datos Laborales
-        </h5>
-    </div>
-    <div class="card-body">
-        <!-- Área, Categoría y Sueldo -->
-        <div class="row">
-            <!-- Área -->
-            <div class="col-md-4 mb-3">
-                <label for="id_area" class="form-label">
-                    <i class="bi bi-building"></i> Área *
-                </label>
-                <select class="form-select @error('id_area') is-invalid @enderror" 
-                        id="id_area" 
-                        name="id_area" 
-                        required>
-                    <option value="">Seleccionar área...</option>
-                    @foreach($areas as $area)
-                        <option value="{{ $area->id_area }}" {{ old('id_area') == $area->id_area ? 'selected' : '' }}>
-                            {{ $area->nombre_area }}
-                        </option>
-                    @endforeach
-                </select>
-                @error('id_area')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
+{{-- resources/views/trabajadores/secciones_perfil/datos_laborales.blade.php --}}
 
-            <!-- Categoría -->
-            <div class="col-md-4 mb-3">
-                <label for="id_categoria" class="form-label">
-                    <i class="bi bi-person-badge"></i> Categoría *
-                </label>
-                <select class="form-select @error('id_categoria') is-invalid @enderror" 
-                        id="id_categoria" 
-                        name="id_categoria" 
-                        required 
-                        disabled>
-                    <option value="">Primero selecciona un área</option>
-                </select>
-                @error('id_categoria')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+<div class="row">
+    <!-- Formulario de Datos Laborales -->
+    <div class="col-md-8">
+        <div class="card shadow">
+            <div class="card-header bg-success text-white">
+                <h5 class="mb-0">
+                    <i class="bi bi-briefcase-fill"></i> Datos Laborales
+                </h5>
             </div>
-
-            <!-- Sueldo Diario -->
-            <div class="col-md-4 mb-3">
-                <label for="sueldo_diarios" class="form-label">
-                    <i class="bi bi-cash"></i> Sueldo Diario *
-                </label>
-                <div class="input-group">
-                    <span class="input-group-text">$</span>
-                    <input type="number" 
-                           class="form-control @error('sueldo_diarios') is-invalid @enderror" 
-                           id="sueldo_diarios" 
-                           name="sueldo_diarios" 
-                           value="{{ old('sueldo_diarios') }}" 
-                           placeholder="0.00"
-                           step="0.01"
-                           min="1"
-                           required>
-                </div>
-                @error('sueldo_diarios')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-        </div>
-
-        <!-- Horarios: Hora de Entrada y Salida -->
-        <div class="row">
-            <!-- Hora de Entrada -->
-            <div class="col-md-6 mb-3">
-                <label for="hora_entrada" class="form-label">
-                    <i class="bi bi-clock"></i> Hora de Entrada *
-                </label>
-                <input type="time" 
-                       class="form-control @error('hora_entrada') is-invalid @enderror" 
-                       id="hora_entrada" 
-                       name="hora_entrada" 
-                       value="{{ old('hora_entrada') }}" 
-                       required>
-                <div class="form-text">Hora de inicio de la jornada laboral</div>
-                @error('hora_entrada')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- Hora de Salida -->
-            <div class="col-md-6 mb-3">
-                <label for="hora_salida" class="form-label">
-                    <i class="bi bi-clock-fill"></i> Hora de Salida *
-                </label>
-                <input type="time" 
-                       class="form-control @error('hora_salida') is-invalid @enderror" 
-                       id="hora_salida" 
-                       name="hora_salida" 
-                       value="{{ old('hora_salida') }}" 
-                       required>
-                <div class="form-text">Hora de fin de la jornada laboral</div>
-                @error('hora_salida')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-        </div>
-
-        <!-- ✅ NUEVA SECCIÓN: Días Laborables -->
-        <div class="row">
-            <div class="col-12 mb-3">
-                <label class="form-label">
-                    <i class="bi bi-calendar-week"></i> Días Laborables *
-                </label>
-                <div class="border rounded p-3 bg-light">
-                    <div class="row">
-                        @foreach(\App\Models\FichaTecnica::DIAS_SEMANA as $valor => $texto)
-                            <div class="col-md-3 col-6 mb-2">
-                                <div class="form-check">
-                                    <input class="form-check-input" 
-                                           type="checkbox" 
-                                           id="dia_{{ $valor }}" 
-                                           name="dias_laborables[]" 
-                                           value="{{ $valor }}"
-                                           {{ in_array($valor, old('dias_laborables', [])) ? 'checked' : '' }}>
-                                    <label class="form-check-label" for="dia_{{ $valor }}">
-                                        {{ $texto }}
-                                    </label>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
+            <div class="card-body">
+                <form action="{{ route('trabajadores.perfil.update-ficha', $trabajador) }}" method="POST">
+                    @csrf
+                    @method('PUT')
                     
-                    <!-- Botones de selección rápida -->
-                    <div class="mt-3 pt-2 border-top">
-                        <small class="text-muted">Selección rápida:</small>
-                        <div class="btn-group btn-group-sm ms-2" role="group">
-                            <button type="button" class="btn btn-outline-primary" id="btn-lunes-viernes">
-                                Lun-Vie
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" id="btn-lunes-sabado">
-                                Lun-Sáb
-                            </button>
-                            <button type="button" class="btn btn-outline-primary" id="btn-todos-dias">
-                                Todos
-                            </button>
-                            <button type="button" class="btn btn-outline-secondary" id="btn-limpiar-dias">
-                                Limpiar
-                            </button>
-                        </div>
-                    </div>
-                </div>
-                @error('dias_laborables')
-                    <div class="text-danger small mt-1">{{ $message }}</div>
-                @enderror
-                @error('dias_laborables.*')
-                    <div class="text-danger small mt-1">{{ $message }}</div>
-                @enderror
-            </div>
-        </div>
-
-        <!-- ✅ NUEVA SECCIÓN: Beneficiario Principal -->
-        <div class="row">
-            <div class="col-12">
-                <div class="card border-info mb-3">
-                    <div class="card-header bg-info text-white">
-                        <h6 class="mb-0">
-                            <i class="bi bi-person-heart"></i> Beneficiario Principal (Para Contrato)
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row">
-                            <!-- Nombre del Beneficiario -->
-                            <div class="col-md-6 mb-3">
-                                <label for="beneficiario_nombre" class="form-label">
-                                    <i class="bi bi-person"></i> Nombre Completo
-                                </label>
-                                <input type="text" 
-                                       class="form-control @error('beneficiario_nombre') is-invalid @enderror" 
-                                       id="beneficiario_nombre" 
-                                       name="beneficiario_nombre" 
-                                       value="{{ old('beneficiario_nombre') }}" 
-                                       placeholder="Nombre del beneficiario"
-                                       maxlength="150">
-                                <div class="form-text">Persona que aparecerá en el contrato</div>
-                                @error('beneficiario_nombre')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
-
-                            <!-- Parentesco -->
-                            <div class="col-md-6 mb-3">
-                                <label for="beneficiario_parentesco" class="form-label">
-                                    <i class="bi bi-people"></i> Parentesco
-                                </label>
-                                <select class="form-select @error('beneficiario_parentesco') is-invalid @enderror" 
-                                        id="beneficiario_parentesco" 
-                                        name="beneficiario_parentesco">
-                                    <option value="">Seleccionar parentesco...</option>
-                                    @foreach(\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO as $valor => $texto)
-                                        <option value="{{ $valor }}" {{ old('beneficiario_parentesco') == $valor ? 'selected' : '' }}>
-                                            {{ $texto }}
+                    <div class="row">
+                        <!-- Área -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_area" class="form-label">
+                                <i class="bi bi-building"></i> Área *
+                            </label>
+                            <select class="form-select @error('id_area') is-invalid @enderror" 
+                                    id="id_area" 
+                                    name="id_area" 
+                                    required>
+                                <option value="">Seleccionar área...</option>
+                                @if(isset($areas))
+                                    @foreach($areas as $area)
+                                        <option value="{{ $area->id_area }}" 
+                                                {{ old('id_area', $trabajador->fichaTecnica->categoria->id_area ?? '') == $area->id_area ? 'selected' : '' }}>
+                                            {{ $area->nombre_area }}
                                         </option>
                                     @endforeach
-                                </select>
-                                @error('beneficiario_parentesco')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
-                            </div>
+                                @endif
+                            </select>
+                            @error('id_area')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
 
-                        <!-- Nota informativa -->
-                        <div class="row">
-                            <div class="col-12">
-                                <div class="alert alert-info mb-0">
-                                    <small>
-                                        <i class="bi bi-info-circle"></i> 
-                                        <strong>Nota:</strong> Este beneficiario aparecerá en el contrato laboral. 
-                                        Puedes dejarlo vacío y completarlo después si es necesario.
-                                    </small>
+                        <!-- Categoría -->
+                        <div class="col-md-6 mb-3">
+                            <label for="id_categoria" class="form-label">
+                                <i class="bi bi-person-badge"></i> Categoría *
+                            </label>
+                            <select class="form-select @error('id_categoria') is-invalid @enderror" 
+                                    id="id_categoria" 
+                                    name="id_categoria" 
+                                    required>
+                                <option value="">Seleccionar categoría...</option>
+                                @if(isset($categorias))
+                                    @foreach($categorias as $categoria)
+                                        <option value="{{ $categoria->id_categoria }}" 
+                                                {{ old('id_categoria', $trabajador->fichaTecnica->id_categoria ?? '') == $categoria->id_categoria ? 'selected' : '' }}>
+                                            {{ $categoria->nombre_categoria }}
+                                        </option>
+                                    @endforeach
+                                @endif
+                            </select>
+                            @error('id_categoria')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Sueldo Diario -->
+                        <div class="col-md-6 mb-3">
+                            <label for="sueldo_diarios" class="form-label">
+                                <i class="bi bi-cash"></i> Sueldo Diario *
+                            </label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       class="form-control @error('sueldo_diarios') is-invalid @enderror" 
+                                       id="sueldo_diarios" 
+                                       name="sueldo_diarios" 
+                                       value="{{ old('sueldo_diarios', $trabajador->fichaTecnica->sueldo_diarios ?? '') }}" 
+                                       step="0.01"
+                                       min="1"
+                                       required>
+                            </div>
+                            @error('sueldo_diarios')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Tipo de Cambio -->
+                        <div class="col-md-6 mb-3">
+                            <label for="tipo_cambio" class="form-label">
+                                <i class="bi bi-arrow-up-circle"></i> Tipo de Cambio
+                            </label>
+                            <select class="form-select @error('tipo_cambio') is-invalid @enderror" 
+                                    id="tipo_cambio" 
+                                    name="tipo_cambio">
+                                <option value="">Determinar automáticamente</option>
+                                <option value="promocion" {{ old('tipo_cambio') == 'promocion' ? 'selected' : '' }}>
+                                    🎉 Promoción
+                                </option>
+                                <option value="transferencia" {{ old('tipo_cambio') == 'transferencia' ? 'selected' : '' }}>
+                                    🔄 Transferencia
+                                </option>
+                                <option value="aumento_sueldo" {{ old('tipo_cambio') == 'aumento_sueldo' ? 'selected' : '' }}>
+                                    💰 Aumento de Sueldo
+                                </option>
+                                <option value="reclasificacion" {{ old('tipo_cambio') == 'reclasificacion' ? 'selected' : '' }}>
+                                    📋 Reclasificación
+                                </option>
+                                <option value="ajuste_salarial" {{ old('tipo_cambio') == 'ajuste_salarial' ? 'selected' : '' }}>
+                                    ⚖️ Ajuste Salarial
+                                </option>
+                            </select>
+                            <small class="text-muted">Si no seleccionas, se determinará automáticamente</small>
+                            @error('tipo_cambio')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Motivo del Cambio -->
+                        <div class="col-md-12 mb-3">
+                            <label for="motivo_cambio" class="form-label">
+                                <i class="bi bi-chat-text"></i> Motivo del Cambio
+                            </label>
+                            <input type="text" 
+                                   class="form-control @error('motivo_cambio') is-invalid @enderror" 
+                                   id="motivo_cambio" 
+                                   name="motivo_cambio" 
+                                   value="{{ old('motivo_cambio') }}"
+                                   placeholder="Ej: Promoción por excelente desempeño, Transferencia por necesidades operativas...">
+                            <small class="text-muted">Opcional - Se registrará en el historial de cambios</small>
+                            @error('motivo_cambio')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="row">
+                        <!-- Formación -->
+                        <div class="col-md-6 mb-3">
+                            <label for="formacion" class="form-label">
+                                <i class="bi bi-mortarboard"></i> Formación Académica
+                            </label>
+                            <select class="form-select @error('formacion') is-invalid @enderror" 
+                                    id="formacion" 
+                                    name="formacion">
+                                <option value="">Seleccionar...</option>
+                                @foreach(['Sin estudios', 'Primaria', 'Secundaria', 'Preparatoria', 'Universidad', 'Posgrado'] as $nivel)
+                                    <option value="{{ $nivel }}" 
+                                            {{ old('formacion', $trabajador->fichaTecnica->formacion ?? '') == $nivel ? 'selected' : '' }}>
+                                        {{ $nivel }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('formacion')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+
+                        <!-- Grado de Estudios -->
+                        <div class="col-md-6 mb-3">
+                            <label for="grado_estudios" class="form-label">
+                                <i class="bi bi-award"></i> Grado de Estudios
+                            </label>
+                            <input type="text" 
+                                   class="form-control @error('grado_estudios') is-invalid @enderror" 
+                                   id="grado_estudios" 
+                                   name="grado_estudios" 
+                                   value="{{ old('grado_estudios', $trabajador->fichaTecnica->grado_estudios ?? '') }}">
+                            @error('grado_estudios')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
+                    <div class="d-flex justify-content-end">
+                        <button type="submit" class="btn btn-success">
+                            <i class="bi bi-save"></i> Actualizar Datos Laborales
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <!-- ✅ PANEL DE HISTORIAL CON VERIFICACIONES DE SEGURIDAD -->
+    <div class="col-md-4">
+        <div class="card shadow">
+            <div class="card-header bg-info text-white">
+                <div class="d-flex justify-content-between align-items-center">
+                    <h6 class="mb-0">
+                        <i class="bi bi-graph-up-arrow"></i> Historial de Cambios
+                    </h6>
+                    @if(Route::has('trabajadores.historial-promociones'))
+                        <a href="{{ route('trabajadores.historial-promociones', $trabajador) }}" 
+                           class="btn btn-light btn-sm">
+                            <i class="bi bi-eye"></i> Ver Todo
+                        </a>
+                    @endif
+                </div>
+            </div>
+            <div class="card-body p-2">
+                @if(isset($statsPromociones) && $statsPromociones['total_cambios'] > 0)
+                    <!-- ✅ ESTADÍSTICAS RÁPIDAS (CON VERIFICACIONES) -->
+                    <div class="row text-center mb-3">
+                        <div class="col-4">
+                            <div class="text-success fw-bold">{{ $statsPromociones['promociones'] ?? 0 }}</div>
+                            <small class="text-muted">Promociones</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-primary fw-bold">{{ $statsPromociones['transferencias'] ?? 0 }}</div>
+                            <small class="text-muted">Transferencias</small>
+                        </div>
+                        <div class="col-4">
+                            <div class="text-info fw-bold">{{ $statsPromociones['total_cambios'] ?? 0 }}</div>
+                            <small class="text-muted">Total</small>
+                        </div>
+                    </div>
+
+                    <!-- ✅ ÚLTIMOS CAMBIOS (CON VERIFICACIONES) -->
+                    @if(isset($historialReciente) && $historialReciente->isNotEmpty())
+                        <div class="timeline-sm">
+                            @foreach($historialReciente->take(3) as $cambio)
+                                <div class="timeline-item mb-2">
+                                    <div class="d-flex">
+                                        <div class="me-2">
+                                            <span class="badge bg-{{ $cambio->color_tipo_cambio ?? 'secondary' }} rounded-pill p-1">
+                                                @if($cambio->tipo_cambio == 'promocion')
+                                                    <i class="bi bi-arrow-up"></i>
+                                                @elseif($cambio->tipo_cambio == 'transferencia')
+                                                    <i class="bi bi-arrow-left-right"></i>
+                                                @elseif($cambio->tipo_cambio == 'aumento_sueldo')
+                                                    <i class="bi bi-cash"></i>
+                                                @else
+                                                    <i class="bi bi-gear"></i>
+                                                @endif
+                                            </span>
+                                        </div>
+                                        <div class="flex-grow-1">
+                                            <div class="small fw-bold">{{ $cambio->tipo_cambio_texto ?? 'Cambio' }}</div>
+                                            <div class="text-muted small">
+                                                {{ $cambio->categoriaNueva->nombre_categoria ?? 'Sin categoría' }}
+                                            </div>
+                                            <div class="text-success small">
+                                                ${{ number_format($cambio->sueldo_nuevo ?? 0, 2) }}
+                                                @if(isset($cambio->sueldo_anterior) && $cambio->sueldo_anterior > 0)
+                                                    <small class="text-muted">
+                                                        ({{ ($cambio->diferencia_sueldo ?? 0) >= 0 ? '+' : '' }}${{ number_format($cambio->diferencia_sueldo ?? 0, 2) }})
+                                                    </small>
+                                                @endif
+                                            </div>
+                                            <div class="text-muted small">
+                                                {{ $cambio->fecha_cambio ? $cambio->fecha_cambio->format('d/m/Y') : 'Fecha no disponible' }}
+                                            </div>
+                                        </div>
+                                    </div>
                                 </div>
-                            </div>
+                                @if(!$loop->last)<hr class="my-2">@endif
+                            @endforeach
                         </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Formación, Estudios y Estado -->
-        <div class="row">
-            <!-- Formación -->
-            <div class="col-md-4 mb-3">
-                <label for="formacion" class="form-label">
-                    <i class="bi bi-mortarboard"></i> Formación Académica
-                </label>
-                <select class="form-select @error('formacion') is-invalid @enderror" 
-                        id="formacion" 
-                        name="formacion">
-                    <option value="">Seleccionar...</option>
-                    <option value="Sin estudios" {{ old('formacion') == 'Sin estudios' ? 'selected' : '' }}>Sin estudios</option>
-                    <option value="Primaria" {{ old('formacion') == 'Primaria' ? 'selected' : '' }}>Primaria</option>
-                    <option value="Secundaria" {{ old('formacion') == 'Secundaria' ? 'selected' : '' }}>Secundaria</option>
-                    <option value="Preparatoria" {{ old('formacion') == 'Preparatoria' ? 'selected' : '' }}>Preparatoria</option>
-                    <option value="Universidad" {{ old('formacion') == 'Universidad' ? 'selected' : '' }}>Universidad</option>
-                    <option value="Posgrado" {{ old('formacion') == 'Posgrado' ? 'selected' : '' }}>Posgrado</option>
-                </select>
-                @error('formacion')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- Grado de Estudios -->
-            <div class="col-md-4 mb-3">
-                <label for="grado_estudios" class="form-label">
-                    <i class="bi bi-award"></i> Grado de Estudios
-                </label>
-                <input type="text" 
-                       class="form-control @error('grado_estudios') is-invalid @enderror" 
-                       id="grado_estudios" 
-                       name="grado_estudios" 
-                       value="{{ old('grado_estudios') }}" 
-                       placeholder="Ej: Licenciatura en Administración">
-                @error('grado_estudios')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-
-            <!-- Estado Inicial -->
-            <div class="col-md-4 mb-3">
-                <label for="estatus" class="form-label">
-                    <i class="bi bi-person-check"></i> Estado Inicial
-                </label>
-                <select class="form-select @error('estatus') is-invalid @enderror" 
-                        id="estatus" 
-                        name="estatus">
-                    <option value="">Por defecto (Activo)</option>
-                    @foreach(\App\Models\Trabajador::TODOS_ESTADOS as $valor => $texto)
-                        <option value="{{ $valor }}" 
-                                {{ old('estatus') == $valor ? 'selected' : '' }}
-                                data-color="{{ 
-                                    $valor === 'activo' ? 'success' : 
-                                    ($valor === 'inactivo' ? 'secondary' : 
-                                    ($valor === 'suspendido' ? 'danger' : 'info'))
-                                }}">
-                            {{ $texto }}
-                        </option>
-                    @endforeach
-                </select>
-                <div class="form-text">
-                    <small class="text-muted">
-                        Por defecto se creará como "Activo". Solo cambia si es necesario.
-                    </small>
-                </div>
-                @error('estatus')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
-            </div>
-        </div>
-
-        <!-- ✅ NUEVA SECCIÓN: Resumen Calculado -->
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card border-success">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-success">
-                            <i class="bi bi-calculator"></i> Resumen Automático
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <div class="h5 text-primary mb-0" id="horas-diarias">-</div>
-                                <small class="text-muted">Horas/día</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-success mb-0" id="horas-semanales">-</div>
-                                <small class="text-muted">Horas/semana</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-info mb-0" id="dias-laborables-count">-</div>
-                                <small class="text-muted">Días laborables</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-warning mb-0" id="turno-calculado">-</div>
-                                <small class="text-muted">Turno</small>
-                            </div>
+                    @else
+                        <div class="text-center text-muted py-3">
+                            <i class="bi bi-graph-up fs-2 opacity-50"></i>
+                            <p class="mb-0 small">Sin historial reciente</p>
                         </div>
+                    @endif
+                @else
+                    <!-- ✅ ESTADO VACÍO -->
+                    <div class="text-center text-muted py-3">
+                        <i class="bi bi-graph-up fs-2 opacity-50"></i>
+                        <p class="mb-0 small">Sin historial de cambios</p>
+                        <small class="text-muted">Los cambios aparecerán aquí cuando actualices los datos laborales</small>
                     </div>
-                </div>
+                @endif
             </div>
         </div>
     </div>
 </div>
 
-<!-- ✅ SCRIPT ESPECÍFICO PARA DÍAS LABORABLES -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Botones de selección rápida de días
-    const btnLunesViernes = document.getElementById('btn-lunes-viernes');
-    const btnLunesSabado = document.getElementById('btn-lunes-sabado');
-    const btnTodosDias = document.getElementById('btn-todos-dias');
-    const btnLimpiarDias = document.getElementById('btn-limpiar-dias');
-    
-    const diasCheckboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
-    
-    btnLunesViernes.addEventListener('click', function() {
-        limpiarDias();
-        ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'].forEach(dia => {
-            const checkbox = document.getElementById(`dia_${dia}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        calcularResumen();
-    });
-    
-    btnLunesSabado.addEventListener('click', function() {
-        limpiarDias();
-        ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'].forEach(dia => {
-            const checkbox = document.getElementById(`dia_${dia}`);
-            if (checkbox) checkbox.checked = true;
-        });
-        calcularResumen();
-    });
-    
-    btnTodosDias.addEventListener('click', function() {
-        diasCheckboxes.forEach(checkbox => checkbox.checked = true);
-        calcularResumen();
-    });
-    
-    btnLimpiarDias.addEventListener('click', function() {
-        limpiarDias();
-        calcularResumen();
-    });
-    
-    function limpiarDias() {
-        diasCheckboxes.forEach(checkbox => checkbox.checked = false);
-    }
-    
-    // Calcular resumen automático
-    function calcularResumen() {
-        const horaEntrada = document.getElementById('hora_entrada').value;
-        const horaSalida = document.getElementById('hora_salida').value;
-        const diasSeleccionados = Array.from(diasCheckboxes).filter(cb => cb.checked).length;
-        
-        let horasDiarias = 0;
-        let turno = '-';
-        
-        if (horaEntrada && horaSalida) {
-            const entrada = new Date(`1970-01-01T${horaEntrada}:00`);
-            let salida = new Date(`1970-01-01T${horaSalida}:00`);
-            
-            // Si cruza medianoche
-            if (salida <= entrada) {
-                salida.setDate(salida.getDate() + 1);
-            }
-            
-            horasDiarias = (salida - entrada) / (1000 * 60 * 60);
-            
-            // Calcular turno
-            if (horaEntrada >= '06:00' && horaSalida <= '18:00') {
-                turno = 'Diurno';
-            } else if (horaEntrada >= '18:00' || horaSalida <= '06:00') {
-                turno = 'Nocturno';
-            } else {
-                turno = 'Mixto';
-            }
-        }
-        
-        const horasSemanales = horasDiarias * diasSeleccionados;
-        
-        document.getElementById('horas-diarias').textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) : '-';
-        document.getElementById('horas-semanales').textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) : '-';
-        document.getElementById('dias-laborables-count').textContent = diasSeleccionados || '-';
-        document.getElementById('turno-calculado').textContent = turno;
-    }
-    
-    // Event listeners para recalcular
-    document.getElementById('hora_entrada').addEventListener('change', calcularResumen);
-    document.getElementById('hora_salida').addEventListener('change', calcularResumen);
-    diasCheckboxes.forEach(checkbox => {
-        checkbox.addEventListener('change', calcularResumen);
-    });
-    
-    // Calcular inicial
-    calcularResumen();
-});
-</script>
+{{-- ✅ DEBUG TEMPORAL (remover en producción) --}}
+@if(config('app.debug'))
+    <div class="mt-3">
+        <details class="border rounded p-2 bg-light">
+            <summary class="text-muted small">🔍 Debug Info</summary>
+            <div class="mt-2 small">
+                <strong>Variables disponibles:</strong><br>
+                - $statsPromociones: {{ isset($statsPromociones) ? '✅' : '❌' }}<br>
+                - $historialReciente: {{ isset($historialReciente) ? '✅' : '❌' }}<br>
+                - $areas: {{ isset($areas) ? '✅' : '❌' }}<br>
+                - $categorias: {{ isset($categorias) ? '✅' : '❌' }}<br>
+                
+                @if(isset($statsPromociones))
+                    <strong>Stats:</strong> {{ json_encode($statsPromociones) }}<br>
+                @endif
+                
+                @if(isset($historialReciente))
+                    <strong>Historial count:</strong> {{ $historialReciente->count() }}<br>
+                @endif
+            </div>
+        </details>
+    </div>
+@endif

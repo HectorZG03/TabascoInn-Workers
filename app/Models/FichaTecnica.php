@@ -148,7 +148,7 @@ class FichaTecnica extends Model
             
             return round($entrada->diffInMinutes($salida) / 60, 2);
         } catch (\Exception $e) {
-            \Log::warning('Error calculando horas trabajadas', [
+            Log::warning('Error calculando horas trabajadas', [
                 'ficha_id' => $this->id_ficha,
                 'entrada' => $this->hora_entrada,
                 'salida' => $this->hora_salida,
@@ -253,7 +253,7 @@ class FichaTecnica extends Model
                 return 'mixto';
             }
         } catch (\Exception $e) {
-            \Log::warning('Error calculando turno', [
+            Log::warning('Error calculando turno', [
                 'ficha_id' => $this->id_ficha,
                 'entrada' => $this->hora_entrada,
                 'salida' => $this->hora_salida,
@@ -355,4 +355,4 @@ class FichaTecnica extends Model
     {
         return $query->whereNotNull('beneficiario_nombre');
     }
-}x
+}

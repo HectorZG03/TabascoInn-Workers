@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trabajador;
 use App\Models\ContratoTrabajador;
+use App\Models\FichaTecnica;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
@@ -24,6 +25,7 @@ class ContratoController extends Controller
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
             'fecha_nacimiento' => 'required|date',
+            'fecha_ingreso' => 'required|date',
             'direccion' => 'nullable|string|max:255',
             'curp' => 'nullable|string|max:18',
             'rfc' => 'nullable|string|max:13',
@@ -41,7 +43,20 @@ class ContratoController extends Controller
             'categoria_nombre' => 'nullable|string|max:100',
             'area_nombre' => 'nullable|string|max:100',
             'horas_trabajo' => 'nullable|numeric|min:1|max:24',
+            'horas_semanales' => 'nullable|numeric|min:1|max:168',
             'turno' => 'nullable|in:diurno,nocturno,mixto',
+            'hora_entrada' => 'nullable|date_format:H:i',
+            'hora_salida' => 'nullable|date_format:H:i',
+            'formacion' => 'nullable|string|max:100',
+            'grado_estudios' => 'nullable|string|max:100',
+            
+            // ✅ NUEVOS: Campos de beneficiario
+            'beneficiario_nombre' => 'nullable|string|max:100',
+            'beneficiario_parentesco' => 'nullable|string|max:50',
+            
+            // ✅ NUEVOS: Días laborables (array)
+            'dias_laborables' => 'nullable|array',
+            'dias_laborables.*' => 'string|in:lunes,martes,miercoles,jueves,viernes,sabado,domingo',
             
             // ✅ DATOS DEL CONTRATO
             'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
@@ -50,6 +65,15 @@ class ContratoController extends Controller
         ]);
 
         try {
+            // ✅ PROCESAR DÍAS LABORABLES Y DE DESCANSO
+            $diasLaborables = $request->dias_laborables ?? ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+            $todosLosDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+            $diasDescanso = array_diff($todosLosDias, $diasLaborables);
+            
+            // ✅ CALCULAR HORAS SEMANALES SI NO SE PROPORCIONA
+            $horasPorDia = $request->horas_trabajo ?? 8;
+            $horasSemanales = $request->horas_semanales ?? (count($diasLaborables) * $horasPorDia);
+            
             // ✅ MEJORADO: Crear objeto trabajador temporal CON TODOS LOS CAMPOS
             $trabajadorTemp = (object) [
                 'nombre_trabajador' => $request->nombre_trabajador,
@@ -57,6 +81,7 @@ class ContratoController extends Controller
                 'ape_mat' => $request->ape_mat,
                 'nombre_completo' => trim($request->nombre_trabajador . ' ' . $request->ape_pat . ' ' . ($request->ape_mat ?? '')),
                 'fecha_nacimiento' => $request->fecha_nacimiento,
+                'fecha_ingreso' => $request->fecha_ingreso,
                 'direccion' => $request->direccion,
                 'curp' => $request->curp,
                 'rfc' => $request->rfc,
@@ -78,9 +103,21 @@ class ContratoController extends Controller
                         ]
                     ],
                     'sueldo_diarios' => $request->sueldo_diarios ?? 0,
-                    'horas_trabajo' => $request->horas_trabajo ?? 8,
+                    'horas_trabajo' => $horasPorDia,
+                    'horas_semanales' => $horasSemanales,
+                    'horas_trabajadas_calculadas' => $horasPorDia,
+                    'horas_semanales_calculadas' => $horasSemanales,
                     'turno' => $request->turno ?? 'diurno',
-                    'turno_texto' => $this->getTurnoTexto($request->turno ?? 'diurno')
+                    'turno_calculado' => $request->turno ?? 'diurno',
+                    'turno_texto' => $this->getTurnoTexto($request->turno ?? 'diurno'),
+                    'hora_entrada' => $request->hora_entrada ?? '08:00',
+                    'hora_salida' => $request->hora_salida ?? '17:00',
+                    'formacion' => $request->formacion ?? 'No Especificada',
+                    'grado_estudios' => $request->grado_estudios ?? 'No Especificado',
+                    'beneficiario_nombre' => $request->beneficiario_nombre,
+                    'beneficiario_parentesco' => $request->beneficiario_parentesco,
+                    'dias_laborables' => $diasLaborables,
+                    'dias_descanso' => array_values($diasDescanso)
                 ]
             ];
 
@@ -114,7 +151,8 @@ class ContratoController extends Controller
                 'hash' => $hash,
                 'trabajador' => $trabajadorTemp->nombre_completo,
                 'tipo_duracion' => $request->tipo_duracion,
-                'duracion' => $duracionCalculada
+                'duracion' => $duracionCalculada,
+                'dias_laborables' => count($diasLaborables)
             ]);
 
             return response()->json([
@@ -128,7 +166,10 @@ class ContratoController extends Controller
                     'fecha_fin' => $fechaFin->format('d/m/Y'),
                     'duracion' => $duracionCalculada,
                     'tipo_duracion' => $request->tipo_duracion,
-                    'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion)
+                    'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
+                    'turno' => $request->turno ?? 'diurno',
+                    'horas_semanales' => $horasSemanales,
+                    'dias_laborables' => count($diasLaborables)
                 ]
             ]);
 
@@ -147,15 +188,18 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ MEJORADO: Generar contrato definitivo con carga de relaciones
+     * ✅ MEJORADO: Generar contrato definitivo con carga de relaciones completas
      */
     public function generarDefinitivo($trabajador, $datosContrato)
     {
         try {
-            // ✅ NUEVO: Cargar relaciones necesarias si no están cargadas
+            // ✅ NUEVO: Cargar TODAS las relaciones necesarias
             if (!$trabajador->relationLoaded('fichaTecnica')) {
                 $trabajador->load(['fichaTecnica.categoria.area']);
             }
+
+            // ✅ CALCULAR/COMPLETAR DATOS FALTANTES DE LA FICHA TÉCNICA
+            $this->completarDatosFichaTecnica($trabajador);
 
             $fechaInicio = \Carbon\Carbon::parse($datosContrato['fecha_inicio_contrato']);
             $fechaFin = \Carbon\Carbon::parse($datosContrato['fecha_fin_contrato']);
@@ -166,7 +210,7 @@ class ContratoController extends Controller
             $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
             // Generar PDF final
-            $pdf = PDF::loadView('formatos.contrato', [
+            $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajador,
                 'fecha_inicio' => $fechaInicio->format('d/m/Y'),
                 'fecha_fin' => $fechaFin->format('d/m/Y'),
@@ -211,7 +255,7 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ MEJORADO: Generar contrato individual con carga de relaciones
+     * ✅ MEJORADO: Generar contrato individual con carga de relaciones completas
      */
     public function generar(Request $request, Trabajador $trabajador)
     {
@@ -222,8 +266,11 @@ class ContratoController extends Controller
         ]);
 
         try {
-            // ✅ NUEVO: Cargar relaciones necesarias
+            // ✅ NUEVO: Cargar TODAS las relaciones necesarias
             $trabajador->load(['fichaTecnica.categoria.area']);
+
+            // ✅ COMPLETAR DATOS FALTANTES
+            $this->completarDatosFichaTecnica($trabajador);
 
             $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio);
             $fechaFin = \Carbon\Carbon::parse($request->fecha_fin);
@@ -234,7 +281,7 @@ class ContratoController extends Controller
             $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
             // Generar PDF
-            $pdf = PDF::loadView('formatos.contrato', [
+            $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajador,
                 'fecha_inicio' => $fechaInicio->format('d/m/Y'),
                 'fecha_fin' => $fechaFin->format('d/m/Y'),
@@ -274,7 +321,52 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ NUEVO: Método para convertir número a texto (salario)
+     * ✅ NUEVO: Completar datos calculados de la ficha técnica
+     */
+    private function completarDatosFichaTecnica($trabajador)
+    {
+        if (!$trabajador->fichaTecnica) {
+            return;
+        }
+
+        $ficha = $trabajador->fichaTecnica;
+
+        // ✅ CALCULAR DÍAS LABORABLES SI NO ESTÁN DEFINIDOS
+        if (empty($ficha->dias_laborables)) {
+            $ficha->dias_laborables = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
+        }
+
+        // ✅ CALCULAR DÍAS DE DESCANSO
+        $todosLosDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
+        $ficha->dias_descanso = array_values(array_diff($todosLosDias, $ficha->dias_laborables));
+
+        // ✅ CALCULAR HORAS SEMANALES
+        $horasPorDia = $ficha->horas_trabajo ?? 8;
+        $diasLaborablesPorSemana = count($ficha->dias_laborables);
+        $ficha->horas_semanales_calculadas = $ficha->horas_semanales ?? ($diasLaborablesPorSemana * $horasPorDia);
+        $ficha->horas_trabajadas_calculadas = $horasPorDia;
+
+        // ✅ ASEGURAR TURNO CALCULADO
+        $ficha->turno_calculado = $ficha->turno ?? 'diurno';
+
+        // ✅ HORARIOS POR DEFECTO
+        if (!$ficha->hora_entrada) {
+            $ficha->hora_entrada = $ficha->turno === 'nocturno' ? '22:00' : '08:00';
+        }
+        if (!$ficha->hora_salida) {
+            $ficha->hora_salida = $ficha->turno === 'nocturno' ? '06:00' : '17:00';
+        }
+
+        Log::info('✅ Datos de ficha técnica completados', [
+            'trabajador_id' => $trabajador->id_trabajador,
+            'dias_laborables' => count($ficha->dias_laborables),
+            'horas_semanales' => $ficha->horas_semanales_calculadas,
+            'turno' => $ficha->turno_calculado
+        ]);
+    }
+
+    /**
+     * ✅ MEJORADO: Método para convertir número a texto (salario)
      */
     private function numeroATexto($numero)
     {
@@ -299,7 +391,7 @@ class ContratoController extends Controller
         $numero = intval($numero); // Convertir a entero (sin centavos por simplicidad)
 
         if ($numero < 20) {
-            return $unidades[$numero] . ' PESOS';
+            return ($unidades[$numero] ?: 'CERO') . ' PESOS';
         } elseif ($numero < 100) {
             $dec = intval($numero / 10);
             $uni = $numero % 10;
@@ -308,7 +400,25 @@ class ContratoController extends Controller
             $cen = intval($numero / 100);
             $resto = $numero % 100;
             $centena = ($numero == 100) ? 'CIEN' : $centenas[$cen];
-            return $centena . ($resto > 0 ? ' ' . $this->numeroATexto($resto) : ' PESOS');
+            
+            if ($resto > 0) {
+                // Recursión para el resto, pero quitamos " PESOS" del final
+                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
+                return $centena . ' ' . $restoTexto . ' PESOS';
+            } else {
+                return $centena . ' PESOS';
+            }
+        } elseif ($numero < 1000000) {
+            $miles = intval($numero / 1000);
+            $resto = $numero % 1000;
+            $milesTexto = ($miles == 1) ? 'MIL' : str_replace(' PESOS', '', $this->numeroATexto($miles)) . ' MIL';
+            
+            if ($resto > 0) {
+                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
+                return $milesTexto . ' ' . $restoTexto . ' PESOS';
+            } else {
+                return $milesTexto . ' PESOS';
+            }
         }
 
         // Para números mayores, simplificar
@@ -456,8 +566,11 @@ class ContratoController extends Controller
      */
     public function crear(Trabajador $trabajador)
     {
-        // ✅ NUEVO: Cargar relaciones necesarias
+        // ✅ NUEVO: Cargar TODAS las relaciones necesarias
         $trabajador->load(['fichaTecnica.categoria.area']);
+        
+        // ✅ COMPLETAR DATOS CALCULADOS
+        $this->completarDatosFichaTecnica($trabajador);
         
         return view('contratos.crear', compact('trabajador'));
     }
