@@ -15,7 +15,7 @@ use Illuminate\Support\Str;
 class ContratoController extends Controller
 {
     /**
-     * ✅ MEJORADO: Generar preview del contrato - CON todos los campos necesarios
+     * ✅ CORREGIDO: Generar preview del contrato - Enviar fechas como objetos Carbon
      */
     public function generarPreview(Request $request)
     {
@@ -80,8 +80,8 @@ class ContratoController extends Controller
                 'ape_pat' => $request->ape_pat,
                 'ape_mat' => $request->ape_mat,
                 'nombre_completo' => trim($request->nombre_trabajador . ' ' . $request->ape_pat . ' ' . ($request->ape_mat ?? '')),
-                'fecha_nacimiento' => $request->fecha_nacimiento,
-                'fecha_ingreso' => $request->fecha_ingreso,
+                'fecha_nacimiento' => \Carbon\Carbon::parse($request->fecha_nacimiento), // ✅ CORREGIDO: Como objeto Carbon
+                'fecha_ingreso' => \Carbon\Carbon::parse($request->fecha_ingreso), // ✅ CORREGIDO: Como objeto Carbon
                 'direccion' => $request->direccion,
                 'curp' => $request->curp,
                 'rfc' => $request->rfc,
@@ -130,15 +130,15 @@ class ContratoController extends Controller
             // ✅ NUEVO: Convertir salario a texto
             $salarioTexto = $this->numeroATexto($request->sueldo_diarios ?? 0);
             
-            // ✅ GENERAR PDF temporal CON TODAS LAS VARIABLES
+            // ✅ CORREGIDO: Enviar fechas como objetos Carbon, no como strings formateados
             $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajadorTemp,
-                'fecha_inicio' => $fechaInicio->format('d/m/Y'),
-                'fecha_fin' => $fechaFin->format('d/m/Y'),
+                'fecha_inicio' => $fechaInicio, // ✅ CORREGIDO: Objeto Carbon
+                'fecha_fin' => $fechaFin,       // ✅ CORREGIDO: Objeto Carbon
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $request->tipo_duracion,
                 'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
-                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
+                'salario_texto' => $salarioTexto
             ]);
 
             // Guardar archivo temporal
@@ -162,8 +162,8 @@ class ContratoController extends Controller
                     'hash' => $hash,
                     'download_url' => route('ajax.contratos.preview.download', $hash),
                     'trabajador_nombre' => $trabajadorTemp->nombre_completo,
-                    'fecha_inicio' => $fechaInicio->format('d/m/Y'),
-                    'fecha_fin' => $fechaFin->format('d/m/Y'),
+                    'fecha_inicio' => $fechaInicio->format('d/m/Y'), // ✅ AQUÍ sí formatear para el JSON
+                    'fecha_fin' => $fechaFin->format('d/m/Y'),       // ✅ AQUÍ sí formatear para el JSON
                     'duracion' => $duracionCalculada,
                     'tipo_duracion' => $request->tipo_duracion,
                     'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
@@ -188,7 +188,7 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ MEJORADO: Generar contrato definitivo con carga de relaciones completas
+     * ✅ CORREGIDO: Generar contrato definitivo con fechas como objetos Carbon
      */
     public function generarDefinitivo($trabajador, $datosContrato)
     {
@@ -209,15 +209,15 @@ class ContratoController extends Controller
             // ✅ NUEVO: Convertir salario a texto
             $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
-            // Generar PDF final
+            // ✅ CORREGIDO: Enviar fechas como objetos Carbon
             $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajador,
-                'fecha_inicio' => $fechaInicio->format('d/m/Y'),
-                'fecha_fin' => $fechaFin->format('d/m/Y'),
+                'fecha_inicio' => $fechaInicio, // ✅ CORREGIDO: Objeto Carbon
+                'fecha_fin' => $fechaFin,       // ✅ CORREGIDO: Objeto Carbon
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $datosContrato['tipo_duracion'],
                 'duracion_texto' => $this->formatearDuracion($duracionCalculada, $datosContrato['tipo_duracion']),
-                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
+                'salario_texto' => $salarioTexto
             ]);
 
             // Guardar archivo definitivo
@@ -255,7 +255,7 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ MEJORADO: Generar contrato individual con carga de relaciones completas
+     * ✅ CORREGIDO: Generar contrato individual con fechas como objetos Carbon
      */
     public function generar(Request $request, Trabajador $trabajador)
     {
@@ -280,15 +280,15 @@ class ContratoController extends Controller
             // ✅ NUEVO: Convertir salario a texto
             $salarioTexto = $this->numeroATexto($trabajador->fichaTecnica->sueldo_diarios ?? 0);
 
-            // Generar PDF
+            // ✅ CORREGIDO: Enviar fechas como objetos Carbon
             $pdf = PDF::loadView('Formatos.contrato', [
                 'trabajador' => $trabajador,
-                'fecha_inicio' => $fechaInicio->format('d/m/Y'),
-                'fecha_fin' => $fechaFin->format('d/m/Y'),
+                'fecha_inicio' => $fechaInicio, // ✅ CORREGIDO: Objeto Carbon
+                'fecha_fin' => $fechaFin,       // ✅ CORREGIDO: Objeto Carbon
                 'duracion' => $duracionCalculada,
                 'tipo_duracion' => $request->tipo_duracion,
                 'duracion_texto' => $this->formatearDuracion($duracionCalculada, $request->tipo_duracion),
-                'salario_texto' => $salarioTexto // ✅ NUEVO: Salario en texto
+                'salario_texto' => $salarioTexto
             ]);
 
             // Guardar archivo

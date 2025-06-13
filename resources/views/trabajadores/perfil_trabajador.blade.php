@@ -73,6 +73,10 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
+                        {{-- ✅ NUEVA PESTAÑA DE CONTRATOS --}}
+                        <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
+                            <i class="bi bi-file-earmark-text"></i> Contratos
+                        </button>
                     </div>
                 </nav>
                 <div>
@@ -102,6 +106,19 @@
                 <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
                     @include('trabajadores.secciones_perfil.documentos')
                 </div>
+
+                {{-- ✅ NUEVA PESTAÑA DE CONTRATOS --}}
+                <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
+                    {{-- El contenido se carga dinámicamente via AJAX para mejor rendimiento --}}
+                    <div id="contratos-content">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando contratos...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Cargando información de contratos...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -115,5 +132,66 @@
 
 {{-- ✅ JAVASCRIPT ESPECÍFICO DEL PERFIL --}}
 @include('trabajadores.secciones_perfil.perfil_scripts')
+
+{{-- ✅ NUEVO: JavaScript para carga dinámica de contratos --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ Cargar contratos cuando se active la pestaña
+    const contratosTab = document.getElementById('nav-contratos-tab');
+    let contratosLoaded = false;
+    
+    if (contratosTab) {
+        contratosTab.addEventListener('shown.bs.tab', function (event) {
+            if (!contratosLoaded) {
+                loadContratos();
+                contratosLoaded = true;
+            }
+        });
+    }
+    
+    // ✅ Función para cargar contratos via AJAX
+    function loadContratos() {
+        const contentDiv = document.getElementById('contratos-content');
+        
+        fetch('{{ route("trabajadores.contratos.show", $trabajador) }}')
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+                return response.text();
+            })
+            .then(html => {
+                contentDiv.innerHTML = html;
+                console.log('✅ Contratos cargados exitosamente');
+            })
+            .catch(error => {
+                console.error('Error al cargar contratos:', error);
+                contentDiv.innerHTML = `
+                    <div class="text-center py-5">
+                        <div class="text-danger mb-3">
+                            <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
+                        </div>
+                        <h5 class="text-danger">Error al cargar contratos</h5>
+                        <p class="text-muted">No se pudieron cargar los contratos del trabajador.</p>
+                        <button class="btn btn-outline-primary" onclick="location.reload()">
+                            <i class="bi bi-arrow-clockwise"></i> Reintentar
+                        </button>
+                    </div>
+                `;
+            });
+    }
+    
+    // ✅ Si se accede directamente a la pestaña de contratos via URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const activeTab = urlParams.get('tab');
+    
+    if (activeTab === 'contratos' && !contratosLoaded) {
+        setTimeout(() => {
+            loadContratos();
+            contratosLoaded = true;
+        }, 100);
+    }
+});
+</script>
 
 @endsection

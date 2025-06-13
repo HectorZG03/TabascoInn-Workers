@@ -9,6 +9,7 @@ use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\AdminContratosController; // ✅ NUEVA IMPORTACIÓN
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -93,6 +94,18 @@ Route::middleware(['auth'])->group(function () {
         // ✅ NUEVA RUTA PARA VER HISTORIAL COMPLETO - MOVIDA AQUÍ FUERA DEL GRUPO PERFIL
         Route::get('/{trabajador}/historial-promociones', [ActPerfilTrabajadorController::class, 'verHistorialCompleto'])
              ->name('historial-promociones');
+
+        // ✅ NUEVAS RUTAS DE ADMINISTRACIÓN DE CONTRATOS
+        Route::prefix('{trabajador}/contratos')->name('contratos.')->group(function () {
+            // Mostrar contratos del trabajador (vista principal)
+            Route::get('/', [AdminContratosController::class, 'show'])->name('show');
+            
+            // Descargar contrato específico
+            Route::get('/{contrato}/descargar', [AdminContratosController::class, 'descargar'])->name('descargar');
+            
+            // API: Obtener resumen de contratos (para AJAX)
+            Route::get('/api/resumen', [AdminContratosController::class, 'obtenerResumen'])->name('api.resumen');
+        });
        
         // ✅ RUTAS DEL PERFIL AVANZADO - Controlador Separado
         Route::prefix('{trabajador}/perfil')->name('perfil.')->group(function () {
@@ -114,7 +127,6 @@ Route::middleware(['auth'])->group(function () {
             // API para categorías por área (AJAX) - Específico para perfil
             Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
         });
-
     });
 
     // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
