@@ -133,7 +133,17 @@
 {{-- ✅ JAVASCRIPT ESPECÍFICO DEL PERFIL --}}
 @include('trabajadores.secciones_perfil.perfil_scripts')
 
-{{-- ✅ NUEVO: JavaScript para carga dinámica de contratos --}}
+{{-- Agregar esta línea al final del archivo perfil_trabajador.blade.php, justo antes del @endsection --}}
+
+{{-- ✅ MODALES SEPARADOS --}}
+@include('trabajadores.modales.subir_documento', ['trabajador' => $trabajador])
+
+{{-- ✅ NUEVO: Modal para crear contrato (solo si tiene ficha técnica) --}}
+@if($trabajador->fichaTecnica)
+    @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
+@endif
+
+{{-- ✅ JavaScript para carga dinámica de contratos ACTUALIZADO --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ✅ Cargar contratos cuando se active la pestaña
@@ -153,6 +163,17 @@ document.addEventListener('DOMContentLoaded', function() {
     function loadContratos() {
         const contentDiv = document.getElementById('contratos-content');
         
+        // ✅ Mostrar spinner de carga más atractivo
+        contentDiv.innerHTML = `
+            <div class="text-center py-5">
+                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
+                    <span class="visually-hidden">Cargando contratos...</span>
+                </div>
+                <h5 class="text-muted">Cargando contratos...</h5>
+                <p class="text-muted">Obteniendo información de contratos del trabajador</p>
+            </div>
+        `;
+        
         fetch('{{ route("trabajadores.contratos.show", $trabajador) }}')
             .then(response => {
                 if (!response.ok) {
@@ -163,6 +184,15 @@ document.addEventListener('DOMContentLoaded', function() {
             .then(html => {
                 contentDiv.innerHTML = html;
                 console.log('✅ Contratos cargados exitosamente');
+                
+                // ✅ Reinicializar Bootstrap componentes si es necesario
+                if (typeof bootstrap !== 'undefined') {
+                    // Reinicializar tooltips en el contenido cargado
+                    const tooltips = contentDiv.querySelectorAll('[data-bs-toggle="tooltip"]');
+                    tooltips.forEach(tooltip => {
+                        new bootstrap.Tooltip(tooltip);
+                    });
+                }
             })
             .catch(error => {
                 console.error('Error al cargar contratos:', error);
@@ -173,19 +203,31 @@ document.addEventListener('DOMContentLoaded', function() {
                         </div>
                         <h5 class="text-danger">Error al cargar contratos</h5>
                         <p class="text-muted">No se pudieron cargar los contratos del trabajador.</p>
-                        <button class="btn btn-outline-primary" onclick="location.reload()">
-                            <i class="bi bi-arrow-clockwise"></i> Reintentar
-                        </button>
+                        <div class="alert alert-danger d-inline-block">
+                            <strong>Error:</strong> ${error.message}
+                        </div>
+                        <div class="mt-3">
+                            <button class="btn btn-outline-primary" onclick="location.reload()">
+                                <i class="bi bi-arrow-clockwise"></i> Reintentar
+                            </button>
+                        </div>
                     </div>
                 `;
             });
     }
     
-    // ✅ Si se accede directamente a la pestaña de contratos via URL
+    // ✅ Si se accede directamente a la pestaña de contratos via URL o session
     const urlParams = new URLSearchParams(window.location.search);
-    const activeTab = urlParams.get('tab');
+    const activeTab = urlParams.get('tab') || '{{ session("activeTab") }}';
     
     if (activeTab === 'contratos' && !contratosLoaded) {
+        // Activar la pestaña de contratos
+        const contratosTabElement = document.querySelector('[data-bs-target="#nav-contratos"]');
+        if (contratosTabElement) {
+            const tab = new bootstrap.Tab(contratosTabElement);
+            tab.show();
+        }
+        
         setTimeout(() => {
             loadContratos();
             contratosLoaded = true;

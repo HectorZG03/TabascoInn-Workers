@@ -17,20 +17,40 @@
                             </p>
                         </div>
                         <div class="col-md-4">
-                            <div class="row text-center">
-                                <div class="col-4">
-                                    <div class="h5 text-primary mb-0">{{ $estadisticas['total'] }}</div>
-                                    <small class="text-muted">Total</small>
+                            @if($contratos->count() > 0)
+                                <div class="row text-center">
+                                    <div class="col-4">
+                                        <div class="h5 text-primary mb-0">{{ $estadisticas['total'] }}</div>
+                                        <small class="text-muted">Total</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 text-success mb-0">{{ $estadisticas['vigentes'] }}</div>
+                                        <small class="text-muted">Vigentes</small>
+                                    </div>
+                                    <div class="col-4">
+                                        <div class="h5 text-info mb-0">{{ $estadisticas['duracion_total_texto'] }}</div>
+                                        <small class="text-muted">Duración Total</small>
+                                    </div>
                                 </div>
-                                <div class="col-4">
-                                    <div class="h5 text-success mb-0">{{ $estadisticas['vigentes'] }}</div>
-                                    <small class="text-muted">Vigentes</small>
+                            @else
+                                {{-- ✅ NUEVO: Botón para crear primer contrato --}}
+                                <div class="text-end">
+                                    @if($trabajador->fichaTecnica)
+                                        <button type="button" 
+                                                class="btn btn-primary"
+                                                data-bs-toggle="modal" 
+                                                data-bs-target="#modalCrearContrato">
+                                            <i class="bi bi-file-earmark-plus"></i>
+                                            Crear Primer Contrato
+                                        </button>
+                                    @else
+                                        <div class="alert alert-warning mb-0">
+                                            <i class="bi bi-exclamation-triangle"></i>
+                                            <small>Requiere ficha técnica completa</small>
+                                        </div>
+                                    @endif
                                 </div>
-                                <div class="col-4">
-                                    <div class="h5 text-info mb-0">{{ $estadisticas['duracion_total_texto'] }}</div>
-                                    <small class="text-muted">Duración Total</small>
-                                </div>
-                            </div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -39,30 +59,44 @@
     </div>
 
     {{-- ✅ Alertas de estado importantes --}}
-    @if($estadisticas['proximos_vencer'] > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="alert alert-warning d-flex align-items-center" role="alert">
-                    <i class="bi bi-exclamation-triangle-fill me-2"></i>
-                    <div>
-                        <strong>Atención:</strong> Hay {{ $estadisticas['proximos_vencer'] }} contrato(s) próximo(s) a vencer en los próximos 30 días.
+    @if($contratos->count() > 0)
+        @if($estadisticas['proximos_vencer'] > 0)
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-warning d-flex align-items-center" role="alert">
+                        <i class="bi bi-exclamation-triangle-fill me-2"></i>
+                        <div>
+                            <strong>Atención:</strong> Hay {{ $estadisticas['proximos_vencer'] }} contrato(s) próximo(s) a vencer en los próximos 30 días.
+                        </div>
                     </div>
                 </div>
             </div>
-        </div>
-    @endif
+        @endif
 
-    @if(!$estadisticas['tiene_contrato_vigente'] && $estadisticas['total'] > 0)
-        <div class="row mb-3">
-            <div class="col-12">
-                <div class="alert alert-danger d-flex align-items-center" role="alert">
-                    <i class="bi bi-x-circle-fill me-2"></i>
-                    <div>
-                        <strong>Sin contrato vigente:</strong> El trabajador no tiene ningún contrato activo actualmente.
+        @if(!$estadisticas['tiene_contrato_vigente'])
+            <div class="row mb-3">
+                <div class="col-12">
+                    <div class="alert alert-danger d-flex align-items-center justify-content-between" role="alert">
+                        <div class="d-flex align-items-center">
+                            <i class="bi bi-x-circle-fill me-2"></i>
+                            <div>
+                                <strong>Sin contrato vigente:</strong> El trabajador no tiene ningún contrato activo actualmente.
+                            </div>
+                        </div>
+                        {{-- ✅ NUEVO: Botón para crear contrato cuando no hay vigente --}}
+                        @if($trabajador->fichaTecnica)
+                            <button type="button" 
+                                    class="btn btn-primary btn-sm"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalCrearContrato">
+                                <i class="bi bi-file-earmark-plus"></i>
+                                Crear Contrato
+                            </button>
+                        @endif
                     </div>
                 </div>
             </div>
-        </div>
+        @endif
     @endif
 
     {{-- ✅ Contenido principal --}}
@@ -77,7 +111,19 @@
                                 <i class="bi bi-list-ul text-primary"></i>
                                 Historial de Contratos
                             </h5>
-                            <span class="badge bg-light text-dark">{{ $contratos->count() }} contrato(s)</span>
+                            <div class="d-flex gap-2">
+                                <span class="badge bg-light text-dark">{{ $contratos->count() }} contrato(s)</span>
+                                {{-- ✅ NUEVO: Botón adicional para crear nuevo contrato --}}
+                                @if(!$estadisticas['tiene_contrato_vigente'] && $trabajador->fichaTecnica)
+                                    <button type="button" 
+                                            class="btn btn-primary btn-sm"
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalCrearContrato">
+                                        <i class="bi bi-file-earmark-plus"></i>
+                                        Nuevo Contrato
+                                    </button>
+                                @endif
+                            </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -213,6 +259,19 @@
                                                             <i class="bi bi-download"></i>
                                                         </button>
                                                     @endif
+
+                                                    {{-- ✅ NUEVO: Renovar contrato (solo si está próximo a vencer) --}}
+                                                    @if($contrato->esta_vigente_bool && $contrato->dias_restantes_calculados <= 30)
+                                                        <button type="button" 
+                                                                class="btn btn-outline-warning btn-sm"
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#modalRenovarContrato"
+                                                                data-contrato-id="{{ $contrato->id_contrato }}"
+                                                                data-contrato-fin="{{ $contrato->fecha_fin_contrato->format('Y-m-d') }}"
+                                                                title="Renovar contrato">
+                                                            <i class="bi bi-arrow-repeat"></i>
+                                                        </button>
+                                                    @endif
                                                 </div>
                                             </td>
                                         </tr>
@@ -263,7 +322,7 @@
                 @endif
 
             @else
-                {{-- Estado vacío --}}
+                {{-- ✅ Estado vacío MEJORADO --}}
                 <div class="card border-0 shadow-sm">
                     <div class="card-body text-center py-5">
                         <div class="mb-3">
@@ -273,10 +332,34 @@
                         <p class="text-muted mb-4">
                             Este trabajador no tiene contratos registrados en el sistema.
                         </p>
-                        <div class="alert alert-info d-inline-block">
-                            <i class="bi bi-info-circle"></i>
-                            <strong>Nota:</strong> Los contratos se generan automáticamente al crear un trabajador o pueden agregarse manualmente.
-                        </div>
+                        
+                        @if($trabajador->fichaTecnica)
+                            {{-- ✅ NUEVO: Acción principal para crear primer contrato --}}
+                            <button type="button" 
+                                    class="btn btn-primary btn-lg mb-3"
+                                    data-bs-toggle="modal" 
+                                    data-bs-target="#modalCrearContrato">
+                                <i class="bi bi-file-earmark-plus"></i>
+                                Crear Primer Contrato
+                            </button>
+                            <div class="alert alert-info d-inline-block">
+                                <i class="bi bi-info-circle"></i>
+                                <strong>Listo para crear contrato:</strong> El trabajador tiene ficha técnica completa.
+                            </div>
+                        @else
+                            {{-- Trabajador sin ficha técnica --}}
+                            <div class="alert alert-warning d-inline-block">
+                                <i class="bi bi-exclamation-triangle"></i>
+                                <strong>Ficha técnica requerida:</strong> Complete primero los datos laborales del trabajador.
+                            </div>
+                            <div class="mt-3">
+                                <a href="{{ route('trabajadores.perfil.show', $trabajador) }}?tab=laborales" 
+                                   class="btn btn-outline-primary">
+                                    <i class="bi bi-briefcase"></i>
+                                    Completar Ficha Técnica
+                                </a>
+                            </div>
+                        @endif
                     </div>
                 </div>
             @endif
@@ -284,7 +367,9 @@
     </div>
 </div>
 
-{{-- ✅ Modal para ver detalles del contrato --}}
+{{-- ✅ MODALES --}}
+
+{{-- Modal para ver detalles del contrato (existente) --}}
 <div class="modal fade" id="detalleContratoModal" tabindex="-1" aria-labelledby="detalleContratoModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -351,16 +436,74 @@
     </div>
 </div>
 
+{{-- ✅ NUEVO: Modal para crear contrato --}}
+@include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
+
+{{-- ✅ NUEVO: Modal para renovar contrato (simplificado) --}}
+<div class="modal fade" id="modalRenovarContrato" tabindex="-1" aria-labelledby="modalRenovarContratoLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header bg-warning text-white">
+                <h5 class="modal-title" id="modalRenovarContratoLabel">
+                    <i class="bi bi-arrow-repeat"></i> Renovar Contrato
+                </h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            {{-- ✅ CORREGIDO: Action inicial para evitar errores --}}
+            <form id="formRenovarContrato" 
+                  method="POST" 
+                  action="#"
+                  data-trabajador-id="{{ $trabajador->id_trabajador }}">
+                @csrf
+                <div class="modal-body">
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> Renovando contrato próximo a vencer
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Inicio</label>
+                        <input type="date" 
+                               name="fecha_inicio" 
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Fecha de Fin</label>
+                        <input type="date" 
+                               name="fecha_fin" 
+                               class="form-control"
+                               required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Tipo de Duración</label>
+                        <select name="tipo_duracion" class="form-select" required>
+                            <option value="dias">Días</option>
+                            <option value="meses" selected>Meses</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-warning">
+                        <i class="bi bi-arrow-repeat"></i> Renovar Contrato
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
 {{-- ✅ JavaScript específico para contratos --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    // ✅ Manejar modal de detalles del contrato
+    // ✅ Manejar modal de detalles del contrato (existente)
     const detalleModal = document.getElementById('detalleContratoModal');
     if (detalleModal) {
         detalleModal.addEventListener('show.bs.modal', function (event) {
             const button = event.relatedTarget;
             
-            // Obtener datos del botón
             const contratoId = button.getAttribute('data-contrato-id');
             const inicio = button.getAttribute('data-contrato-inicio');
             const fin = button.getAttribute('data-contrato-fin');
@@ -368,18 +511,15 @@ document.addEventListener('DOMContentLoaded', function() {
             const estado = button.getAttribute('data-contrato-estado');
             const diasRestantes = button.getAttribute('data-contrato-dias-restantes');
             
-            // Actualizar contenido del modal
             document.getElementById('modal-fecha-inicio').textContent = inicio;
             document.getElementById('modal-fecha-fin').textContent = fin;
             document.getElementById('modal-duracion').textContent = duracion;
             document.getElementById('modal-dias-restantes').textContent = diasRestantes + ' días';
             
-            // Actualizar badge de estado
             const estadoBadge = document.getElementById('modal-estado-badge');
             estadoBadge.textContent = estado.charAt(0).toUpperCase() + estado.slice(1);
             estadoBadge.className = 'badge';
             
-            // Aplicar color según el estado
             if (estado === 'vigente') {
                 estadoBadge.classList.add('bg-success');
             } else if (estado === 'expirado') {
@@ -387,6 +527,45 @@ document.addEventListener('DOMContentLoaded', function() {
             } else {
                 estadoBadge.classList.add('bg-warning');
             }
+        });
+    }
+
+    // ✅ NUEVO: Manejar modal de renovación
+    const renovarModal = document.getElementById('modalRenovarContrato');
+    if (renovarModal) {
+        renovarModal.addEventListener('show.bs.modal', function (event) {
+            const button = event.relatedTarget;
+            const contratoId = button.getAttribute('data-contrato-id');
+            const contratoFin = button.getAttribute('data-contrato-fin');
+            
+            // ✅ CORREGIDO: Construir URL correctamente
+            const form = document.getElementById('formRenovarContrato');
+            const trabajadorId = form.getAttribute('data-trabajador-id');
+            const baseUrl = window.location.origin;
+            form.action = `${baseUrl}/trabajadores/${trabajadorId}/contratos/${contratoId}/renovar`;
+            
+            console.log('✅ Configurando renovación:', {
+                contratoId: contratoId,
+                trabajadorId: trabajadorId,
+                finalUrl: form.action
+            });
+            
+            // Configurar fecha mínima
+            const fechaInicioInput = form.querySelector('input[name="fecha_inicio"]');
+            const fechaFinInput = form.querySelector('input[name="fecha_fin"]');
+            
+            // Siguiente día después del contrato actual
+            const fechaMin = new Date(contratoFin);
+            fechaMin.setDate(fechaMin.getDate() + 1);
+            const fechaMinStr = fechaMin.toISOString().split('T')[0];
+            
+            fechaInicioInput.value = fechaMinStr;
+            fechaInicioInput.min = fechaMinStr;
+            
+            // 6 meses después por defecto
+            const fechaFinDefault = new Date(fechaMin);
+            fechaFinDefault.setMonth(fechaFinDefault.getMonth() + 6);
+            fechaFinInput.value = fechaFinDefault.toISOString().split('T')[0];
         });
     }
 
