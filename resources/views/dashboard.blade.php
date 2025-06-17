@@ -88,6 +88,22 @@
         </div>
     </div>
 
+    <!-- ✅ NUEVO: Administración de Contratos -->
+    <div class="col-md-6 col-lg-4 mb-4">
+        <div class="card shadow h-100 card-hover" style="border-top: 3px solid #6f42c1;">
+            <div class="card-body text-center" style="background-color: #FFFFFF;">
+                <i class="bi bi-file-earmark-contract fs-1 mb-3" style="color: #6f42c1;"></i>
+                <h5 class="card-title" style="color: #2F2F2F;">Administración de Contratos</h5>
+                <p class="card-text" style="color: #5D3A1A;">Gestión completa de contratos laborales del personal</p>
+                <a href="{{ route('contratos.admin.index') }}" 
+                   class="btn text-white" 
+                   style="background-color: #6f42c1; text-decoration: none;">
+                    <i class="bi bi-arrow-right"></i> Administrar
+                </a>
+            </div>
+        </div>
+    </div>
+
     <!-- Búsqueda y Consultas -->
     <div class="col-md-6 col-lg-4 mb-4">
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">

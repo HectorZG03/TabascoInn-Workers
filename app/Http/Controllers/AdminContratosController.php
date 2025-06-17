@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Trabajador;
 use App\Models\ContratoTrabajador;
+use App\Models\Area;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Response;
@@ -13,6 +14,171 @@ use Carbon\Carbon;
 
 class AdminContratosController extends Controller
 {
+    /**
+     * ✅ NUEVO: Vista principal de administración de contratos
+     */
+    public function index(Request $request)
+    {
+        // ✅ Query optimizada con relaciones necesarias
+        $query = ContratoTrabajador::with([
+            'trabajador.fichaTecnica.categoria.area'
+        ])->select([
+            'contratos_trabajadores.*',
+            // Calcular estado directamente en SQL para mejor rendimiento
+            DB::raw('CASE 
+                WHEN fecha_inicio_contrato > CURDATE() THEN "pendiente"
+                WHEN fecha_fin_contrato < CURDATE() THEN "expirado" 
+                ELSE "vigente"
+            END as estado_calculado'),
+            // Calcular días restantes
+            DB::raw('CASE 
+                WHEN fecha_fin_contrato < CURDATE() THEN 0
+                ELSE DATEDIFF(fecha_fin_contrato, CURDATE())
+            END as dias_restantes_calculados')
+        ]);
+
+        // ✅ FILTROS AVANZADOS
+        if ($request->filled('estado')) {
+            $estado = $request->estado;
+            if ($estado === 'vigente') {
+                $query->whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()');
+            } elseif ($estado === 'expirado') {
+                $query->whereRaw('fecha_fin_contrato < CURDATE()');
+            } elseif ($estado === 'pendiente') {
+                $query->whereRaw('fecha_inicio_contrato > CURDATE()');
+            } elseif ($estado === 'proximo_vencer') {
+                $query->whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)');
+            }
+        }
+
+        if ($request->filled('area')) {
+            $query->whereHas('trabajador.fichaTecnica.categoria.area', function($q) use ($request) {
+                $q->where('id_area', $request->area);
+            });
+        }
+
+        if ($request->filled('tipo_duracion')) {
+            $query->where('tipo_duracion', $request->tipo_duracion);
+        }
+
+        if ($request->filled('trabajador')) {
+            $search = $request->trabajador;
+            $query->whereHas('trabajador', function($q) use ($search) {
+                $q->where('nombre_trabajador', 'LIKE', "%{$search}%")
+                  ->orWhere('ape_pat', 'LIKE', "%{$search}%")
+                  ->orWhere('ape_mat', 'LIKE', "%{$search}%")
+                  ->orWhere('curp', 'LIKE', "%{$search}%");
+            });
+        }
+
+        if ($request->filled('fecha_desde')) {
+            $query->where('fecha_inicio_contrato', '>=', $request->fecha_desde);
+        }
+
+        if ($request->filled('fecha_hasta')) {
+            $query->where('fecha_fin_contrato', '<=', $request->fecha_hasta);
+        }
+
+        // ✅ ORDENAMIENTO
+        $sortBy = $request->get('sort', 'fecha_inicio_contrato');
+        $sortDirection = $request->get('direction', 'desc');
+        
+        $allowedSorts = ['fecha_inicio_contrato', 'fecha_fin_contrato', 'estado_calculado', 'dias_restantes_calculados'];
+        if (in_array($sortBy, $allowedSorts)) {
+            $query->orderBy($sortBy, $sortDirection);
+        } else {
+            $query->orderBy('fecha_inicio_contrato', 'desc');
+        }
+
+        // ✅ PAGINACIÓN
+        $contratos = $query->paginate(20)->withQueryString();
+
+        // ✅ PROCESAR DATOS ADICIONALES después de la consulta
+        foreach ($contratos as $contrato) {
+            // Asegurar datos calculados
+            $contrato->estado_calculado = $contrato->estado_calculado ?? $contrato->estado;
+            $contrato->dias_restantes_calculados = (int) ($contrato->dias_restantes_calculados ?? 0);
+            
+            // Información formateada
+            $contrato->duracion_completa = $this->formatearDuracionCompleta($contrato);
+            $contrato->color_estado = $this->obtenerColorEstado($contrato->estado_calculado);
+            $contrato->archivo_existe = $contrato->ruta_archivo && Storage::disk('public')->exists($contrato->ruta_archivo);
+            
+            // Información del trabajador si existe
+            if ($contrato->trabajador) {
+                $contrato->trabajador_nombre_completo = $contrato->trabajador->nombre_completo;
+                $contrato->trabajador_area = $contrato->trabajador->fichaTecnica?->categoria?->area?->nombre_area ?? 'Sin área';
+                $contrato->trabajador_categoria = $contrato->trabajador->fichaTecnica?->categoria?->nombre_categoria ?? 'Sin categoría';
+                $contrato->trabajador_estatus = $contrato->trabajador->estatus;
+            }
+        }
+
+        // ✅ ESTADÍSTICAS GENERALES
+        $estadisticas = $this->calcularEstadisticasGenerales();
+
+        // ✅ DATOS PARA FILTROS
+        $areas = Area::orderBy('nombre_area')->get();
+        $estados_filtro = [
+            'vigente' => 'Vigentes',
+            'expirado' => 'Expirados',
+            'pendiente' => 'Pendientes',
+            'proximo_vencer' => 'Próximos a vencer (30 días)'
+        ];
+        $tipos_duracion = [
+            'dias' => 'Por días',
+            'meses' => 'Por meses'
+        ];
+
+        Log::info('✅ Vista de administración de contratos consultada', [
+            'total_contratos' => $contratos->total(),
+            'filtros_aplicados' => $request->except(['page']),
+        ]);
+
+        return view('trabajadores.contratos.admin_contratos', compact(
+            'contratos',
+            'estadisticas',
+            'areas',
+            'estados_filtro',
+            'tipos_duracion'
+        ));
+    }
+
+    /**
+     * ✅ NUEVO: Calcular estadísticas generales del sistema
+     */
+    private function calcularEstadisticasGenerales(): array
+    {
+        $hoy = Carbon::today();
+        
+        $total = ContratoTrabajador::count();
+        
+        $vigentes = ContratoTrabajador::whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()')->count();
+        
+        $expirados = ContratoTrabajador::whereRaw('fecha_fin_contrato < CURDATE()')->count();
+        
+        $pendientes = ContratoTrabajador::whereRaw('fecha_inicio_contrato > CURDATE()')->count();
+        
+        $proximosVencer = ContratoTrabajador::whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)')->count();
+        
+        $vencenEstaSeemana = ContratoTrabajador::whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)')->count();
+        
+        $porDias = ContratoTrabajador::where('tipo_duracion', 'dias')->count();
+        $porMeses = ContratoTrabajador::where('tipo_duracion', 'meses')->count();
+
+        return [
+            'total' => $total,
+            'vigentes' => $vigentes,
+            'expirados' => $expirados,
+            'pendientes' => $pendientes,
+            'proximos_vencer' => $proximosVencer,
+            'vencen_semana' => $vencenEstaSeemana,
+            'por_dias' => $porDias,
+            'por_meses' => $porMeses,
+            'porcentaje_vigentes' => $total > 0 ? round(($vigentes / $total) * 100, 1) : 0,
+            'trabajadores_con_contrato' => ContratoTrabajador::distinct('id_trabajador')->count(),
+        ];
+    }
+
     /**
      * Mostrar contratos del trabajador (vista principal)
      */
