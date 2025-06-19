@@ -23,28 +23,40 @@
 
     <!-- Estadísticas Generales -->
     <div class="row mb-4">
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #007A4D !important;">
                 <div class="card-body text-center">
                     <i class="bi bi-file-check fs-1 text-success mb-2"></i>
                     <h3 class="text-success">{{ $estadisticas['vigentes'] }}</h3>
-                    <h6 class="text-muted">Contratos Vigentes</h6>
-                    <small class="text-success">{{ $estadisticas['porcentaje_vigentes'] }}% del total</small>
+                    <h6 class="text-muted">Vigentes</h6>
+                    <small class="text-success">En período activo</small>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #6f42c1 !important;">
+                <div class="card-body text-center">
+                    <i class="bi bi-file-earmark-check fs-1 text-primary mb-2"></i>
+                    <h3 class="text-primary">{{ $estadisticas['activos'] }}</h3>
+                    <h6 class="text-muted">Activos</h6>
+                    <small class="text-primary">{{ $estadisticas['porcentaje_activos'] }}% del total</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #dc3545 !important;">
                 <div class="card-body text-center">
                     <i class="bi bi-file-x fs-1 text-danger mb-2"></i>
                     <h3 class="text-danger">{{ $estadisticas['expirados'] }}</h3>
-                    <h6 class="text-muted">Contratos Expirados</h6>
+                    <h6 class="text-muted">Expirados</h6>
+                    <small class="text-muted">Activos vencidos</small>
                 </div>
             </div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #ffc107 !important;">
                 <div class="card-body text-center">
                     <i class="bi bi-clock fs-1 text-warning mb-2"></i>
@@ -55,13 +67,24 @@
             </div>
         </div>
         
-        <div class="col-lg-3 col-md-6 mb-3">
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
             <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #6c757d !important;">
                 <div class="card-body text-center">
-                    <i class="bi bi-people fs-1 text-secondary mb-2"></i>
-                    <h3 class="text-secondary">{{ $estadisticas['trabajadores_con_contrato'] }}</h3>
+                    <i class="bi bi-arrow-repeat fs-1 text-info mb-2"></i>
+                    <h3 class="text-info">{{ $estadisticas['renovados'] }}</h3>
+                    <h6 class="text-muted">Renovados</h6>
+                    <small class="text-muted">Reemplazados</small>
+                </div>
+            </div>
+        </div>
+        
+        <div class="col-lg-2 col-md-4 col-6 mb-3">
+            <div class="card border-0 shadow-sm h-100" style="border-top: 4px solid #28a745 !important;">
+                <div class="card-body text-center">
+                    <i class="bi bi-people fs-1 text-success mb-2"></i>
+                    <h3 class="text-success">{{ $estadisticas['trabajadores_con_contrato'] }}</h3>
                     <h6 class="text-muted">Trabajadores</h6>
-                    <small class="text-muted">Con contratos</small>
+                    <small class="text-success">Con contratos activos</small>
                 </div>
             </div>
         </div>
@@ -150,9 +173,6 @@
                                     <a href="{{ route('contratos.admin.index') }}" class="btn btn-outline-secondary">
                                         <i class="bi bi-arrow-clockwise me-1"></i> Limpiar
                                     </a>
-                                    <button type="button" class="btn btn-outline-primary" onclick="exportarExcel()">
-                                        <i class="bi bi-file-excel me-1"></i> Exportar
-                                    </button>
                                 </div>
                             </div>
                         </div>
@@ -339,12 +359,13 @@
 
                                                 <!-- Renovar contrato (solo si está próximo a vencer) -->
                                                 @if($contrato->estado_calculado === 'vigente' && $contrato->dias_restantes_calculados <= 30 && $contrato->trabajador)
-                                                <button type="button" 
-                                                        class="btn btn-sm btn-outline-warning" 
+                                                <a type="button" 
+                                                        class="btn btn-sm btn-outline-warning"
+                                                        href="{{ route('trabajadores.contratos.renovar', [$contrato->trabajador, $contrato]) }}"
                                                         title="Renovar contrato"
-                                                        onclick="mostrarModalRenovar({{ $contrato->id_contrato }}, '{{ $contrato->trabajador_nombre_completo }}')">
+                                                        >
                                                     <i class="bi bi-arrow-repeat"></i>
-                                                </button>
+                                                </a>
                                                 @endif
                                             </div>
                                         </td>
@@ -384,84 +405,10 @@
     </div>
 </div>
 
-<!-- Modal para renovar contrato (placeholder) -->
-<div class="modal fade" id="modalRenovarContrato" tabindex="-1">
-    <div class="modal-dialog modal-lg">
-        <div class="modal-content">
-            <div class="modal-header" style="background-color: #E6F2ED;">
-                <h5 class="modal-title" style="color: #007A4D;">
-                    <i class="bi bi-arrow-repeat me-2"></i>
-                    Renovar Contrato
-                </h5>
-                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-            </div>
-            <div class="modal-body">
-                <div class="text-center py-4">
-                    <i class="bi bi-tools display-4 text-muted"></i>
-                    <h5 class="mt-3">Funcionalidad en desarrollo</h5>
-                    <p class="text-muted">
-                        El formulario de renovación de contratos estará disponible próximamente.
-                    </p>
-                </div>
-            </div>
-        </div>
-    </div>
-</div>
-
 @endsection
-
-@push('styles')
-<style>
-    .card-hover:hover {
-        transform: translateY(-2px);
-        transition: all 0.3s ease;
-    }
-    
-    .table th {
-        font-weight: 600;
-        font-size: 0.875rem;
-        text-transform: uppercase;
-        letter-spacing: 0.5px;
-    }
-    
-    .badge-sm {
-        font-size: 0.75rem;
-        padding: 0.25rem 0.5rem;
-    }
-    
-    .avatar-sm {
-        flex-shrink: 0;
-    }
-    
-    .table-hover tbody tr:hover {
-        background-color: #F8FBF9 !important;
-    }
-    
-    .btn-group .btn {
-        margin: 0 1px;
-    }
-    
-    .alert {
-        border-left: 4px solid transparent;
-    }
-    
-    .alert-warning {
-        border-left-color: #ffc107;
-    }
-</style>
-@endpush
 
 @push('scripts')
 <script>
-    // Función para mostrar modal de renovar (placeholder)
-    function mostrarModalRenovar(contratoId, trabajadorNombre) {
-        console.log('Renovar contrato:', contratoId, 'Trabajador:', trabajadorNombre);
-        
-        // Por ahora solo mostrar el modal placeholder
-        const modal = new bootstrap.Modal(document.getElementById('modalRenovarContrato'));
-        modal.show();
-    }
-    
     // Función para exportar a Excel (placeholder)
     function exportarExcel() {
         alert('Funcionalidad de exportación próximamente disponible');

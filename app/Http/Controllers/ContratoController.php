@@ -233,6 +233,7 @@ class ContratoController extends Controller
                 'tipo_duracion' => $datosContrato['tipo_duracion'],
                 'duracion' => $duracionCalculada,
                 'duracion_meses' => $datosContrato['tipo_duracion'] === 'meses' ? $duracionCalculada : null,
+                'estatus' => ContratoTrabajador::ESTATUS_ACTIVO, // ✅ NUEVO: Estatus por defecto
                 'ruta_archivo' => $ruta
             ]);
 

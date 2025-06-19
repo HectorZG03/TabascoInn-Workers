@@ -16,18 +16,43 @@ class ContratoTrabajador extends Model
         'id_trabajador',
         'fecha_inicio_contrato',
         'fecha_fin_contrato',
-        'tipo_duracion',        // ✅ NUEVO: 'dias' o 'meses'
-        'duracion',             // ✅ NUEVO: cantidad en días o meses
-        'duracion_meses',       // ✅ MANTENER para compatibilidad
-        'ruta_archivo'
+        'tipo_duracion',
+        'duracion',
+        'estatus',                  // ✅ NUEVO
+        'contrato_anterior_id',     // ✅ NUEVO
+        'observaciones',            // ✅ NUEVO
+        'ruta_archivo',
+        'duracion_meses',           // Legacy
     ];
 
     protected $casts = [
         'fecha_inicio_contrato' => 'date',
         'fecha_fin_contrato' => 'date',
         'tipo_duracion' => 'string',
+        'estatus' => 'string',
         'duracion' => 'integer',
         'duracion_meses' => 'integer',
+        'contrato_anterior_id' => 'integer',
+    ];
+
+    // ✅ NUEVAS CONSTANTES DE ESTATUS
+    public const ESTATUS_ACTIVO = 'activo';
+    public const ESTATUS_TERMINADO = 'terminado';
+    public const ESTATUS_REVOCADO = 'revocado';
+    public const ESTATUS_RENOVADO = 'renovado';
+
+    public const TODOS_ESTATUS = [
+        self::ESTATUS_ACTIVO => 'Activo',
+        self::ESTATUS_TERMINADO => 'Terminado',
+        self::ESTATUS_REVOCADO => 'Revocado',
+        self::ESTATUS_RENOVADO => 'Renovado'
+    ];
+
+    public const COLORES_ESTATUS = [
+        self::ESTATUS_ACTIVO => 'success',
+        self::ESTATUS_TERMINADO => 'secondary',
+        self::ESTATUS_REVOCADO => 'danger',
+        self::ESTATUS_RENOVADO => 'info'
     ];
 
     // ===== RELACIONES =====
@@ -40,7 +65,45 @@ class ContratoTrabajador extends Model
         return $this->belongsTo(Trabajador::class, 'id_trabajador');
     }
 
+    /**
+     * ✅ NUEVA: Relación con contrato anterior (renovaciones)
+     */
+    public function contratoAnterior(): BelongsTo
+    {
+        return $this->belongsTo(ContratoTrabajador::class, 'contrato_anterior_id', 'id_contrato');
+    }
+
+    /**
+     * ✅ NUEVA: Relación con contratos posteriores (renovaciones)
+     */
+    public function renovaciones()
+    {
+        return $this->hasMany(ContratoTrabajador::class, 'contrato_anterior_id', 'id_contrato');
+    }
+
     // ===== MÉTODOS HELPER =====
+
+    /**
+     * ✅ ACTUALIZADO: Estado calculado vs estatus físico
+     */
+    public function getEstadoCalculadoAttribute(): string
+    {
+        // Si el estatus físico es revocado o renovado, respetarlo
+        if (in_array($this->estatus, [self::ESTATUS_REVOCADO, self::ESTATUS_RENOVADO])) {
+            return $this->estatus;
+        }
+
+        // Para activo y terminado, calcular basado en fechas
+        $hoy = Carbon::today();
+        
+        if ($hoy->isBefore($this->fecha_inicio_contrato)) {
+            return 'pendiente';
+        } elseif ($hoy->isAfter($this->fecha_fin_contrato)) {
+            return $this->estatus === self::ESTATUS_ACTIVO ? 'expirado' : $this->estatus;
+        } else {
+            return 'vigente';
+        }
+    }
 
     /**
      * ✅ NUEVO: Obtiene la duración formateada como texto
@@ -55,24 +118,122 @@ class ContratoTrabajador extends Model
     }
 
     /**
-     * ✅ NUEVO: Verifica si el contrato es por días
+     * ✅ ACTUALIZADO: Verifica si el contrato está realmente vigente
      */
+    public function estaVigente(): bool
+    {
+        if ($this->estatus !== self::ESTATUS_ACTIVO) {
+            return false;
+        }
+
+        $hoy = Carbon::today();
+        return $hoy->between($this->fecha_inicio_contrato, $this->fecha_fin_contrato);
+    }
+
+    /**
+     * ✅ NUEVO: Días restantes del contrato (solo si está activo)
+     */
+    public function diasRestantes(): int
+    {
+        if ($this->estatus !== self::ESTATUS_ACTIVO) {
+            return 0;
+        }
+
+        $hoy = Carbon::today();
+        
+        if ($hoy->isAfter($this->fecha_fin_contrato)) {
+            return 0;
+        }
+        
+        return $hoy->diffInDays($this->fecha_fin_contrato);
+    }
+
+    /**
+     * ✅ NUEVO: Verifica si puede renovarse
+     */
+    public function puedeRenovarse(): bool
+    {
+        // Solo contratos activos pueden renovarse
+        if ($this->estatus !== self::ESTATUS_ACTIVO) {
+            return false;
+        }
+
+        // Solo si está próximo a vencer (30 días) o ya venció
+        $diasRestantes = $this->diasRestantes();
+        return $diasRestantes <= 30;
+    }
+
+    /**
+     * ✅ NUEVO: Marcar como renovado
+     */
+    public function marcarComoRenovado(): bool
+    {
+        if ($this->estatus !== self::ESTATUS_ACTIVO) {
+            return false;
+        }
+
+        return $this->update([
+            'estatus' => self::ESTATUS_RENOVADO,
+            'observaciones' => ($this->observaciones ?? '') . "\n[" . now()->format('Y-m-d H:i') . "] Contrato renovado automáticamente."
+        ]);
+    }
+
+    /**
+     * ✅ NUEVO: Revocar contrato
+     */
+    public function revocar(string $motivo = null): bool
+    {
+        if (!in_array($this->estatus, [self::ESTATUS_ACTIVO])) {
+            return false;
+        }
+
+        $observacion = "[" . now()->format('Y-m-d H:i') . "] Contrato revocado.";
+        if ($motivo) {
+            $observacion .= " Motivo: {$motivo}";
+        }
+
+        return $this->update([
+            'estatus' => self::ESTATUS_REVOCADO,
+            'observaciones' => ($this->observaciones ?? '') . "\n" . $observacion
+        ]);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener color del badge según el estatus
+     */
+    public function getColorEstatusAttribute(): string
+    {
+        return self::COLORES_ESTATUS[$this->estatus] ?? 'secondary';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto del estatus
+     */
+    public function getTextoEstatusAttribute(): string
+    {
+        return self::TODOS_ESTATUS[$this->estatus] ?? 'Desconocido';
+    }
+
+    /**
+     * ✅ NUEVO: Verifica si es una renovación
+     */
+    public function esRenovacion(): bool
+    {
+        return !is_null($this->contrato_anterior_id);
+    }
+
+    // ===== MÉTODOS EXISTENTES ACTUALIZADOS =====
+
     public function esPorDias(): bool
     {
         return $this->tipo_duracion === 'dias';
     }
 
-    /**
-     * ✅ NUEVO: Verifica si el contrato es por meses
-     */
     public function esPorMeses(): bool
     {
         return $this->tipo_duracion === 'meses';
     }
 
-    /**
-     * ✅ NUEVO: Calcula la fecha de fin basada en inicio y duración
-     */
     public function calcularFechaFin(Carbon $fechaInicio = null): Carbon
     {
         $fecha = $fechaInicio ?? $this->fecha_inicio_contrato;
@@ -84,9 +245,6 @@ class ContratoTrabajador extends Model
         }
     }
 
-    /**
-     * ✅ NUEVO: Método estático para calcular fecha fin sin instancia
-     */
     public static function calcularFechaFinEstatico(Carbon $fechaInicio, int $duracion, string $tipo): Carbon
     {
         if ($tipo === 'dias') {
@@ -96,72 +254,56 @@ class ContratoTrabajador extends Model
         }
     }
 
-    /**
-     * ✅ NUEVO: Verifica si el contrato está vigente
-     */
-    public function estaVigente(): bool
-    {
-        $hoy = Carbon::today();
-        return $hoy->between($this->fecha_inicio_contrato, $this->fecha_fin_contrato);
-    }
+    // ===== SCOPES ACTUALIZADOS =====
 
     /**
-     * ✅ NUEVO: Días restantes del contrato
-     */
-    public function diasRestantes(): int
-    {
-        $hoy = Carbon::today();
-        
-        if ($hoy->isAfter($this->fecha_fin_contrato)) {
-            return 0; // Contrato expirado
-        }
-        
-        return $hoy->diffInDays($this->fecha_fin_contrato);
-    }
-
-    /**
-     * ✅ NUEVO: Estado del contrato
-     */
-    public function getEstadoAttribute(): string
-    {
-        $hoy = Carbon::today();
-        
-        if ($hoy->isBefore($this->fecha_inicio_contrato)) {
-            return 'pendiente';
-        } elseif ($hoy->isAfter($this->fecha_fin_contrato)) {
-            return 'expirado';
-        } else {
-            return 'vigente';
-        }
-    }
-
-    // ===== SCOPES =====
-
-    /**
-     * ✅ NUEVO: Contratos vigentes
+     * ✅ ACTUALIZADO: Contratos realmente vigentes (activos + en período)
      */
     public function scopeVigentes($query)
     {
         $hoy = Carbon::today();
-        return $query->where('fecha_inicio_contrato', '<=', $hoy)
+        return $query->where('estatus', self::ESTATUS_ACTIVO)
+                    ->where('fecha_inicio_contrato', '<=', $hoy)
                     ->where('fecha_fin_contrato', '>=', $hoy);
     }
 
     /**
-     * ✅ NUEVO: Contratos por tipo de duración
+     * ✅ NUEVO: Por estatus específico
      */
-    public function scopePorTipo($query, string $tipo)
+    public function scopePorEstatus($query, string $estatus)
     {
-        return $query->where('tipo_duracion', $tipo);
+        return $query->where('estatus', $estatus);
     }
 
     /**
-     * ✅ NUEVO: Contratos que expiran pronto
+     * ✅ ACTUALIZADO: Próximos a vencer (solo activos)
      */
     public function scopeProximosAVencer($query, int $dias = 30)
     {
         $fechaLimite = Carbon::today()->addDays($dias);
-        return $query->where('fecha_fin_contrato', '<=', $fechaLimite)
+        return $query->where('estatus', self::ESTATUS_ACTIVO)
+                    ->where('fecha_fin_contrato', '<=', $fechaLimite)
                     ->where('fecha_fin_contrato', '>=', Carbon::today());
+    }
+
+    /**
+     * ✅ NUEVO: Solo renovaciones
+     */
+    public function scopeRenovaciones($query)
+    {
+        return $query->whereNotNull('contrato_anterior_id');
+    }
+
+    /**
+     * ✅ NUEVO: Contratos originales (no renovaciones)
+     */
+    public function scopeOriginales($query)
+    {
+        return $query->whereNull('contrato_anterior_id');
+    }
+
+    public function scopePorTipo($query, string $tipo)
+    {
+        return $query->where('tipo_duracion', $tipo);
     }
 }

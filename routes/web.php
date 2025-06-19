@@ -102,29 +102,32 @@ Route::middleware(['auth'])->group(function () {
             ->name('historial-promociones');
 
        
-        // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - ACTUALIZADAS
-        Route::prefix('{trabajador}/contratos')->name('contratos.')->group(function () {
-            // Mostrar contratos del trabajador (vista principal)
-            Route::get('/', [AdminContratosController::class, 'show'])->name('show');
-            
-            // ✅ NUEVO: Crear contrato (formulario)
-            Route::get('/crear', [AdminContratosController::class, 'create'])->name('crear.form');
-            
-            // ✅ NUEVO: Crear contrato (procesar)
-            Route::post('/crear', [AdminContratosController::class, 'store'])->name('crear');
-            
-            // ✅ NUEVO: Renovar contrato específico
-            Route::post('/{contrato}/renovar', [AdminContratosController::class, 'renovar'])->name('renovar');
-            
-            // Descargar contrato específico (existente)
-            Route::get('/{contrato}/descargar', [AdminContratosController::class, 'descargar'])->name('descargar');
-            
-            // ✅ NUEVO: API para verificar si puede crear contrato
-            Route::get('/api/verificar-creacion', [AdminContratosController::class, 'verificarCreacion'])->name('api.verificar');
-            
-            // API: Obtener resumen de contratos (existente)
-            Route::get('/api/resumen', [AdminContratosController::class, 'obtenerResumen'])->name('api.resumen');
-        });
+    // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - CORREGIDAS
+    Route::prefix('{trabajador}/contratos')->name('contratos.')->group(function () {
+        // Mostrar contratos del trabajador (vista principal)
+        Route::get('/', [AdminContratosController::class, 'show'])->name('show');
+        
+        // ✅ NUEVO: Crear contrato (formulario)
+        Route::get('/crear', [AdminContratosController::class, 'create'])->name('crear.form');
+        
+        // ✅ NUEVO: Crear contrato (procesar)
+        Route::post('/crear', [AdminContratosController::class, 'store'])->name('crear');
+        
+        // ✅ CORREGIDO: Vista del formulario de renovación (GET)
+        Route::get('/{contrato}/renovar', [AdminContratosController::class, 'mostrarRenovacion'])->name('renovar.form');
+        
+        // ✅ NUEVO: Procesar renovación (POST)
+        Route::post('/{contrato}/renovar', [AdminContratosController::class, 'renovar'])->name('renovar');
+        
+        // Descargar contrato específico (existente)
+        Route::get('/{contrato}/descargar', [AdminContratosController::class, 'descargar'])->name('descargar');
+        
+        // ✅ NUEVO: API para verificar si puede crear contrato
+        Route::get('/api/verificar-creacion', [AdminContratosController::class, 'verificarCreacion'])->name('api.verificar');
+        
+        // API: Obtener resumen de contratos (existente)
+        Route::get('/api/resumen', [AdminContratosController::class, 'obtenerResumen'])->name('api.resumen');
+    });
 
     
         // ✅ RUTAS DEL PERFIL AVANZADO - Controlador Separado

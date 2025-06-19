@@ -37,17 +37,23 @@ class AdminContratosController extends Controller
             END as dias_restantes_calculados')
         ]);
 
-        // ✅ FILTROS AVANZADOS
+        // ✅ FILTROS AVANZADOS ACTUALIZADOS
         if ($request->filled('estado')) {
             $estado = $request->estado;
             if ($estado === 'vigente') {
-                $query->whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()');
+                $query->where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+                      ->whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()');
             } elseif ($estado === 'expirado') {
-                $query->whereRaw('fecha_fin_contrato < CURDATE()');
+                $query->where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+                      ->whereRaw('fecha_fin_contrato < CURDATE()');
             } elseif ($estado === 'pendiente') {
-                $query->whereRaw('fecha_inicio_contrato > CURDATE()');
+                $query->where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+                      ->whereRaw('fecha_inicio_contrato > CURDATE()');
             } elseif ($estado === 'proximo_vencer') {
-                $query->whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)');
+                $query->where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+                      ->whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)');
+            } elseif (in_array($estado, [ContratoTrabajador::ESTATUS_ACTIVO, ContratoTrabajador::ESTATUS_TERMINADO, ContratoTrabajador::ESTATUS_REVOCADO, ContratoTrabajador::ESTATUS_RENOVADO])) {
+                $query->where('estatus', $estado);
             }
         }
 
@@ -95,14 +101,19 @@ class AdminContratosController extends Controller
 
         // ✅ PROCESAR DATOS ADICIONALES después de la consulta
         foreach ($contratos as $contrato) {
-            // Asegurar datos calculados
-            $contrato->estado_calculado = $contrato->estado_calculado ?? $contrato->estado;
+            // ✅ ACTUALIZADO: Usar estado calculado del modelo
+            $contrato->estado_calculado = $contrato->estado_calculado ?? $contrato->estatus;
             $contrato->dias_restantes_calculados = (int) ($contrato->dias_restantes_calculados ?? 0);
             
             // Información formateada
             $contrato->duracion_completa = $this->formatearDuracionCompleta($contrato);
             $contrato->color_estado = $this->obtenerColorEstado($contrato->estado_calculado);
             $contrato->archivo_existe = $contrato->ruta_archivo && Storage::disk('public')->exists($contrato->ruta_archivo);
+            
+            // ✅ NUEVO: Información de estatus físico
+            $contrato->estatus_fisico = $contrato->estatus;
+            $contrato->texto_estatus = $contrato->texto_estatus;
+            $contrato->color_estatus = $contrato->color_estatus;
             
             // Información del trabajador si existe
             if ($contrato->trabajador) {
@@ -116,23 +127,22 @@ class AdminContratosController extends Controller
         // ✅ ESTADÍSTICAS GENERALES
         $estadisticas = $this->calcularEstadisticasGenerales();
 
-        // ✅ DATOS PARA FILTROS
+        // ✅ DATOS PARA FILTROS ACTUALIZADOS
         $areas = Area::orderBy('nombre_area')->get();
         $estados_filtro = [
-            'vigente' => 'Vigentes',
-            'expirado' => 'Expirados',
-            'pendiente' => 'Pendientes',
-            'proximo_vencer' => 'Próximos a vencer (30 días)'
+            'vigente' => 'Vigentes (activos en período)',
+            'pendiente' => 'Pendientes (activos, aún no inician)',
+            'expirado' => 'Expirados (activos pero vencidos)',
+            'proximo_vencer' => 'Próximos a vencer (30 días)',
+            ContratoTrabajador::ESTATUS_ACTIVO => 'Todos los activos',
+            ContratoTrabajador::ESTATUS_TERMINADO => 'Terminados',
+            ContratoTrabajador::ESTATUS_REVOCADO => 'Revocados',
+            ContratoTrabajador::ESTATUS_RENOVADO => 'Renovados'
         ];
         $tipos_duracion = [
             'dias' => 'Por días',
             'meses' => 'Por meses'
         ];
-
-        Log::info('✅ Vista de administración de contratos consultada', [
-            'total_contratos' => $contratos->total(),
-            'filtros_aplicados' => $request->except(['page']),
-        ]);
 
         return view('trabajadores.contratos.admin_contratos', compact(
             'contratos',
@@ -144,38 +154,66 @@ class AdminContratosController extends Controller
     }
 
     /**
-     * ✅ NUEVO: Calcular estadísticas generales del sistema
+     * ✅ ACTUALIZADO: Calcular estadísticas generales con nuevo estatus
      */
     private function calcularEstadisticasGenerales(): array
     {
-        $hoy = Carbon::today();
-        
         $total = ContratoTrabajador::count();
         
-        $vigentes = ContratoTrabajador::whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()')->count();
+        // ✅ NUEVO: Usar campo estatus físico
+        $activos = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)->count();
+        $terminados = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_TERMINADO)->count();
+        $revocados = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_REVOCADO)->count();
+        $renovados = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_RENOVADO)->count();
         
-        $expirados = ContratoTrabajador::whereRaw('fecha_fin_contrato < CURDATE()')->count();
+        // ✅ MEJORADO: Combinar estatus físico con estado temporal
+        $hoy = Carbon::today();
         
-        $pendientes = ContratoTrabajador::whereRaw('fecha_inicio_contrato > CURDATE()')->count();
+        // Contratos realmente vigentes (activos + en período)
+        $vigentes = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+            ->whereRaw('fecha_inicio_contrato <= CURDATE() AND fecha_fin_contrato >= CURDATE()')
+            ->count();
+            
+        // Contratos activos pero aún no iniciados (pendientes)
+        $pendientes = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+            ->whereRaw('fecha_inicio_contrato > CURDATE()')
+            ->count();
+            
+        // Contratos activos pero ya vencidos por fecha
+        $expirados = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+            ->whereRaw('fecha_fin_contrato < CURDATE()')
+            ->count();
         
-        $proximosVencer = ContratoTrabajador::whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)')->count();
+        // Próximos a vencer (30 días)
+        $proximosVencer = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+            ->whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 30 DAY)')
+            ->count();
         
-        $vencenEstaSeemana = ContratoTrabajador::whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)')->count();
+        // Vencen esta semana
+        $vencenEstaSeemana = ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+            ->whereRaw('fecha_fin_contrato >= CURDATE() AND fecha_fin_contrato <= DATE_ADD(CURDATE(), INTERVAL 7 DAY)')
+            ->count();
         
         $porDias = ContratoTrabajador::where('tipo_duracion', 'dias')->count();
         $porMeses = ContratoTrabajador::where('tipo_duracion', 'meses')->count();
 
         return [
             'total' => $total,
+            'activos' => $activos,
             'vigentes' => $vigentes,
-            'expirados' => $expirados,
             'pendientes' => $pendientes,
+            'expirados' => $expirados,
+            'terminados' => $terminados,
+            'revocados' => $revocados,
+            'renovados' => $renovados,
             'proximos_vencer' => $proximosVencer,
             'vencen_semana' => $vencenEstaSeemana,
             'por_dias' => $porDias,
             'por_meses' => $porMeses,
             'porcentaje_vigentes' => $total > 0 ? round(($vigentes / $total) * 100, 1) : 0,
-            'trabajadores_con_contrato' => ContratoTrabajador::distinct('id_trabajador')->count(),
+            'porcentaje_activos' => $total > 0 ? round(($activos / $total) * 100, 1) : 0,
+            'trabajadores_con_contrato' => ContratoTrabajador::where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
+                ->distinct('id_trabajador')->count(),
         ];
     }
 
@@ -588,7 +626,32 @@ class AdminContratosController extends Controller
     }
 
     /**
-     * ✅ NUEVO: Renovar contrato existente
+     * ✅ NUEVO: Mostrar formulario de renovación
+     */
+    public function mostrarRenovacion(Trabajador $trabajador, ContratoTrabajador $contrato)
+    {
+        // Verificar que el contrato pertenece al trabajador
+        if ($contrato->id_trabajador !== $trabajador->id_trabajador) {
+            abort(403, 'No autorizado para renovar este contrato');
+        }
+
+        // Cargar relaciones necesarias
+        $trabajador->load(['fichaTecnica.categoria.area']);
+
+        // Obtener renovaciones anteriores de este contrato
+        $renovaciones = ContratoTrabajador::where('contrato_anterior_id', $contrato->id_contrato)
+            ->orderBy('fecha_inicio_contrato', 'desc')
+            ->get();
+
+        return view('trabajadores.contratos.renovar_contrato', compact(
+            'trabajador',
+            'contrato', 
+            'renovaciones'
+        ));
+    }
+
+    /**
+     * ✅ ACTUALIZADO: Renovar contrato existente con nuevo estatus
      */
     public function renovar(Request $request, Trabajador $trabajador, ContratoTrabajador $contrato)
     {
@@ -597,10 +660,9 @@ class AdminContratosController extends Controller
             abort(403, 'No autorizado para renovar este contrato');
         }
 
-        // Verificar que el contrato está próximo a vencer o ya venció
-        $diasRestantes = $contrato->diasRestantes();
-        if ($diasRestantes > 30 && $contrato->estaVigente()) {
-            return back()->withErrors(['error' => 'Solo se pueden renovar contratos próximos a vencer (30 días o menos)']);
+        // ✅ NUEVO: Verificar que el contrato puede renovarse
+        if ($contrato->estatus !== ContratoTrabajador::ESTATUS_ACTIVO) {
+            return back()->withErrors(['error' => 'Solo se pueden renovar contratos activos']);
         }
 
         $validated = $request->validate([
@@ -628,11 +690,17 @@ class AdminContratosController extends Controller
             'fecha_inicio.after_or_equal' => 'La renovación debe iniciar después del contrato actual',
             'fecha_fin.required' => 'La fecha de fin es obligatoria',
             'fecha_fin.after' => 'La fecha de fin debe ser posterior al inicio',
+            'tipo_duracion.required' => 'Debe especificar el tipo de duración',
+            'tipo_duracion.in' => 'Tipo de duración no válido',
+            'observaciones_renovacion.max' => 'Las observaciones no pueden exceder 500 caracteres'
         ]);
 
         DB::beginTransaction();
         
         try {
+            // ✅ NUEVO: Marcar contrato actual como renovado
+            $contrato->marcarComoRenovado();
+
             // Crear nuevo contrato (renovación)
             $contratoController = new ContratoController();
             $nuevoContrato = $contratoController->generarDefinitivo($trabajador, [
@@ -641,35 +709,55 @@ class AdminContratosController extends Controller
                 'tipo_duracion' => $validated['tipo_duracion'],
             ]);
 
-            // Marcar como renovación del contrato anterior
+            // ✅ ACTUALIZADO: Marcar como renovación con observaciones mejoradas
+            $observacionesRenovacion = "Renovación del contrato #{$contrato->id_contrato} " .
+                                     "(período: {$contrato->fecha_inicio_contrato->format('d/m/Y')} - {$contrato->fecha_fin_contrato->format('d/m/Y')}).";
+            
+            if (!empty($validated['observaciones_renovacion'])) {
+                $observacionesRenovacion .= "\n" . trim($validated['observaciones_renovacion']);
+            }
+
             $nuevoContrato->update([
-                'observaciones' => "Renovación del contrato #{$contrato->id_contrato}. " . 
-                                 ($validated['observaciones_renovacion'] ?? ''),
-                'contrato_anterior_id' => $contrato->id_contrato
+                'contrato_anterior_id' => $contrato->id_contrato,
+                'observaciones' => $observacionesRenovacion,
+                'estatus' => ContratoTrabajador::ESTATUS_ACTIVO // ✅ NUEVO: Asegurar que esté activo
             ]);
 
             DB::commit();
 
-            Log::info('✅ Contrato renovado', [
+            Log::info('✅ Contrato renovado exitosamente', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'contrato_anterior_id' => $contrato->id_contrato,
-                'nuevo_contrato_id' => $nuevoContrato->id_contrato
+                'nuevo_contrato_id' => $nuevoContrato->id_contrato,
+                'fecha_inicio_renovacion' => $validated['fecha_inicio'],
+                'fecha_fin_renovacion' => $validated['fecha_fin'],
+                'tipo_duracion' => $validated['tipo_duracion']
             ]);
 
-        return redirect()->route('trabajadores.perfil.show', $trabajador)
-                    ->with('success', 'Contrato renovado exitosamente')
-                    ->with('activeTab', 'contratos');
+            $fechaInicio = \Carbon\Carbon::parse($validated['fecha_inicio']);
+            $fechaFin = \Carbon\Carbon::parse($validated['fecha_fin']);
+            
+            $mensaje = "Contrato renovado exitosamente para {$trabajador->nombre_completo}. ";
+            $mensaje .= "Nueva vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+            $mensaje .= "El contrato anterior ha sido marcado como renovado.";
+
+            return redirect()->route('trabajadores.contratos.show', $trabajador)
+                        ->with('success', $mensaje);
 
         } catch (\Exception $e) {
             DB::rollback();
             
             Log::error('💥 Error al renovar contrato', [
                 'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
                 'contrato_id' => $contrato->id_contrato,
-                'trabajador_id' => $trabajador->id_trabajador
+                'trabajador_id' => $trabajador->id_trabajador,
+                'request_data' => $request->except(['_token'])
             ]);
 
-            return back()->withErrors(['error' => 'Error al renovar el contrato: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'Error al renovar el contrato: ' . $e->getMessage()])
+                        ->withInput();
         }
     }
 
