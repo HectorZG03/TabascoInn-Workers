@@ -78,6 +78,23 @@
                     @enderror
                 </div>
 
+                <!-- ✅ NUEVO: Lugar de Nacimiento -->
+                <div class="col-md-4 mb-3">
+                    <label for="lugar_nacimiento" class="form-label">
+                        <i class="bi bi-geo"></i> Lugar de Nacimiento
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('lugar_nacimiento') is-invalid @enderror" 
+                           id="lugar_nacimiento" 
+                           name="lugar_nacimiento" 
+                           value="{{ old('lugar_nacimiento', $trabajador->lugar_nacimiento) }}"
+                           placeholder="Ej: Villahermosa, Tabasco"
+                           maxlength="100">
+                    @error('lugar_nacimiento')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
                 <!-- CURP -->
                 <div class="col-md-4 mb-3">
                     <label for="curp" class="form-label">
@@ -94,7 +111,9 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+            </div>
 
+            <div class="row">
                 <!-- RFC -->
                 <div class="col-md-4 mb-3">
                     <label for="rfc" class="form-label">
@@ -111,9 +130,7 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-            </div>
 
-            <div class="row">
                 <!-- NSS -->
                 <div class="col-md-4 mb-3">
                     <label for="no_nss" class="form-label">
@@ -146,7 +163,9 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+            </div>
 
+            <div class="row">
                 <!-- Correo -->
                 <div class="col-md-4 mb-3">
                     <label for="correo" class="form-label">
@@ -161,19 +180,94 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+
+                <!-- ✅ NUEVO: Estado Actual -->
+                <div class="col-md-4 mb-3">
+                    <label for="estado_actual" class="form-label">
+                        <i class="bi bi-map"></i> Estado Actual
+                    </label>
+                    <select class="form-select @error('estado_actual') is-invalid @enderror" 
+                            id="estado_actual" 
+                            name="estado_actual">
+                        <option value="">Seleccionar estado...</option>
+                        @php
+                            $estados = \App\Models\Trabajador::ESTADOS_MEXICO ?? [
+                                'Aguascalientes' => 'Aguascalientes',
+                                'Baja California' => 'Baja California',
+                                'Baja California Sur' => 'Baja California Sur',
+                                'Campeche' => 'Campeche',
+                                'Chiapas' => 'Chiapas',
+                                'Chihuahua' => 'Chihuahua',
+                                'Ciudad de México' => 'Ciudad de México',
+                                'Coahuila' => 'Coahuila',
+                                'Colima' => 'Colima',
+                                'Durango' => 'Durango',
+                                'Estado de México' => 'Estado de México',
+                                'Guanajuato' => 'Guanajuato',
+                                'Guerrero' => 'Guerrero',
+                                'Hidalgo' => 'Hidalgo',
+                                'Jalisco' => 'Jalisco',
+                                'Michoacán' => 'Michoacán',
+                                'Morelos' => 'Morelos',
+                                'Nayarit' => 'Nayarit',
+                                'Nuevo León' => 'Nuevo León',
+                                'Oaxaca' => 'Oaxaca',
+                                'Puebla' => 'Puebla',
+                                'Querétaro' => 'Querétaro',
+                                'Quintana Roo' => 'Quintana Roo',
+                                'San Luis Potosí' => 'San Luis Potosí',
+                                'Sinaloa' => 'Sinaloa',
+                                'Sonora' => 'Sonora',
+                                'Tabasco' => 'Tabasco',
+                                'Tamaulipas' => 'Tamaulipas',
+                                'Tlaxcala' => 'Tlaxcala',
+                                'Veracruz' => 'Veracruz',
+                                'Yucatán' => 'Yucatán',
+                                'Zacatecas' => 'Zacatecas',
+                            ];
+                        @endphp
+                        @foreach($estados as $clave => $nombre)
+                            <option value="{{ $clave }}" 
+                                    {{ old('estado_actual', $trabajador->estado_actual) == $clave ? 'selected' : '' }}>
+                                {{ $nombre }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('estado_actual')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- ✅ NUEVO: Ciudad Actual -->
+                <div class="col-md-4 mb-3">
+                    <label for="ciudad_actual" class="form-label">
+                        <i class="bi bi-building"></i> Ciudad Actual
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('ciudad_actual') is-invalid @enderror" 
+                           id="ciudad_actual" 
+                           name="ciudad_actual" 
+                           value="{{ old('ciudad_actual', $trabajador->ciudad_actual) }}"
+                           placeholder="Ej: Villahermosa"
+                           maxlength="50">
+                    @error('ciudad_actual')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
             </div>
 
             <div class="row">
                 <!-- Dirección -->
                 <div class="col-md-8 mb-3">
                     <label for="direccion" class="form-label">
-                        <i class="bi bi-geo-alt"></i> Dirección
+                        <i class="bi bi-geo-alt"></i> Dirección Completa
                     </label>
                     <input type="text" 
                            class="form-control @error('direccion') is-invalid @enderror" 
                            id="direccion" 
                            name="direccion" 
-                           value="{{ old('direccion', $trabajador->direccion) }}">
+                           value="{{ old('direccion', $trabajador->direccion) }}"
+                           placeholder="Calle, número, colonia">
                     @error('direccion')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror

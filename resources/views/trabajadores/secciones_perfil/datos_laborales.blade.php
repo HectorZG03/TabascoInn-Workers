@@ -175,6 +175,136 @@
                         </div>
                     </div>
 
+                    <!-- ✅ NUEVA SECCIÓN: HORARIO LABORAL -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="border-bottom pb-2">
+                                <i class="bi bi-clock"></i> Horario Laboral
+                            </h6>
+                        </div>
+                        
+                        <!-- Hora de Entrada -->
+                        <div class="col-md-6 mb-3">
+                            <label for="hora_entrada" class="form-label">
+                                <i class="bi bi-door-open"></i> Hora de Entrada
+                            </label>
+                            <input type="time" 
+                                   class="form-control @error('hora_entrada') is-invalid @enderror" 
+                                   id="hora_entrada" 
+                                   name="hora_entrada" 
+                                   value="{{ old('hora_entrada', optional($trabajador->fichaTecnica)->hora_entrada ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_entrada)->format('H:i') : '') }}">
+                            @error('hora_entrada')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <!-- Hora de Salida -->
+                        <div class="col-md-6 mb-3">
+                            <label for="hora_salida" class="form-label">
+                                <i class="bi bi-door-closed"></i> Hora de Salida
+                            </label>
+                            <input type="time" 
+                                   class="form-control @error('hora_salida') is-invalid @enderror" 
+                                   id="hora_salida" 
+                                   name="hora_salida" 
+                                   value="{{ old('hora_salida', optional($trabajador->fichaTecnica)->hora_salida ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_salida)->format('H:i') : '') }}">
+                            @error('hora_salida')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <!-- Días Laborables -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-calendar-week"></i> Días Laborables
+                            </label>
+                            <div class="dias-laborables-container">
+                                @php
+                                    $diasLaborablesActuales = old('dias_laborables', optional($trabajador->fichaTecnica)->dias_laborables ?? []);
+                                    // Convertir a array si es string (JSON)
+                                    if (is_string($diasLaborablesActuales)) {
+                                        $diasLaborablesActuales = json_decode($diasLaborablesActuales, true) ?? [];
+                                    }
+                                @endphp
+                                
+                                @foreach(\App\Models\FichaTecnica::DIAS_SEMANA as $key => $dia)
+                                    <div class="form-check form-check-inline">
+                                        <input class="form-check-input" 
+                                               type="checkbox" 
+                                               id="dias_laborables_{{ $key }}"
+                                               name="dias_laborables[]"
+                                               value="{{ $key }}"
+                                               {{ in_array($key, $diasLaborablesActuales) ? 'checked' : '' }}>
+                                        <label class="form-check-label" for="dias_laborables_{{ $key }}">{{ $dia }}</label>
+                                    </div>
+                                @endforeach
+                            </div>
+                            @error('dias_laborables')
+                                <div class="invalid-feedback d-block">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <!-- Días de Descanso (solo lectura) -->
+                        <div class="col-md-12 mb-3">
+                            <label class="form-label">
+                                <i class="bi bi-calendar-event"></i> Días de Descanso
+                            </label>
+                            <div class="dias-descanso-container">
+                                @php
+                                    $diasDescanso = \App\Models\FichaTecnica::calcularDiasDescanso($diasLaborablesActuales);
+                                    $diasDescansoTexto = array_map(function($dia) {
+                                        return \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? $dia;
+                                    }, $diasDescanso);
+                                @endphp
+                                <p class="form-control-static">{{ implode(', ', $diasDescansoTexto) ?: 'No calculados' }}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ NUEVA SECCIÓN: BENEFICIARIO -->
+                    <div class="row mt-4">
+                        <div class="col-12">
+                            <h6 class="border-bottom pb-2">
+                                <i class="bi bi-person-heart"></i> Beneficiario Principal
+                            </h6>
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="beneficiario_nombre" class="form-label">
+                                <i class="bi bi-person-badge"></i> Nombre Completo
+                            </label>
+                            <input type="text" 
+                                   class="form-control @error('beneficiario_nombre') is-invalid @enderror" 
+                                   id="beneficiario_nombre" 
+                                   name="beneficiario_nombre" 
+                                   value="{{ old('beneficiario_nombre', optional($trabajador->fichaTecnica)->beneficiario_nombre ?? '') }}"
+                                   placeholder="Nombre completo del beneficiario">
+                            @error('beneficiario_nombre')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        
+                        <div class="col-md-6 mb-3">
+                            <label for="beneficiario_parentesco" class="form-label">
+                                <i class="bi bi-diagram-3"></i> Parentesco
+                            </label>
+                            <select class="form-select @error('beneficiario_parentesco') is-invalid @enderror" 
+                                    id="beneficiario_parentesco" 
+                                    name="beneficiario_parentesco">
+                                <option value="">Seleccionar parentesco...</option>
+                                @foreach(\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO as $key => $parentesco)
+                                    <option value="{{ $key }}" 
+                                        {{ old('beneficiario_parentesco', optional($trabajador->fichaTecnica)->beneficiario_parentesco ?? '') == $key ? 'selected' : '' }}>
+                                        {{ $parentesco }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('beneficiario_parentesco')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
+                        </div>
+                    </div>
+
                     <div class="d-flex justify-content-end">
                         <button type="submit" class="btn btn-success">
                             <i class="bi bi-save"></i> Actualizar Datos Laborales
