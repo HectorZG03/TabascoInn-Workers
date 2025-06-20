@@ -5,7 +5,7 @@
 @section('title', 'Perfil de ' . $trabajador->nombre_completo . ' - Hotel')
 
 @section('content')
-<div class="container-fluid">
+<div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->
     <div class="row mb-4">
         <div class="col-12">
@@ -73,7 +73,7 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
-                        {{-- ✅ NUEVA PESTAÑA DE CONTRATOS --}}
+                        {{-- ✅ PESTAÑA DE CONTRATOS --}}
                         <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
@@ -107,9 +107,8 @@
                     @include('trabajadores.secciones_perfil.documentos')
                 </div>
 
-                {{-- ✅ NUEVA PESTAÑA DE CONTRATOS --}}
+                {{-- ✅ PESTAÑA DE CONTRATOS (Carga dinámica via AJAX) --}}
                 <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
-                    {{-- El contenido se carga dinámicamente via AJAX para mejor rendimiento --}}
                     <div id="contratos-content">
                         <div class="text-center py-5">
                             <div class="spinner-border text-primary" role="status">
@@ -130,110 +129,12 @@
 {{-- ✅ MODALES SEPARADOS --}}
 @include('trabajadores.modales.subir_documento', ['trabajador' => $trabajador])
 
-{{-- ✅ JAVASCRIPT ESPECÍFICO DEL PERFIL --}}
-@include('trabajadores.secciones_perfil.perfil_scripts')
-
-{{-- Agregar esta línea al final del archivo perfil_trabajador.blade.php, justo antes del @endsection --}}
-
-{{-- ✅ MODALES SEPARADOS --}}
-@include('trabajadores.modales.subir_documento', ['trabajador' => $trabajador])
-
-{{-- ✅ NUEVO: Modal para crear contrato (solo si tiene ficha técnica) --}}
+{{-- ✅ Modal para crear contrato (solo si tiene ficha técnica) --}}
 @if($trabajador->fichaTecnica)
     @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 @endif
 
-{{-- ✅ JavaScript para carga dinámica de contratos ACTUALIZADO --}}
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // ✅ Cargar contratos cuando se active la pestaña
-    const contratosTab = document.getElementById('nav-contratos-tab');
-    let contratosLoaded = false;
-    
-    if (contratosTab) {
-        contratosTab.addEventListener('shown.bs.tab', function (event) {
-            if (!contratosLoaded) {
-                loadContratos();
-                contratosLoaded = true;
-            }
-        });
-    }
-    
-    // ✅ Función para cargar contratos via AJAX
-    function loadContratos() {
-        const contentDiv = document.getElementById('contratos-content');
-        
-        // ✅ Mostrar spinner de carga más atractivo
-        contentDiv.innerHTML = `
-            <div class="text-center py-5">
-                <div class="spinner-border text-primary mb-3" role="status" style="width: 3rem; height: 3rem;">
-                    <span class="visually-hidden">Cargando contratos...</span>
-                </div>
-                <h5 class="text-muted">Cargando contratos...</h5>
-                <p class="text-muted">Obteniendo información de contratos del trabajador</p>
-            </div>
-        `;
-        
-        fetch('{{ route("trabajadores.contratos.show", $trabajador) }}')
-            .then(response => {
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
-                return response.text();
-            })
-            .then(html => {
-                contentDiv.innerHTML = html;
-                console.log('✅ Contratos cargados exitosamente');
-                
-                // ✅ Reinicializar Bootstrap componentes si es necesario
-                if (typeof bootstrap !== 'undefined') {
-                    // Reinicializar tooltips en el contenido cargado
-                    const tooltips = contentDiv.querySelectorAll('[data-bs-toggle="tooltip"]');
-                    tooltips.forEach(tooltip => {
-                        new bootstrap.Tooltip(tooltip);
-                    });
-                }
-            })
-            .catch(error => {
-                console.error('Error al cargar contratos:', error);
-                contentDiv.innerHTML = `
-                    <div class="text-center py-5">
-                        <div class="text-danger mb-3">
-                            <i class="bi bi-exclamation-triangle" style="font-size: 3rem;"></i>
-                        </div>
-                        <h5 class="text-danger">Error al cargar contratos</h5>
-                        <p class="text-muted">No se pudieron cargar los contratos del trabajador.</p>
-                        <div class="alert alert-danger d-inline-block">
-                            <strong>Error:</strong> ${error.message}
-                        </div>
-                        <div class="mt-3">
-                            <button class="btn btn-outline-primary" onclick="location.reload()">
-                                <i class="bi bi-arrow-clockwise"></i> Reintentar
-                            </button>
-                        </div>
-                    </div>
-                `;
-            });
-    }
-    
-    // ✅ Si se accede directamente a la pestaña de contratos via URL o session
-    const urlParams = new URLSearchParams(window.location.search);
-    const activeTab = urlParams.get('tab') || '{{ session("activeTab") }}';
-    
-    if (activeTab === 'contratos' && !contratosLoaded) {
-        // Activar la pestaña de contratos
-        const contratosTabElement = document.querySelector('[data-bs-target="#nav-contratos"]');
-        if (contratosTabElement) {
-            const tab = new bootstrap.Tab(contratosTabElement);
-            tab.show();
-        }
-        
-        setTimeout(() => {
-            loadContratos();
-            contratosLoaded = true;
-        }, 100);
-    }
-});
-</script>
+{{-- ✅ JAVASCRIPT CENTRALIZADO DEL PERFIL --}}
+@include('trabajadores.secciones_perfil.perfil_scripts')
 
 @endsection

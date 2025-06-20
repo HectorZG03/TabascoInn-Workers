@@ -296,39 +296,6 @@
                 @enderror
             </div>
         </div>
-
-        <!-- ✅ NUEVA SECCIÓN: Resumen Calculado -->
-        <div class="row mt-3">
-            <div class="col-12">
-                <div class="card border-success">
-                    <div class="card-header bg-light">
-                        <h6 class="mb-0 text-success">
-                            <i class="bi bi-calculator"></i> Resumen Automático
-                        </h6>
-                    </div>
-                    <div class="card-body">
-                        <div class="row text-center">
-                            <div class="col-md-3">
-                                <div class="h5 text-primary mb-0" id="horas-diarias">-</div>
-                                <small class="text-muted">Horas/día</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-success mb-0" id="horas-semanales">-</div>
-                                <small class="text-muted">Horas/semana</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-info mb-0" id="dias-laborables-count">-</div>
-                                <small class="text-muted">Días laborables</small>
-                            </div>
-                            <div class="col-md-3">
-                                <div class="h5 text-warning mb-0" id="turno-calculado">-</div>
-                                <small class="text-muted">Turno</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
     </div>
 </div>
 

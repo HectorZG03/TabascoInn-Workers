@@ -33,7 +33,7 @@
                     </div>
                 </div>
 
-                <!-- ✅ DATOS DEL CONTRATO - SIN campo duración manual -->
+                <!-- ✅ DATOS DEL CONTRATO - SIN select de tipo de duración -->
                 <div class="card mb-4">
                     <div class="card-header bg-success text-white">
                         <h6 class="mb-0">
@@ -43,7 +43,7 @@
                     <div class="card-body">
                         <div class="row">
                             <!-- Fecha de Inicio -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="fecha_inicio_contrato" class="form-label">
                                     <i class="bi bi-calendar-check"></i> Fecha de Inicio *
                                 </label>
@@ -57,7 +57,7 @@
                             </div>
 
                             <!-- Fecha de Fin -->
-                            <div class="col-md-4 mb-3">
+                            <div class="col-md-6 mb-3">
                                 <label for="fecha_fin_contrato" class="form-label">
                                     <i class="bi bi-calendar-x"></i> Fecha de Fin *
                                 </label>
@@ -67,31 +67,49 @@
                                        required>
                                 <div class="form-text">Fecha en que termina el contrato</div>
                             </div>
+                        </div>
 
-                            <!-- Tipo de Duración -->
-                            <div class="col-md-4 mb-3">
-                                <label for="tipo_duracion" class="form-label">
-                                    <i class="bi bi-clock-history"></i> Tipo de Contrato *
-                                </label>
-                                <select class="form-select" id="tipo_duracion" required>
-                                    <option value="meses" selected>Por Meses</option>
-                                    <option value="dias">Por Días</option>
-                                </select>
-                                <div class="form-text">Tipo de duración del contrato</div>
+                        <!-- ✅ NUEVO: Preview de Duración Calculada Automáticamente -->
+                        <div id="duracionPreview" class="alert alert-info d-none">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <i class="bi bi-calculator text-primary"></i>
+                                    <div><strong>Duración Total:</strong></div>
+                                    <div class="h5 text-primary mb-0" id="duracionCalculada">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="bi bi-tag text-success"></i>
+                                    <div><strong>Tipo:</strong></div>
+                                    <div class="h6 text-success mb-0" id="tipoCalculado">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="bi bi-calendar-check text-info"></i>
+                                    <div><strong>Inicio:</strong></div>
+                                    <div class="small text-info mb-0" id="fechaInicioCalculada">-</div>
+                                </div>
+                                <div class="col-md-3">
+                                    <i class="bi bi-calendar-x text-warning"></i>
+                                    <div><strong>Fin:</strong></div>
+                                    <div class="small text-warning mb-0" id="fechaFinCalculada">-</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Explicación del cálculo -->
+                            <hr class="my-3">
+                            <div class="row">
+                                <div class="col-12 text-center">
+                                    <small class="text-muted">
+                                        <i class="bi bi-info-circle"></i>
+                                        <strong>Lógica de cálculo:</strong> 
+                                        <span id="logicaCalculo">Selecciona las fechas para ver el cálculo</span>
+                                    </small>
+                                </div>
                             </div>
                         </div>
 
-                        <!-- Preview de Duración Calculada -->
-                        <div id="duracionPreview" class="alert alert-info d-none">
-                            <i class="bi bi-calculator"></i>
-                            <strong>Duración Calculada:</strong> <span id="duracionCalculada">-</span>
-                            <br><strong>Desde:</strong> <span id="fechaInicioCalculada">-</span>
-                            <strong>Hasta:</strong> <span id="fechaFinCalculada">-</span>
-                        </div>
-
                         <!-- Botón Generar Contrato -->
-                        <div class="text-center">
-                            <button type="button" class="btn btn-success" id="btnGenerarContrato">
+                        <div class="text-center mt-3">
+                            <button type="button" class="btn btn-success btn-lg" id="btnGenerarContrato">
                                 <i class="bi bi-file-earmark-pdf"></i> Generar Contrato PDF
                             </button>
                             <div id="loadingSpinner" class="spinner-border spinner-border-sm ms-2" style="display: none;" role="status">
@@ -139,7 +157,7 @@
                     <i class="bi bi-x-circle"></i> Cancelar
                 </button>
                 <button type="button" class="btn btn-success" id="btnGuardarFinal" disabled>
-                    <i class="bi bi-save"></i> Guardar Trabajador y Contrato
+                    <i class="bi bi-save"></i> Guardar
                 </button>
             </div>
         </div>
@@ -148,7 +166,7 @@
 
 <script>
 /**
- * ✅ JAVASCRIPT LIMPIO - SIN validaciones de campo "duracion"
+ * ✅ JAVASCRIPT ACTUALIZADO - Cálculo automático de tipo de duración
  */
 class ContratoModal {
     constructor() {
@@ -157,6 +175,7 @@ class ContratoModal {
         this.datosFormulario = {};
         this.contratoGenerado = false;
         this.hashContrato = null;
+        this.tipoCalculado = null; // ✅ NUEVO: Almacenar tipo calculado
         
         this.init();
     }
@@ -190,10 +209,9 @@ class ContratoModal {
         document.getElementById('btnGenerarContrato')?.addEventListener('click', () => this.handleGenerarContrato());
         document.getElementById('btnGuardarFinal')?.addEventListener('click', () => this.handleGuardarFinal());
         
-        // Validaciones automáticas cuando cambien las fechas
+        // ✅ ACTUALIZADO: Eventos para cálculo automático
         document.getElementById('fecha_inicio_contrato')?.addEventListener('change', () => this.handleFechaInicioChange());
         document.getElementById('fecha_fin_contrato')?.addEventListener('change', () => this.actualizarCalculosContrato());
-        document.getElementById('tipo_duracion')?.addEventListener('change', () => this.actualizarCalculosContrato());
     }
 
     /**
@@ -225,7 +243,6 @@ class ContratoModal {
     handleFormSubmit(e) {
         e.preventDefault();
         
-        // ✅ SIMPLIFICADO: Solo validar formulario básico
         if (!this.form.checkValidity()) {
             this.form.classList.add('was-validated');
             this.mostrarAlerta('Por favor completa todos los campos obligatorios', 'warning');
@@ -238,17 +255,14 @@ class ContratoModal {
     }
 
     /**
-     * Recopila todos los datos del formulario - SIN validar duración
+     * Recopila todos los datos del formulario
      */
     recopilarDatosFormulario() {
         const formData = new FormData(this.form);
         this.datosFormulario = {};
         
         for (let [key, value] of formData.entries()) {
-            // ✅ FILTRAR: No incluir campos de duración manual si existen
-            if (key !== 'duracion' && key !== 'duracion_meses') {
-                this.datosFormulario[key] = value;
-            }
+            this.datosFormulario[key] = value;
         }
         
         this.actualizarPreviewModal();
@@ -270,16 +284,15 @@ class ContratoModal {
     }
 
     /**
-     * ✅ SIMPLIFICADO: Maneja la generación del contrato preview - SIN validar duración
+     * ✅ ACTUALIZADO: Maneja la generación del contrato preview - Solo valida fechas
      */
     handleGenerarContrato() {
         const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        const tipoDuracion = document.getElementById('tipo_duracion')?.value;
         
-        // ✅ SOLO validar los 3 campos necesarios
-        if (!fechaInicio || !fechaFin || !tipoDuracion) {
-            this.mostrarAlerta('Por favor completa la fecha de inicio, fecha de fin y tipo de contrato', 'warning');
+        // ✅ SOLO validar las 2 fechas necesarias
+        if (!fechaInicio || !fechaFin) {
+            this.mostrarAlerta('Por favor completa la fecha de inicio y fecha de fin', 'warning');
             return;
         }
 
@@ -289,11 +302,17 @@ class ContratoModal {
             return;
         }
 
-        this.generarContratoPreview(fechaInicio, fechaFin, tipoDuracion);
+        // ✅ NUEVO: Obtener tipo calculado automáticamente
+        if (!this.tipoCalculado) {
+            this.mostrarAlerta('Error en el cálculo automático del tipo de contrato', 'danger');
+            return;
+        }
+
+        this.generarContratoPreview(fechaInicio, fechaFin, this.tipoCalculado);
     }
 
     /**
-     * ✅ Genera el contrato preview via AJAX - SIN enviar duración manual
+     * ✅ ACTUALIZADO: Genera el contrato preview con tipo calculado automáticamente
      */
     async generarContratoPreview(fechaInicio, fechaFin, tipoDuracion) {
         const btnGenerar = document.getElementById('btnGenerarContrato');
@@ -303,20 +322,16 @@ class ContratoModal {
             // Mostrar estado de carga
             this.setLoadingState(btnGenerar, spinner, true);
             
-            // ✅ LIMPIO: Preparar datos para el preview SIN duracion manual
+            // ✅ ACTUALIZADO: Preparar datos con tipo calculado
             const datosPreview = {
                 ...this.datosFormulario,
                 fecha_inicio_contrato: fechaInicio,
                 fecha_fin_contrato: fechaFin,
-                tipo_duracion: tipoDuracion,
+                tipo_duracion: tipoDuracion, // ✅ Usar tipo calculado automáticamente
                 _token: document.querySelector('meta[name="csrf-token"]')?.getAttribute('content')
             };
 
-            // ✅ ELIMINAR cualquier campo de duración manual que pueda existir
-            delete datosPreview.duracion;
-            delete datosPreview.duracion_meses;
-
-            console.log('✅ Enviando datos limpios:', datosPreview);
+            console.log('✅ Enviando datos con tipo calculado:', { tipoDuracion, fechaInicio, fechaFin });
 
             // Realizar petición AJAX
             const response = await fetch('/ajax/contratos/preview', {
@@ -373,7 +388,7 @@ class ContratoModal {
     }
 
     /**
-     * ✅ LIMPIO: Maneja el guardado final - SIN enviar duración manual
+     * ✅ ACTUALIZADO: Maneja el guardado final con tipo calculado
      */
     handleGuardarFinal() {
         if (!this.contratoGenerado) {
@@ -383,12 +398,11 @@ class ContratoModal {
 
         const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        const tipoDuracion = document.getElementById('tipo_duracion')?.value;
         
-        // ✅ SOLO agregar los 3 campos necesarios al formulario
+        // ✅ ACTUALIZADO: Usar tipo calculado automáticamente
         this.addHiddenInput('fecha_inicio_contrato', fechaInicio);
         this.addHiddenInput('fecha_fin_contrato', fechaFin);
-        this.addHiddenInput('tipo_duracion', tipoDuracion);
+        this.addHiddenInput('tipo_duracion', this.tipoCalculado); // ✅ Tipo calculado
         
         // Mostrar loading y enviar formulario
         const btnGuardar = document.getElementById('btnGuardarFinal');
@@ -397,61 +411,80 @@ class ContratoModal {
             btnGuardar.innerHTML = '<i class="bi bi-hourglass-split me-1"></i> Guardando...';
         }
         
-        console.log('✅ Enviando formulario final con datos limpios');
+        console.log('✅ Enviando formulario final con tipo calculado:', this.tipoCalculado);
         this.form.submit();
     }
 
     /**
-     * Actualiza los cálculos del contrato
+     * ✅ NUEVO: Actualiza los cálculos del contrato automáticamente
      */
     actualizarCalculosContrato() {
         const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        const tipoDuracion = document.getElementById('tipo_duracion')?.value;
         
-        if (fechaInicio && fechaFin && tipoDuracion) {
+        if (fechaInicio && fechaFin) {
             // Validar que las fechas sean lógicas
             const inicio = new Date(fechaInicio);
             const fin = new Date(fechaFin);
             
             if (fin <= inicio) {
                 this.hideElement('duracionPreview');
+                this.tipoCalculado = null;
                 return;
             }
             
-            // Calcular duración según el tipo
+            // ✅ LÓGICA DE CÁLCULO AUTOMÁTICO
+            const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
+            
+            let tipoDuracion;
             let duracionCalculada;
             let duracionTexto;
+            let logicaTexto;
             
-            if (tipoDuracion === 'dias') {
-                duracionCalculada = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
-                duracionTexto = `${duracionCalculada} ${duracionCalculada === 1 ? 'día' : 'días'}`;
-            } else {
-                // Para meses, calcular diferencia aproximada
-                const meses = (fin.getFullYear() - inicio.getFullYear()) * 12 + (fin.getMonth() - inicio.getMonth());
+            // ✅ REGLA: Si > 30 días, calcular en meses. Si <= 30 días, calcular en días
+            if (diasTotales > 30) {
+                tipoDuracion = 'meses';
                 
-                // Ajustar si el día del mes final es menor
-                duracionCalculada = meses;
+                // Calcular meses de manera más precisa
+                let meses = (fin.getFullYear() - inicio.getFullYear()) * 12 + (fin.getMonth() - inicio.getMonth());
+                
+                // Ajustar si el día del mes final es menor al inicial
                 if (fin.getDate() < inicio.getDate()) {
-                    duracionCalculada--;
+                    meses--;
                 }
                 
                 // Asegurar que sea al menos 1 mes si hay diferencia
-                if (duracionCalculada <= 0 && fin > inicio) {
-                    duracionCalculada = 1;
+                if (meses <= 0 && fin > inicio) {
+                    meses = 1;
                 }
                 
-                duracionTexto = `${duracionCalculada} ${duracionCalculada === 1 ? 'mes' : 'meses'}`;
+                duracionCalculada = meses;
+                duracionTexto = `${meses} ${meses === 1 ? 'mes' : 'meses'}`;
+                logicaTexto = `${diasTotales} días > 30 días → Se calcula en <strong>meses</strong>`;
+                
+            } else {
+                tipoDuracion = 'dias';
+                duracionCalculada = diasTotales;
+                duracionTexto = `${diasTotales} ${diasTotales === 1 ? 'día' : 'días'}`;
+                logicaTexto = `${diasTotales} días ≤ 30 días → Se calcula en <strong>días</strong>`;
             }
+            
+            // ✅ ALMACENAR el tipo calculado para usar posteriormente
+            this.tipoCalculado = tipoDuracion;
             
             // Mostrar información calculada
             this.setElementText('duracionCalculada', duracionTexto);
+            this.setElementText('tipoCalculado', tipoDuracion === 'dias' ? 'Por Días' : 'Por Meses');
             this.setElementText('fechaInicioCalculada', inicio.toLocaleDateString('es-MX'));
             this.setElementText('fechaFinCalculada', fin.toLocaleDateString('es-MX'));
+            this.setElementHTML('logicaCalculo', logicaTexto);
             this.showElement('duracionPreview');
+            
+            console.log('✅ Cálculo automático:', { diasTotales, tipoDuracion, duracionCalculada });
             
         } else {
             this.hideElement('duracionPreview');
+            this.tipoCalculado = null;
         }
         
         // Resetear estado del contrato si cambian los datos
@@ -541,6 +574,11 @@ class ContratoModal {
     setElementText(id, text) {
         const element = document.getElementById(id);
         if (element) element.textContent = text;
+    }
+
+    setElementHTML(id, html) {
+        const element = document.getElementById(id);
+        if (element) element.innerHTML = html;
     }
 
     showElement(id) {

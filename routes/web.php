@@ -24,7 +24,7 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rutas protegidas
 Route::middleware(['auth'])->group(function () {
-
+ 
     // ✅ RUTAS DE CONFIGURACIÓN DE USUARIO
     Route::prefix('configuracion')->name('users.')->group(function () {
         // Menú principal de configuración

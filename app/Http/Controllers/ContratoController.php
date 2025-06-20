@@ -233,14 +233,14 @@ class ContratoController extends Controller
                 'tipo_duracion' => $datosContrato['tipo_duracion'],
                 'duracion' => $duracionCalculada,
                 'duracion_meses' => $datosContrato['tipo_duracion'] === 'meses' ? $duracionCalculada : null,
-                'estatus' => ContratoTrabajador::ESTATUS_ACTIVO, // ✅ NUEVO: Estatus por defecto
+                'estatus' => ContratoTrabajador::ESTATUS_ACTIVO, // ✅ SIEMPRE ACTIVO
                 'ruta_archivo' => $ruta
             ]);
 
-            Log::info('✅ Contrato definitivo guardado', [
+            Log::info('✅ Contrato definitivo creado ACTIVO', [
                 'contrato_id' => $contrato->id_contrato,
                 'trabajador_id' => $trabajador->id_trabajador,
-                'duracion' => $duracionCalculada
+                'estatus' => ContratoTrabajador::ESTATUS_ACTIVO
             ]);
 
             return $contrato;
