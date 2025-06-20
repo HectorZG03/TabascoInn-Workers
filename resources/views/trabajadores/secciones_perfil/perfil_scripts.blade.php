@@ -174,6 +174,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 const contratoData = JSON.parse(button.getAttribute('data-contrato'));
                 
                 const contenido = document.getElementById('detalle-contenido');
+                // En la función initContratosEvents(), modificar el modal de detalles:
+               // Buscar y reemplazar ESTA sección en initContratosEvents()
                 contenido.innerHTML = `
                     <div class="row">
                         <div class="col-6"><strong>Inicio:</strong><br>${contratoData.inicio}</div>
@@ -183,13 +185,16 @@ document.addEventListener('DOMContentLoaded', function() {
                     <div class="row">
                         <div class="col-6"><strong>Duración:</strong><br>${contratoData.duracion}</div>
                         <div class="col-6"><strong>Estado:</strong><br>
-                            <span class="badge bg-${contratoData.estado === 'vigente' ? 'success' : contratoData.estado === 'expirado' ? 'danger' : 'warning'}">
-                                ${contratoData.estado.charAt(0).toUpperCase() + contratoData.estado.slice(1)}
+                            <span class="badge bg-${contratoData.estado === 'expirado' ? 'danger' : 'success'}">
+                                ${contratoData.estado === 'expirado' ? 'Expirado' : 'Vigente'}
                             </span>
                         </div>
                     </div>
                     <hr>
-                    <div><strong>Días Restantes:</strong> ${contratoData.dias_restantes} días</div>
+                    ${contratoData.estado !== 'expirado' ? 
+                        `<div><strong>Días Restantes:</strong> ${contratoData.dias_restantes} días</div>` : 
+                        `<div class="text-danger"><strong>Contrato expirado</strong></div>`
+                    }
                 `;
             });
         }

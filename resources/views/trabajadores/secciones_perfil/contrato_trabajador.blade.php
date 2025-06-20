@@ -47,6 +47,13 @@
 
     {{-- ✅ Alertas importantes (simplificadas) --}}
     @if($contratos->count() > 0)
+        @php
+            // Nueva lógica: vigente si no ha expirado (ignorando fecha de inicio)
+            $tieneContratoVigente = $contratos->contains(function ($contrato) {
+                return now()->lte($contrato->fecha_fin_contrato);
+            });
+        @endphp
+
         @if($estadisticas['proximos_vencer'] > 0)
             <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -56,7 +63,7 @@
             </div>
         @endif
 
-        @if(!$estadisticas['tiene_contrato_vigente'])
+        @if(!$tieneContratoVigente)
             <div class="alert alert-danger d-flex align-items-center justify-content-between mb-3" role="alert">
                 <div class="d-flex align-items-center">
                     <i class="bi bi-x-circle-fill me-2"></i>
@@ -86,7 +93,7 @@
                                 <i class="bi bi-list-ul text-primary"></i>
                                 Historial de Contratos
                             </h5>
-                            @if(!$estadisticas['tiene_contrato_vigente'] && $trabajador->fichaTecnica)
+                            @if(!$tieneContratoVigente && $trabajador->fichaTecnica)
                                 <button type="button" 
                                         class="btn btn-primary btn-sm"
                                         data-bs-toggle="modal" 
@@ -110,22 +117,22 @@
                                 </thead>
                                 <tbody>
                                     @foreach($contratos as $contrato)
-                                        <tr class="{{ $contrato->esta_vigente_bool ? 'table-success' : '' }}">
+                                        @php
+                                            // Nuevo cálculo: vigente si no ha expirado (ignorando fecha de inicio)
+                                            $estaVigente = now()->lte($contrato->fecha_fin_contrato);
+                                            $colorEstado = $estaVigente ? 'success' : 'danger';
+                                        @endphp
+
+                                        <tr class="{{ $estaVigente ? 'table-success' : '' }}">
                                             {{-- Estado --}}
                                             <td>
-                                                <span class="badge bg-{{ $contrato->color_estado }}">
-                                                    @if($contrato->estado_calculado === 'vigente')
-                                                        <i class="bi bi-check-circle"></i>
-                                                    @elseif($contrato->estado_calculado === 'expirado')
-                                                        <i class="bi bi-x-circle"></i>
+                                                <span class="badge bg-{{ $colorEstado }}">
+                                                    @if($estaVigente)
+                                                        <i class="bi bi-check-circle"></i> Vigente
                                                     @else
-                                                        <i class="bi bi-clock"></i>
+                                                        <i class="bi bi-x-circle"></i> Expirado
                                                     @endif
-                                                    {{ ucfirst($contrato->estado_calculado) }}
                                                 </span>
-                                                @if($contrato->esta_vigente_bool)
-                                                    <div><small class="text-success"><i class="bi bi-star-fill"></i> Activo</small></div>
-                                                @endif
                                             </td>
 
                                             {{-- Período --}}
@@ -146,28 +153,28 @@
                                             </td>
 
                                             {{-- Días restantes --}}
-                                            <td>
-                                                @if($contrato->esta_vigente_bool)
-                                                    @if($contrato->dias_restantes_calculados <= 30)
-                                                        <span class="text-warning fw-bold">
-                                                            <i class="bi bi-exclamation-triangle"></i>
-                                                            {{ $contrato->dias_restantes_calculados }} días
-                                                        </span>
-                                                    @else
-                                                        <span class="text-success">
-                                                            {{ $contrato->dias_restantes_calculados }} días
-                                                        </span>
-                                                    @endif
-                                                @elseif($contrato->estado_calculado === 'expirado')
-                                                    <span class="text-danger">
-                                                        <i class="bi bi-x-circle"></i> Expirado
+                                           <td>
+                                            @if($estaVigente)
+                                                @php
+                                                    $diasRestantes = now()->diffInDays($contrato->fecha_fin_contrato, false);
+                                                @endphp
+                                                
+                                                @if($diasRestantes <= 30)
+                                                    <span class="text-warning fw-bold">
+                                                        <i class="bi bi-exclamation-triangle"></i>
+                                                        {{ $diasRestantes }} días
                                                     </span>
                                                 @else
-                                                    <span class="text-muted">
-                                                        <i class="bi bi-clock"></i> Pendiente
+                                                    <span class="text-success">
+                                                        {{ $diasRestantes }} días
                                                     </span>
                                                 @endif
-                                            </td>
+                                            @else
+                                                <span class="text-danger">
+                                                    <i class="bi bi-x-circle"></i> Expirado
+                                                </span>
+                                            @endif
+                                        </td>
 
                                             {{-- Acciones simplificadas --}}
                                             <td>
@@ -181,8 +188,8 @@
                                                                 'inicio' => $contrato->fecha_inicio_contrato->format('d/m/Y'),
                                                                 'fin' => $contrato->fecha_fin_contrato->format('d/m/Y'),
                                                                 'duracion' => $contrato->duracion_completa,
-                                                                'estado' => $contrato->estado_calculado,
-                                                                'dias_restantes' => $contrato->dias_restantes_calculados
+                                                                'estado' => $estaVigente ? 'vigente' : 'expirado',
+                                                                'dias_restantes' => $estaVigente ? $diasRestantes : 0
                                                             ]) }}"
                                                             title="Ver detalles">
                                                         <i class="bi bi-eye"></i>
@@ -198,7 +205,7 @@
                                                     @endif
 
                                                     {{-- Renovar contrato --}}
-                                                    @if($contrato->esta_vigente_bool && $contrato->dias_restantes_calculados <= 30)
+                                                    @if($estaVigente && $diasRestantes <= 30)
                                                         <button type="button" 
                                                                 class="btn btn-outline-warning"
                                                                 data-bs-toggle="modal" 
@@ -211,7 +218,7 @@
                                                     @endif
 
                                                     {{-- ✅ NUEVO: Terminar contrato --}}
-                                                    @if($contrato->esta_vigente_bool)
+                                                    @if($estaVigente)
                                                         <button type="button" 
                                                                 class="btn btn-outline-danger"
                                                                 data-bs-toggle="modal" 
@@ -232,42 +239,53 @@
                 </div>
 
                 {{-- ✅ Información del contrato vigente (simplificada) --}}
-                @if($estadisticas['contrato_actual'])
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <div class="card border-success">
-                                <div class="card-header bg-success text-white">
-                                    <h6 class="mb-0">
-                                        <i class="bi bi-file-earmark-check"></i>
-                                        Contrato Vigente
-                                    </h6>
-                                </div>
-                                <div class="card-body">
-                                    <div class="row">
-                                        <div class="col-md-3">
-                                            <strong>Período:</strong><br>
-                                            {{ $estadisticas['contrato_actual']->fecha_inicio_contrato->format('d/m/Y') }} -
-                                            {{ $estadisticas['contrato_actual']->fecha_fin_contrato->format('d/m/Y') }}
-                                        </div>
-                                        <div class="col-md-3">
-                                            <strong>Duración:</strong><br>
-                                            {{ $estadisticas['contrato_actual']->duracion_texto }}
-                                        </div>
-                                        <div class="col-md-3">
-                                            <strong>Días Restantes:</strong><br>
-                                            <span class="fw-bold {{ $estadisticas['contrato_actual']->diasRestantes() <= 30 ? 'text-warning' : 'text-success' }}">
-                                                {{ $estadisticas['contrato_actual']->diasRestantes() }} días
-                                            </span>
-                                        </div>
-                                        <div class="col-md-3">
-                                            <strong>Vencimiento:</strong><br>
-                                            {{ $estadisticas['contrato_actual']->fecha_fin_contrato->format('d/m/Y') }}
+                @if($tieneContratoVigente)
+                    @php
+                        $contratoActual = $contratos->first(function ($contrato) {
+                            return now()->lte($contrato->fecha_fin_contrato);
+                        });
+                    @endphp
+                    
+                    @if($contratoActual)
+                        <div class="row mt-4">
+                            <div class="col-12">
+                                <div class="card border-success">
+                                    <div class="card-header bg-success text-white">
+                                        <h6 class="mb-0">
+                                            <i class="bi bi-file-earmark-check"></i>
+                                            Contrato Vigente
+                                        </h6>
+                                    </div>
+                                    <div class="card-body">
+                                        <div class="row">
+                                            <div class="col-md-3">
+                                                <strong>Período:</strong><br>
+                                                {{ $contratoActual->fecha_inicio_contrato->format('d/m/Y') }} -
+                                                {{ $contratoActual->fecha_fin_contrato->format('d/m/Y') }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Duración:</strong><br>
+                                                {{ $contratoActual->duracion_texto }}
+                                            </div>
+                                            <div class="col-md-3">
+                                                @php
+                                                    $diasRestantes = now()->diffInDays($contratoActual->fecha_fin_contrato, false);
+                                                @endphp
+                                                <strong>Días Restantes:</strong><br>
+                                                <span class="fw-bold {{ $diasRestantes <= 30 ? 'text-warning' : 'text-success' }}">
+                                                    {{ $diasRestantes }} días
+                                                </span>
+                                            </div>
+                                            <div class="col-md-3">
+                                                <strong>Vencimiento:</strong><br>
+                                                {{ $contratoActual->fecha_fin_contrato->format('d/m/Y') }}
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
                         </div>
-                    </div>
+                    @endif
                 @endif
 
             @else
