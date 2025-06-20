@@ -102,7 +102,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('historial-promociones');
 
        
-    // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - CORREGIDAS
+    // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - ACTUALIZADAS
     Route::prefix('{trabajador}/contratos')->name('contratos.')->group(function () {
         // Mostrar contratos del trabajador (vista principal)
         Route::get('/', [AdminContratosController::class, 'show'])->name('show');
@@ -121,6 +121,9 @@ Route::middleware(['auth'])->group(function () {
         
         // Descargar contrato específico (existente)
         Route::get('/{contrato}/descargar', [AdminContratosController::class, 'descargar'])->name('descargar');
+        
+        // ✅ ACTUALIZADO: Eliminar contrato permanentemente (cambiado de terminar)
+        Route::delete('/{contrato}/eliminar', [AdminContratosController::class, 'eliminar'])->name('eliminar');
         
         // ✅ NUEVO: API para verificar si puede crear contrato
         Route::get('/api/verificar-creacion', [AdminContratosController::class, 'verificarCreacion'])->name('api.verificar');

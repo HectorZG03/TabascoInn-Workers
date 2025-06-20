@@ -98,7 +98,7 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // ========================================
-    // 📋 FUNCIONALIDAD DE CONTRATOS
+    // 📋 FUNCIONALIDAD DE CONTRATOS ACTUALIZADA
     // ========================================
     
     // ✅ CARGA DINÁMICA DE CONTRATOS
@@ -164,9 +164,9 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
     
-    // ✅ EVENTOS ESPECÍFICOS DE CONTRATOS (después de cargar AJAX)
+    // ✅ EVENTOS ESPECÍFICOS DE CONTRATOS (actualizados)
     function initContratosEvents() {
-        // Modal de detalles (simplificado)
+        // Modal de detalles (actualizado con nueva información)
         const detalleModal = document.getElementById('detalleContratoModal');
         if (detalleModal) {
             detalleModal.addEventListener('show.bs.modal', function (event) {
@@ -174,27 +174,63 @@ document.addEventListener('DOMContentLoaded', function() {
                 const contratoData = JSON.parse(button.getAttribute('data-contrato'));
                 
                 const contenido = document.getElementById('detalle-contenido');
-                // En la función initContratosEvents(), modificar el modal de detalles:
-               // Buscar y reemplazar ESTA sección en initContratosEvents()
+                
+                let observacionesHtml = '';
+                if (contratoData.observaciones) {
+                    observacionesHtml = `
+                        <hr>
+                        <div><strong>Observaciones:</strong><br>
+                        <small class="text-muted">${contratoData.observaciones}</small></div>
+                    `;
+                }
+                
+                let renovacionHtml = '';
+                if (contratoData.es_renovacion) {
+                    renovacionHtml = `
+                        <div><strong>Renovación de:</strong> Contrato #${contratoData.contrato_anterior_id}</div>
+                        <hr>
+                    `;
+                }
+
+                // ✅ ACTUALIZADO: Información de estado más detallada
+                let estadoDetalladoHtml = '';
+                if (contratoData.esta_activo) {
+                    if (contratoData.esta_pendiente_iniciar) {
+                        estadoDetalladoHtml = `
+                            <div><strong>Estado Detallado:</strong> Programado (inicia en ${contratoData.dias_restantes} días)</div>
+                            <hr>
+                        `;
+                    } else if (contratoData.esta_en_periodo_vigente) {
+                        estadoDetalladoHtml = `
+                            <div><strong>Estado Detallado:</strong> En período vigente (${contratoData.dias_restantes} días restantes)</div>
+                            <hr>
+                        `;
+                    }
+                }
+                
                 contenido.innerHTML = `
+                    <div class="row">
+                        <div class="col-6"><strong>ID del Contrato:</strong><br>#${contratoData.id}</div>
+                        <div class="col-6"><strong>Estado:</strong><br>
+                            <span class="badge bg-${contratoData.estado === 'expirado' ? 'danger' : 
+                                                   contratoData.estado === 'activo' ? 'success' : 
+                                                   contratoData.estado === 'renovado' ? 'info' : 'secondary'}">
+                                ${contratoData.texto_estado}
+                            </span>
+                        </div>
+                    </div>
+                    <hr>
+                    ${renovacionHtml}
+                    ${estadoDetalladoHtml}
                     <div class="row">
                         <div class="col-6"><strong>Inicio:</strong><br>${contratoData.inicio}</div>
                         <div class="col-6"><strong>Fin:</strong><br>${contratoData.fin}</div>
                     </div>
                     <hr>
                     <div class="row">
-                        <div class="col-6"><strong>Duración:</strong><br>${contratoData.duracion}</div>
-                        <div class="col-6"><strong>Estado:</strong><br>
-                            <span class="badge bg-${contratoData.estado === 'expirado' ? 'danger' : 'success'}">
-                                ${contratoData.estado === 'expirado' ? 'Expirado' : 'Vigente'}
-                            </span>
-                        </div>
+                        <div class="col-12"><strong>Duración:</strong><br>${contratoData.duracion}</div>
                     </div>
-                    <hr>
-                    ${contratoData.estado !== 'expirado' ? 
-                        `<div><strong>Días Restantes:</strong> ${contratoData.dias_restantes} días</div>` : 
-                        `<div class="text-danger"><strong>Contrato expirado</strong></div>`
-                    }
+                    ${observacionesHtml}
                 `;
             });
         }
@@ -211,7 +247,7 @@ document.addEventListener('DOMContentLoaded', function() {
                 const trabajadorId = form.getAttribute('data-trabajador-id');
                 form.action = `/trabajadores/${trabajadorId}/contratos/${contratoId}/renovar`;
                 
-                // Configurar fechas
+                // Configurar fechas mejoradas
                 const fechaMin = new Date(contratoFin);
                 fechaMin.setDate(fechaMin.getDate() + 1);
                 
@@ -225,19 +261,38 @@ document.addEventListener('DOMContentLoaded', function() {
                 const fechaFinDefault = new Date(fechaMin);
                 fechaFinDefault.setMonth(fechaFinDefault.getMonth() + 6);
                 fechaFinInput.value = fechaFinDefault.toISOString().split('T')[0];
+                
+                // Limpiar observaciones
+                const observacionesInput = form.querySelector('textarea[name="observaciones_renovacion"]');
+                if (observacionesInput) {
+                    observacionesInput.value = '';
+                }
             });
         }
 
-        // ✅ NUEVO: Modal de terminar contrato
-        const terminarModal = document.getElementById('modalTerminarContrato');
-        if (terminarModal) {
-            terminarModal.addEventListener('show.bs.modal', function (event) {
+        // ✅ NUEVO: Modal de eliminar contrato
+        const eliminarModal = document.getElementById('modalEliminarContrato');
+        if (eliminarModal) {
+            eliminarModal.addEventListener('show.bs.modal', function (event) {
                 const button = event.relatedTarget;
                 const contratoId = button.getAttribute('data-contrato-id');
+                const contratoInfo = button.getAttribute('data-contrato-info');
                 
-                const form = document.getElementById('formTerminarContrato');
+                const form = document.getElementById('formEliminarContrato');
                 const trabajadorId = form.getAttribute('data-trabajador-id');
-                form.action = `/trabajadores/${trabajadorId}/contratos/${contratoId}/terminar`;
+                form.action = `/trabajadores/${trabajadorId}/contratos/${contratoId}/eliminar`;
+                
+                // Mostrar información del contrato
+                const periodoInfo = document.getElementById('contrato-periodo-info');
+                if (periodoInfo) {
+                    periodoInfo.textContent = contratoInfo;
+                }
+                
+                // Limpiar el motivo
+                const motivoInput = form.querySelector('textarea[name="motivo_eliminacion"]');
+                if (motivoInput) {
+                    motivoInput.value = '';
+                }
             });
         }
 
@@ -267,7 +322,62 @@ document.addEventListener('DOMContentLoaded', function() {
             });
         }
 
-        console.log('✅ Eventos de contratos inicializados');
+        // ✅ VALIDACIONES ACTUALIZADAS para formularios de contratos
+        const formRenovar = document.getElementById('formRenovarContrato');
+        if (formRenovar) {
+            formRenovar.addEventListener('submit', function(e) {
+                const fechaInicio = new Date(this.querySelector('input[name="fecha_inicio"]').value);
+                const fechaFin = new Date(this.querySelector('input[name="fecha_fin"]').value);
+                
+                if (fechaFin <= fechaInicio) {
+                    e.preventDefault();
+                    alert('La fecha de fin debe ser posterior a la fecha de inicio');
+                    return false;
+                }
+                
+                const diferenciaDias = (fechaFin - fechaInicio) / (1000 * 60 * 60 * 24);
+                if (diferenciaDias < 1) {
+                    e.preventDefault();
+                    alert('El contrato debe tener al menos 1 día de duración');
+                    return false;
+                }
+            });
+        }
+
+        // ✅ NUEVO: Validaciones para eliminar contrato
+        const formEliminar = document.getElementById('formEliminarContrato');
+        if (formEliminar) {
+            formEliminar.addEventListener('submit', function(e) {
+                const motivo = this.querySelector('textarea[name="motivo_eliminacion"]').value.trim();
+                
+                if (!motivo) {
+                    e.preventDefault();
+                    alert('Debe especificar un motivo para eliminar el contrato');
+                    return false;
+                }
+                
+                if (motivo.length < 10) {
+                    e.preventDefault();
+                    alert('El motivo debe tener al menos 10 caracteres');
+                    return false;
+                }
+                
+                const confirmMessage = '⚠️ ¿Está seguro de que desea ELIMINAR PERMANENTEMENTE este contrato?\n\n' +
+                                     '• Esta acción NO se puede deshacer\n' +
+                                     '• Se eliminará el registro y el archivo PDF\n' +
+                                     '• Se registrará en el historial del sistema\n\n' +
+                                     'Escriba "ELIMINAR" para confirmar:';
+                
+                const confirmation = prompt(confirmMessage);
+                if (confirmation !== 'ELIMINAR') {
+                    e.preventDefault();
+                    alert('Eliminación cancelada. Debe escribir exactamente "ELIMINAR" para confirmar.');
+                    return false;
+                }
+            });
+        }
+
+        console.log('✅ Eventos de contratos inicializados (solo 3 estados esenciales)');
     }
     
     // ✅ CARGAR CONTRATOS SI ES LA PESTAÑA ACTIVA
@@ -377,6 +487,24 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    console.log('✅ Perfil Trabajador - Scripts optimizados inicializados');
+    // ========================================
+    // 🚨 NOTIFICACIONES Y FEEDBACK
+    // ========================================
+    
+    // Auto-ocultar alertas después de 5 segundos
+    const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
+    alerts.forEach(alert => {
+        setTimeout(() => {
+            alert.style.transition = 'opacity 0.5s ease';
+            alert.style.opacity = '0';
+            setTimeout(() => {
+                if (alert.parentNode) {
+                    alert.parentNode.removeChild(alert);
+                }
+            }, 500);
+        }, 5000);
+    });
+
+    console.log('✅ Perfil Trabajador - Scripts simplificados con 3 estados esenciales inicializados');
 });
 </script>
