@@ -16,6 +16,7 @@
                 <input type="text" 
                        class="form-control @error('nombre_trabajador') is-invalid @enderror" 
                        id="nombre_trabajador" 
+                       style="text-transform: uppercase"
                        name="nombre_trabajador" 
                        value="{{ old('nombre_trabajador') }}" 
                        placeholder="Nombre completo"
@@ -32,7 +33,8 @@
                 </label>
                 <input type="text" 
                        class="form-control @error('ape_pat') is-invalid @enderror" 
-                       id="ape_pat" 
+                       id="ape_pat"
+                       style="text-transform: uppercase"
                        name="ape_pat" 
                        value="{{ old('ape_pat') }}" 
                        placeholder="Apellido paterno"
@@ -50,6 +52,7 @@
                 <input type="text" 
                        class="form-control @error('ape_mat') is-invalid @enderror" 
                        id="ape_mat" 
+                       style="text-transform: uppercase"
                        name="ape_mat" 
                        value="{{ old('ape_mat') }}" 
                        placeholder="Apellido materno">
@@ -86,11 +89,11 @@
                 <input type="text" 
                        class="form-control @error('curp') is-invalid @enderror" 
                        id="curp" 
+                       style="text-transform: uppercase "
                        name="curp" 
                        value="{{ old('curp') }}" 
                        placeholder="18 caracteres"
                        maxlength="18"
-                       pattern="[A-Z0-9]{18}"
                        required>
                 <div class="form-text">Ejemplo: AAAA000000HDFRRR01</div>
                 @error('curp')
@@ -105,7 +108,8 @@
                 </label>
                 <input type="text" 
                        class="form-control @error('rfc') is-invalid @enderror" 
-                       id="rfc" 
+                       id="rfc"
+                       style="text-transform: uppercase"
                        name="rfc" 
                        value="{{ old('rfc') }}" 
                        placeholder="13 caracteres"
@@ -185,6 +189,7 @@
                 <input type="text" 
                        class="form-control @error('direccion') is-invalid @enderror" 
                        id="direccion" 
+                       style="text-transform: uppercase"
                        name="direccion" 
                        value="{{ old('direccion') }}" 
                        placeholder="Calle, número, colonia">
@@ -202,6 +207,7 @@
                 <input type="text" 
                        class="form-control @error('lugar_nacimiento') is-invalid @enderror" 
                        id="lugar_nacimiento" 
+                       style="text-transform: uppercase"
                        name="lugar_nacimiento" 
                        value="{{ old('lugar_nacimiento') }}" 
                        placeholder="Ciudad, Estado"
@@ -263,6 +269,7 @@
                        class="form-control @error('ciudad_actual') is-invalid @enderror" 
                        id="ciudad_actual" 
                        name="ciudad_actual" 
+                       style="text-transform: uppercase"
                        value="{{ old('ciudad_actual') }}" 
                        placeholder="Ciudad donde vive"
                        maxlength="50">
