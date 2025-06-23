@@ -226,10 +226,10 @@
             </div>
         </div>
 
-        <!-- Formación, Estudios y Estado -->
+        <!-- Formación y Estudios (SIN ESTADO) -->
         <div class="row">
             <!-- Formación -->
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
                 <label for="formacion" class="form-label">
                     <i class="bi bi-mortarboard"></i> Formación Académica
                 </label>
@@ -250,7 +250,7 @@
             </div>
 
             <!-- Grado de Estudios -->
-            <div class="col-md-4 mb-3">
+            <div class="col-md-6 mb-3">
                 <label for="grado_estudios" class="form-label">
                     <i class="bi bi-award"></i> Grado de Estudios
                 </label>
@@ -264,36 +264,13 @@
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>
+        </div>
 
-            <!-- Estado Inicial -->
-            <div class="col-md-4 mb-3">
-                <label for="estatus" class="form-label">
-                    <i class="bi bi-person-check"></i> Estado Inicial
-                </label>
-                <select class="form-select @error('estatus') is-invalid @enderror" 
-                        id="estatus" 
-                        name="estatus">
-                    <option value="">Por defecto (Activo)</option>
-                    @foreach(\App\Models\Trabajador::TODOS_ESTADOS as $valor => $texto)
-                        <option value="{{ $valor }}" 
-                                {{ old('estatus') == $valor ? 'selected' : '' }}
-                                data-color="{{ 
-                                    $valor === 'activo' ? 'success' : 
-                                    ($valor === 'inactivo' ? 'secondary' : 
-                                    ($valor === 'suspendido' ? 'danger' : 'info'))
-                                }}">
-                            {{ $texto }}
-                        </option>
-                    @endforeach
-                </select>
-                <div class="form-text">
-                    <small class="text-muted">
-                        Por defecto se creará como "Activo". Solo cambia si es necesario.
-                    </small>
-                </div>
-                @error('estatus')
-                    <div class="invalid-feedback">{{ $message }}</div>
-                @enderror
+        <!-- ✅ NOTA INFORMATIVA SOBRE EL ESTADO -->
+        <div class="alert alert-primary d-flex align-items-center">
+            <i class="bi bi-info-circle me-3 fs-4"></i>
+            <div>
+                <strong>Estado del Trabajador:</strong> El estado inicial se configurará en el siguiente paso junto con el contrato.
             </div>
         </div>
     </div>
@@ -374,10 +351,16 @@ document.addEventListener('DOMContentLoaded', function() {
         
         const horasSemanales = horasDiarias * diasSeleccionados;
         
-        document.getElementById('horas-diarias').textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) : '-';
-        document.getElementById('horas-semanales').textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) : '-';
-        document.getElementById('dias-laborables-count').textContent = diasSeleccionados || '-';
-        document.getElementById('turno-calculado').textContent = turno;
+        // Actualizar vista previa si los elementos existen
+        const horasDiariasEl = document.getElementById('horas-diarias');
+        const horasSemanalesEl = document.getElementById('horas-semanales');
+        const diasLaborablesCountEl = document.getElementById('dias-laborables-count');
+        const turnoCalculadoEl = document.getElementById('turno-calculado');
+        
+        if (horasDiariasEl) horasDiariasEl.textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) : '-';
+        if (horasSemanalesEl) horasSemanalesEl.textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) : '-';
+        if (diasLaborablesCountEl) diasLaborablesCountEl.textContent = diasSeleccionados || '-';
+        if (turnoCalculadoEl) turnoCalculadoEl.textContent = turno;
     }
     
     // Event listeners para recalcular

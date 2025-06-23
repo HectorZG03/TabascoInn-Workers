@@ -142,7 +142,7 @@ class TrabajadorController extends Controller
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
             'formacion' => 'nullable|string|max:50',
             'grado_estudios' => 'nullable|string|max:50',
-            'estatus' => 'nullable|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
+            'estatus' => 'nullable|in: activo,prueba',
             
             // ✅ CORREGIDO: Validación de horarios para Laravel 12
             'hora_entrada' => 'required|date_format:H:i',
@@ -237,6 +237,9 @@ class TrabajadorController extends Controller
             'beneficiario_nombre.max' => 'El nombre del beneficiario no puede exceder 150 caracteres.',
             'beneficiario_parentesco.required_with' => 'El parentesco es obligatorio cuando se especifica un beneficiario.',
             'beneficiario_parentesco.in' => 'Parentesco no válido.',
+
+            // Menssajes para estatus
+            'estatus.in' => 'Estados inicial debe ser activo o prueba',
             
             // Contratos
             'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria.',
@@ -291,7 +294,8 @@ class TrabajadorController extends Controller
 
             Log::info('✅ Trabajador creado', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'estatus' => $trabajador->estatus
+                'estatus' => $trabajador->estatus,
+                'estatus_origen' => 'modal_contrato',
             ]);
 
             // 2️⃣ ✅ CREAR FICHA TÉCNICA CON NUEVOS CAMPOS

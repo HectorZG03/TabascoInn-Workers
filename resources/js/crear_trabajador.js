@@ -1,5 +1,5 @@
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Iniciando crear_trabajador.js v2.0');
+    console.log('🚀 Iniciando crear_trabajador.js v3.0 - Sin estado en formulario principal');
 
     // ✅ DETECTAR MENSAJE DE ÉXITO Y LIMPIAR FORMULARIO
     const successAlert = document.getElementById('success-alert');
@@ -89,7 +89,7 @@ document.addEventListener('DOMContentLoaded', function() {
         console.warn('⚠️ No se encontraron los inputs de horarios');
     }
 
-    // ✅ FUNCIÓN PRINCIPAL: Vista previa en tiempo real
+    // ✅ FUNCIÓN PRINCIPAL: Vista previa en tiempo real (SIN ESTADO)
     function actualizarVistaPrevia() {
         try {
             // Obtener valores del formulario
@@ -138,6 +138,12 @@ document.addEventListener('DOMContentLoaded', function() {
             // ✅ ACTUALIZAR UBICACIÓN Y HORARIO
             actualizarVistaUbicacion();
             actualizarVistaHorario();
+            
+            // ✅ ACTUALIZAR ESTADO EN VISTA PREVIA (Ahora será configurado en modal)
+            const previewEstado = document.getElementById('preview-estado');
+            if (previewEstado) {
+                previewEstado.innerHTML = '<span class="text-muted">Se configurará en el siguiente paso</span>';
+            }
             
         } catch (error) {
             console.error('❌ Error en actualizarVistaPrevia:', error);
@@ -325,8 +331,16 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    // ✅ EVENT LISTENERS PARA VISTA PREVIA
-    const camposParaVistaPrevia = ['nombre_trabajador', 'ape_pat', 'ape_mat', 'fecha_nacimiento', 'sueldo_diarios', 'ciudad_actual', 'estado_actual'];
+    // ✅ EVENT LISTENERS PARA VISTA PREVIA (SIN ESTADO)
+    const camposParaVistaPrevia = [
+        'nombre_trabajador', 
+        'ape_pat', 
+        'ape_mat', 
+        'fecha_nacimiento', 
+        'sueldo_diarios', 
+        'ciudad_actual', 
+        'estado_actual'
+    ];
     
     camposParaVistaPrevia.forEach(id => {
         const element = document.getElementById(id);
@@ -354,7 +368,7 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 
-    // ✅ FUNCIÓN PARA LIMPIAR EL FORMULARIO
+    // ✅ FUNCIÓN PARA LIMPIAR EL FORMULARIO (SIN ESTADO)
     function limpiarFormulario() {
         if (!form) return;
         
@@ -373,6 +387,12 @@ document.addEventListener('DOMContentLoaded', function() {
                 select.classList.remove('is-invalid', 'is-valid');
             });
             
+            // Limpiar checkboxes de días laborables
+            const diasCheckboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+            diasCheckboxes.forEach(checkbox => {
+                checkbox.checked = false;
+            });
+            
             // Resetear categoría
             categoriaSelect.innerHTML = '<option value="">Primero selecciona un área</option>';
             categoriaSelect.disabled = true;
@@ -384,7 +404,7 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             
             actualizarVistaPrevia();
-            console.log('✅ Formulario limpiado exitosamente');
+            console.log('✅ Formulario limpiado exitosamente (sin estado - se configurará en modal)');
         } catch (error) {
             console.error('❌ Error limpiando formulario:', error);
         }
@@ -402,8 +422,42 @@ document.addEventListener('DOMContentLoaded', function() {
         btnCancelar.parentNode.insertBefore(btnLimpiar, btnCancelar);
     }
 
+    // ✅ VALIDACIÓN MEJORADA DE DÍAS LABORABLES
+    function validarDiasLaborables() {
+        const diasCheckboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+        const diasSeleccionados = Array.from(diasCheckboxes).filter(cb => cb.checked);
+        
+        if (diasSeleccionados.length === 0) {
+            // Mostrar mensaje de advertencia
+            const contenedorDias = document.querySelector('.form-label:has-text("Días Laborables")').parentElement;
+            let advertencia = contenedorDias.querySelector('.dias-laborables-warning');
+            
+            if (!advertencia) {
+                advertencia = document.createElement('div');
+                advertencia.className = 'alert alert-warning alert-sm mt-2 dias-laborables-warning';
+                advertencia.innerHTML = '<i class="bi bi-exclamation-triangle me-1"></i> Debes seleccionar al menos un día laborable';
+                contenedorDias.appendChild(advertencia);
+            }
+            
+            return false;
+        } else {
+            // Remover advertencia si existe
+            const advertencia = document.querySelector('.dias-laborables-warning');
+            if (advertencia) {
+                advertencia.remove();
+            }
+            return true;
+        }
+    }
+
+    // Event listener para validar días laborables
+    const diasCheckboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+    diasCheckboxes.forEach(checkbox => {
+        checkbox.addEventListener('change', validarDiasLaborables);
+    });
+
     // ✅ INICIALIZAR VISTA PREVIA
     actualizarVistaPrevia();
     
-    console.log('✅ crear_trabajador.js FINAL cargado correctamente');
+    console.log('✅ crear_trabajador.js v3.0 cargado - Estado se configurará en modal del contrato');
 });

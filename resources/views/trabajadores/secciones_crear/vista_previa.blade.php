@@ -1,139 +1,113 @@
-<!-- ✅ SECCIÓN: VISTA PREVIA COMPACTA CON TOGGLE -->
-<div class="card shadow mb-4 sticky-top" id="vistaPreviewCard">
-    <div class="card-header bg-info text-white py-2">
-        <div class="d-flex justify-content-between align-items-center">
-            <h6 class="mb-0 small">
-                <i class="bi bi-eye"></i> Vista Previa
-            </h6>
-            <button type="button" class="btn btn-sm btn-outline-light" id="togglePreview" data-bs-toggle="collapse" data-bs-target="#previewContent" aria-expanded="true">
-                <i class="bi bi-chevron-up" id="toggleIcon"></i>
-            </button>
-        </div>
+<!-- ✅ SECCIÓN: VISTA PREVIA ACTUALIZADA -->
+<div class="card shadow-sm mb-4">
+    <div class="card-header bg-info text-white">
+        <h5 class="mb-0">
+            <i class="bi bi-eye"></i> Vista Previa
+        </h5>
     </div>
-    <div class="collapse show" id="previewContent">
-        <div class="card-body p-3">
-            <!-- Header Compacto -->
-            <div class="text-center mb-2">
-                <i class="bi bi-person-circle text-muted" style="font-size: 2.5rem;"></i>
-                <div class="mt-1">
-                    <h6 id="preview-nombre" class="mb-0 small text-muted">Nombre del Trabajador</h6>
-                    <small id="preview-categoria" class="text-muted">Categoría - Área</small>
-                </div>
+    <div class="card-body">
+        <!-- Información Básica -->
+        <div class="text-center mb-3">
+            <div class="bg-light rounded-circle d-inline-flex align-items-center justify-content-center" 
+                 style="width: 60px; height: 60px;">
+                <i class="bi bi-person-circle fs-1 text-secondary"></i>
             </div>
-            
-            <!-- Info Principal en 2x2 Grid -->
-            <div class="row text-center g-2 mb-2">
-                <div class="col-6">
-                    <div class="border rounded p-2">
-                        <i class="bi bi-cash text-success small"></i>
-                        <div class="fw-bold text-success small" id="preview-sueldo">$0.00</div>
-                        <tiny class="text-muted">Sueldo</tiny>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border rounded p-2">
-                        <i class="bi bi-calendar text-primary small"></i>
-                        <div class="fw-bold text-primary small" id="preview-edad">-- años</div>
-                        <tiny class="text-muted">Edad</tiny>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border rounded p-2">
-                        <i class="bi bi-clock text-warning small"></i>
-                        <div class="fw-bold text-warning small" id="preview-horas">-- hrs</div>
-                        <tiny class="text-muted">Jornada</tiny>
-                    </div>
-                </div>
-                <div class="col-6">
-                    <div class="border rounded p-2">
-                        <i class="bi bi-sun text-info small"></i>
-                        <div class="fw-bold text-info small" id="preview-turno">--</div>
-                        <tiny class="text-muted">Turno</tiny>
-                    </div>
+            <h6 class="mt-2 mb-1" id="preview-nombre">Nombre del Trabajador</h6>
+            <small class="text-muted" id="preview-categoria">Categoría - Área</small>
+        </div>
+
+        <!-- Datos Principales -->
+        <div class="row g-2">
+            <!-- Edad -->
+            <div class="col-6">
+                <div class="bg-light rounded p-2 text-center">
+                    <small class="text-muted d-block">Edad</small>
+                    <span class="fw-bold" id="preview-edad">-- años</span>
                 </div>
             </div>
 
-            <!-- Ubicación Compacta -->
-            <div class="text-center">
-                <div class="bg-light rounded p-2">
-                    <i class="bi bi-geo-alt text-secondary small"></i>
-                    <span class="fw-bold text-secondary small" id="preview-ubicacion">No especificada</span>
-                    <br><tiny class="text-muted">Ubicación Actual</tiny>
+            <!-- Sueldo -->
+            <div class="col-6">
+                <div class="bg-light rounded p-2 text-center">
+                    <small class="text-muted d-block">Sueldo Diario</small>
+                    <span class="fw-bold text-success" id="preview-sueldo">$0.00</span>
                 </div>
             </div>
 
-            <!-- Status Horario Compacto -->
-            <div class="mt-2">
-                <div id="preview-horario-status" class="alert alert-info py-1 px-2 d-none">
-                    <tiny><i class="bi bi-info-circle"></i> <span id="preview-horario-texto"></span></tiny>
+            <!-- Horas de Trabajo -->
+            <div class="col-6">
+                <div class="bg-light rounded p-2 text-center">
+                    <small class="text-muted d-block">Horas/Día</small>
+                    <span class="fw-bold" id="preview-horas">-- hrs</span>
                 </div>
             </div>
+
+            <!-- Turno -->
+            <div class="col-6">
+                <div class="bg-light rounded p-2 text-center">
+                    <small class="text-muted d-block">Turno</small>
+                    <span class="fw-bold" id="preview-turno">--</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Ubicación -->
+        <div class="mt-3">
+            <div class="bg-light rounded p-2">
+                <small class="text-muted d-block">
+                    <i class="bi bi-geo-alt me-1"></i>Ubicación
+                </small>
+                <span id="preview-ubicacion">No especificada</span>
+            </div>
+        </div>
+
+        <!-- ✅ ESTADO - ACTUALIZADO -->
+        <div class="mt-3">
+            <div class="border border-primary rounded p-2 bg-primary bg-opacity-10">
+                <small class="text-primary d-block">
+                    <i class="bi bi-person-gear me-1"></i>Estado del Trabajador
+                </small>
+                <span id="preview-estado" class="text-primary fw-bold">
+                    Se configurará en el siguiente paso
+                </span>
+            </div>
+        </div>
+
+        <!-- ✅ NUEVO: Resumen de Horarios -->
+        <div class="mt-3">
+            <div class="card border-0 bg-light">
+                <div class="card-body p-2">
+                    <h6 class="card-title mb-2 text-center">
+                        <i class="bi bi-clock me-1"></i>Resumen Horario
+                    </h6>
+                    <div class="row g-1 text-center">
+                        <div class="col-3">
+                            <small class="text-muted d-block">Horas/Día</small>
+                            <span class="fw-bold" id="horas-diarias">-</span>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted d-block">Horas/Sem</small>
+                            <span class="fw-bold" id="horas-semanales">-</span>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted d-block">Días Lab.</small>
+                            <span class="fw-bold" id="dias-laborables-count">-</span>
+                        </div>
+                        <div class="col-3">
+                            <small class="text-muted d-block">Turno</small>
+                            <span class="fw-bold" id="turno-calculado">-</span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Nota informativa -->
+        <div class="alert alert-info mt-3 mb-0">
+            <small>
+                <i class="bi bi-info-circle me-1"></i>
+                <strong>Siguiente paso:</strong> Configurar estado inicial y generar contrato automáticamente.
+            </small>
         </div>
     </div>
 </div>
-
-<style>
-tiny {
-    font-size: 0.7rem;
-    line-height: 1;
-}
-
-#togglePreview {
-    border: 1px solid rgba(255,255,255,0.3);
-    transition: all 0.3s ease;
-}
-
-#togglePreview:hover {
-    background-color: rgba(255,255,255,0.1);
-    border-color: rgba(255,255,255,0.5);
-}
-
-#toggleIcon {
-    transition: transform 0.3s ease;
-}
-
-#previewContent.collapsing #toggleIcon,
-#previewContent.show #toggleIcon {
-    transform: rotate(0deg);
-}
-
-#previewContent:not(.show) ~ .card-header #toggleIcon {
-    transform: rotate(180deg);
-}
-</style>
-
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    const toggleBtn = document.getElementById('togglePreview');
-    const toggleIcon = document.getElementById('toggleIcon');
-    const previewContent = document.getElementById('previewContent');
-    
-    // Manejar el cambio de icono cuando se colapsa/expande
-    previewContent.addEventListener('hidden.bs.collapse', function () {
-        toggleIcon.classList.remove('bi-chevron-up');
-        toggleIcon.classList.add('bi-chevron-down');
-    });
-    
-    previewContent.addEventListener('shown.bs.collapse', function () {
-        toggleIcon.classList.remove('bi-chevron-down');
-        toggleIcon.classList.add('bi-chevron-up');
-    });
-    
-    // Guardar estado en localStorage para recordar preferencia
-    previewContent.addEventListener('hidden.bs.collapse', function () {
-        localStorage.setItem('vistaPreviewCollapsed', 'true');
-    });
-    
-    previewContent.addEventListener('shown.bs.collapse', function () {
-        localStorage.setItem('vistaPreviewCollapsed', 'false');
-    });
-    
-    // Restaurar estado previo al cargar la página
-    const wasCollapsed = localStorage.getItem('vistaPreviewCollapsed') === 'true';
-    if (wasCollapsed) {
-        previewContent.classList.remove('show');
-        toggleIcon.classList.remove('bi-chevron-up');
-        toggleIcon.classList.add('bi-chevron-down');
-    }
-});
-</script>

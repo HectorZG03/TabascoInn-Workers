@@ -1,4 +1,4 @@
-<!-- ✅ MODAL SIMPLIFICADO PARA CONTRATO -->
+<!-- ✅ MODAL MEJORADO PARA CONTRATO CON ESTADO -->
 <div class="modal fade" id="modalContrato" tabindex="-1" aria-labelledby="modalContratoLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -18,7 +18,61 @@
                         <i class="bi bi-info-circle me-3 fs-4"></i>
                         <div>
                             <h6 class="alert-heading mb-1">¡Ya casi terminamos!</h6>
-                            <p class="mb-0">Solo configura las fechas del contrato laboral y crearemos todo automáticamente.</p>
+                            <p class="mb-0">Configura el estado inicial del trabajador y las fechas del contrato laboral.</p>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- ✅ NUEVA SECCIÓN: Estado del Trabajador -->
+                <div class="card border-0 shadow-sm mb-4">
+                    <div class="card-header bg-primary text-white">
+                        <h6 class="mb-0">
+                            <i class="bi bi-person-check me-2"></i>
+                            Estado Inicial del Trabajador
+                        </h6>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-12">
+                                <label for="estatus" class="form-label fw-semibold">
+                                    <i class="bi bi-gear me-1"></i>
+                                    Seleccionar Estado Inicial
+                                </label>
+                                <select class="form-select form-select-lg @error('estatus') is-invalid @enderror" 
+                                        id="estatus" 
+                                        name="estatus" 
+                                        required>
+                                    <option value="">Seleccionar estado...</option>
+                                    <option value="activo" {{ old('estatus', 'activo') == 'activo' ? 'selected' : '' }}>
+                                        ✅ Activo - Trabajador operativo completo
+                                    </option>
+                                    <option value="prueba" {{ old('estatus') == 'prueba' ? 'selected' : '' }}>
+                                        🟡 En Prueba - Período de evaluación inicial
+                                    </option>
+                                </select>
+                                <div class="form-text">
+                                    <small class="text-muted">
+                                        <strong>Activo:</strong> El trabajador opera normalmente desde el primer día.<br>
+                                        <strong>En Prueba:</strong> Período de evaluación (generalmente 30-90 días).
+                                    </small>
+                                </div>
+                                @error('estatus')
+                                    <div class="invalid-feedback">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Vista previa del estado seleccionado -->
+                        <div id="estadoPreview" class="mt-3" style="display: none;">
+                            <div class="alert mb-0" id="estadoPreviewAlert">
+                                <div class="d-flex align-items-center">
+                                    <i id="estadoPreviewIcon" class="me-2 fs-5"></i>
+                                    <div>
+                                        <div class="fw-bold" id="estadoPreviewTexto">Estado</div>
+                                        <small id="estadoPreviewDescripcion" class="text-muted">Descripción</small>
+                                    </div>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -118,22 +172,28 @@
                                 Al confirmar se creará:
                             </h6>
                             <div class="row g-2">
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-person-plus text-primary me-2"></i>
                                         <small>Perfil del trabajador</small>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-briefcase text-success me-2"></i>
                                         <small>Ficha técnica laboral</small>
                                     </div>
                                 </div>
-                                <div class="col-md-4">
+                                <div class="col-md-3">
                                     <div class="d-flex align-items-center">
                                         <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
                                         <small>Contrato en PDF</small>
+                                    </div>
+                                </div>
+                                <div class="col-md-3">
+                                    <div class="d-flex align-items-center">
+                                        <i class="bi bi-person-check text-info me-2"></i>
+                                        <small>Estado inicial</small>
                                     </div>
                                 </div>
                             </div>
@@ -144,7 +204,6 @@
 
             <!-- Footer simplificado -->
             <div class="modal-footer bg-light">
-
                 <button type="button" class="btn btn-outline-primary" id="btnGenerarPreview">
                     <i class="bi bi-file-earmark-pdf me-1"></i>
                     Generar PDF (Opcional)
@@ -184,12 +243,12 @@
     border-radius: 10px;
 }
 
-.form-control-lg:focus {
+.form-control-lg:focus, .form-select-lg:focus {
     border-color: #0d6efd;
     box-shadow: 0 0 0 0.25rem rgba(13, 110, 253, 0.25);
 }
 
-#duracionPreview {
+#duracionPreview, #estadoPreview {
     animation: fadeIn 0.3s ease-in-out;
 }
 
@@ -206,13 +265,17 @@
     border-radius: 10px;
     font-weight: 600;
 }
+
+.form-select-lg option {
+    padding: 8px;
+}
 </style>
 
 <script>
 /**
- * ✅ JAVASCRIPT CORREGIDO - Estructura de clase arreglada
+ * ✅ JAVASCRIPT MEJORADO - Con manejo de estado del trabajador
  */
-class ContratoModalSimple {
+class ContratoModalMejorado {
     constructor() {
         this.form = null;
         this.modal = null;
@@ -233,7 +296,7 @@ class ContratoModalSimple {
             }
             
             this.bindEvents();
-            console.log('✅ ContratoModalSimple inicializado');
+            console.log('✅ ContratoModalMejorado inicializado');
         });
     }
 
@@ -250,13 +313,76 @@ class ContratoModalSimple {
         // Eventos para cálculo automático de fechas
         document.getElementById('fecha_inicio_contrato')?.addEventListener('change', () => this.handleFechaChange());
         document.getElementById('fecha_fin_contrato')?.addEventListener('change', () => this.handleFechaChange());
+        
+        // ✅ NUEVO: Event listener para cambio de estado
+        document.getElementById('estatus')?.addEventListener('change', () => this.handleEstadoChange());
+        
+        // Inicializar vista previa de estado
+        this.handleEstadoChange();
+    }
+
+    // ✅ NUEVO: Manejar cambio de estado
+    handleEstadoChange() {
+        const estatusSelect = document.getElementById('estatus');
+        const estadoPreview = document.getElementById('estadoPreview');
+        const previewAlert = document.getElementById('estadoPreviewAlert');
+        const previewIcon = document.getElementById('estadoPreviewIcon');
+        const previewTexto = document.getElementById('estadoPreviewTexto');
+        const previewDescripcion = document.getElementById('estadoPreviewDescripcion');
+        
+        if (!estatusSelect) return;
+        
+        const estadoSeleccionado = estatusSelect.value;
+        
+        if (!estadoSeleccionado) {
+            estadoPreview.style.display = 'none';
+            return;
+        }
+        
+        // Configurar vista previa según el estado
+        let alertClass, iconClass, textoEstado, descripcionEstado;
+        
+        switch (estadoSeleccionado) {
+            case 'activo':
+                alertClass = 'alert-success';
+                iconClass = 'bi-check-circle-fill text-success';
+                textoEstado = 'Trabajador Activo';
+                descripcionEstado = 'El trabajador operará con todos los derechos y responsabilidades desde el primer día.';
+                break;
+            case 'prueba':
+                alertClass = 'alert-warning';
+                iconClass = 'bi-hourglass-split text-warning';
+                textoEstado = 'En Período de Prueba';
+                descripcionEstado = 'El trabajador estará en evaluación durante un período determinado (generalmente 30-90 días).';
+                break;
+            default:
+                estadoPreview.style.display = 'none';
+                return;
+        }
+        
+        // Actualizar elementos
+        previewAlert.className = `alert ${alertClass} mb-0`;
+        previewIcon.className = `${iconClass} me-2 fs-5`;
+        previewTexto.textContent = textoEstado;
+        previewDescripcion.textContent = descripcionEstado;
+        
+        // Mostrar vista previa
+        estadoPreview.style.display = 'block';
+        
+        console.log('✅ Estado actualizado:', estadoSeleccionado);
     }
 
     async generarYDescargarPreview() {
         const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
+        const estatus = document.getElementById('estatus')?.value;
 
-        // Validación de fecha
+        // Validación de campos
+        if (!estatus) {
+            this.mostrarError('Por favor selecciona el estado inicial del trabajador');
+            return;
+        }
+        
         if (!fechaInicio || !fechaFin) {
             this.mostrarError('Antes de generar, asigna las fechas del contrato');
             return;
@@ -282,6 +408,7 @@ class ContratoModalSimple {
             formData.append('fecha_inicio_contrato', fechaInicio);
             formData.append('fecha_fin_contrato', fechaFin);
             formData.append('tipo_duracion', this.tipoCalculado || 'meses');
+            formData.append('estatus', estatus);
 
             // Enviar solicitud al servidor
             const response = await fetch('{{ route("ajax.contratos.preview") }}', {
@@ -417,8 +544,14 @@ class ContratoModalSimple {
     async handleCrearTodo() {
         const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
+        const estatus = document.getElementById('estatus')?.value;
         
         // Validaciones
+        if (!estatus) {
+            this.mostrarError('Por favor selecciona el estado inicial del trabajador');
+            return;
+        }
+        
         if (!fechaInicio || !fechaFin) {
             this.mostrarError('Por favor completa ambas fechas del contrato');
             return;
@@ -442,15 +575,17 @@ class ContratoModalSimple {
         this.setLoadingState(true);
 
         try {
-            // Agregar datos del contrato al formulario
+            // Agregar datos del contrato y estado al formulario
             this.addHiddenInput('fecha_inicio_contrato', fechaInicio);
             this.addHiddenInput('fecha_fin_contrato', fechaFin);
             this.addHiddenInput('tipo_duracion', this.tipoCalculado);
+            this.addHiddenInput('estatus', estatus);
             
-            console.log('✅ Enviando formulario con contrato:', {
+            console.log('✅ Enviando formulario con contrato y estado:', {
                 fechaInicio,
                 fechaFin,
-                tipo: this.tipoCalculado
+                tipo: this.tipoCalculado,
+                estatus
             });
 
             // Enviar formulario
@@ -557,5 +692,5 @@ class ContratoModalSimple {
 }
 
 // Inicializar automáticamente
-new ContratoModalSimple();
+new ContratoModalMejorado();
 </script>
