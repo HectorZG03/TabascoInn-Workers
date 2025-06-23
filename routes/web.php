@@ -228,7 +228,11 @@ Route::middleware(['auth'])->group(function () {
         
         // Descargar contrato temporal
         Route::get('/preview-download/{hash}', [ContratoController::class, 'descargarPreview'])->name('preview.download');
-    });
+
+         // Nueva ruta para generar preview
+        Route::post('/preview', [ContratoController::class, 'generarPreview'])
+            ->name('preview');
+        });
 
     
 });

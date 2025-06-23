@@ -144,6 +144,12 @@
 
             <!-- Footer simplificado -->
             <div class="modal-footer bg-light">
+
+                <button type="button" class="btn btn-outline-primary" id="btnGenerarPreview">
+                    <i class="bi bi-file-earmark-pdf me-1"></i>
+                    Generar PDF (Opcional)
+                </button>
+
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>
                     Cancelar
@@ -204,7 +210,7 @@
 
 <script>
 /**
- * ✅ JAVASCRIPT SIMPLIFICADO - Modal más directo
+ * ✅ JAVASCRIPT CORREGIDO - Estructura de clase arreglada
  */
 class ContratoModalSimple {
     constructor() {
@@ -235,12 +241,75 @@ class ContratoModalSimple {
         // Interceptar envío del formulario principal
         this.form.addEventListener('submit', (e) => this.handleFormSubmit(e));
         
+        // Botón para generar la vista previa
+        document.getElementById('btnGenerarPreview')?.addEventListener('click', () => this.generarYDescargarPreview());
+        
         // Evento para crear todo de una vez
         document.getElementById('btnCrearTodo')?.addEventListener('click', () => this.handleCrearTodo());
         
         // Eventos para cálculo automático de fechas
         document.getElementById('fecha_inicio_contrato')?.addEventListener('change', () => this.handleFechaChange());
         document.getElementById('fecha_fin_contrato')?.addEventListener('change', () => this.handleFechaChange());
+    }
+
+    async generarYDescargarPreview() {
+        const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
+        const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
+
+        // Validación de fecha
+        if (!fechaInicio || !fechaFin) {
+            this.mostrarError('Antes de generar, asigna las fechas del contrato');
+            return;
+        }
+        
+        const inicio = new Date(fechaInicio);
+        const fin = new Date(fechaFin);
+        
+        if (fin <= inicio) {
+            this.mostrarError('Fechas no válidas, la fecha de fin debe ser posterior a la de inicio');
+            return;
+        }
+
+        // Animación de estado de carga
+        const btnPreview = document.getElementById('btnGenerarPreview');
+        const originalBtnHTML = btnPreview.innerHTML;
+        btnPreview.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generando...';
+        btnPreview.disabled = true;
+
+        try {
+            const formData = new FormData(this.form);
+            // Datos del Contrato
+            formData.append('fecha_inicio_contrato', fechaInicio);
+            formData.append('fecha_fin_contrato', fechaFin);
+            formData.append('tipo_duracion', this.tipoCalculado || 'meses');
+
+            // Enviar solicitud al servidor
+            const response = await fetch('{{ route("ajax.contratos.preview") }}', {
+                method: 'POST',
+                headers: {
+                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    'Accept': 'application/json'
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (!response.ok || !data.success) {
+                throw new Error(data.message || 'Error al generar el preview');
+            }
+
+            // Descargar el PDF
+            window.location.href = data.data.download_url;
+            
+        } catch (error) {
+            console.error('Error generando preview:', error);
+            this.mostrarError(error.message || 'Error al generar la vista previa');
+        } finally {
+            // Restaurar estado del botón
+            btnPreview.innerHTML = originalBtnHTML;
+            btnPreview.disabled = false;
+        }
     }
 
     handleFormSubmit(e) {
