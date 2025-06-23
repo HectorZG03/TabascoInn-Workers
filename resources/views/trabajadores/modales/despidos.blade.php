@@ -4,7 +4,7 @@
         <div class="modal-content">
             <div class="modal-header bg-danger text-white">
                 <h5 class="modal-title" id="modalDespidoLabel">
-                    <i class="bi bi-exclamation-triangle"></i> Despedir Trabajador
+                    <i class="bi bi-exclamation-triangle"></i> Dar de Baja a Trabajador
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -18,8 +18,8 @@
                             <i class="bi bi-info-circle"></i> Información Importante
                         </h6>
                         <p class="mb-0">
-                            Está a punto de despedir al trabajador <strong id="nombreTrabajador"></strong>. 
-                            Esta acción cambiará su estado a "Inactivo" y se creará un registro permanente del despido.
+                            Está a punto de dar de baja al trabajador <strong id="nombreTrabajador"></strong>. 
+                            Esta acción cambiará su estado a "Inactivo" y se creará un registro permanente de la baja.
                         </p>
                     </div>
 
@@ -48,8 +48,8 @@
                             <select class="form-select" id="condicion_salida" name="condicion_salida" required>
                                 <option value="">Seleccionar condición...</option>
                                 <option value="Voluntaria">Voluntaria (Renuncia)</option>
-                                <option value="Despido con Causa">Despido con Causa</option>
-                                <option value="Despido sin Causa">Despido sin Causa</option>
+                                <option value="Despido con Causa">Baja con Causa</option>
+                                <option value="Despido sin Causa">Baja sin Causa</option>
                                 <option value="Mutuo Acuerdo">Mutuo Acuerdo</option>
                                 <option value="Abandono de Trabajo">Abandono de Trabajo</option>
                                 <option value="Fin de Contrato">Fin de Contrato</option>
@@ -61,7 +61,7 @@
                     <!-- Motivo -->
                     <div class="mb-3">
                         <label for="motivo" class="form-label">
-                            <i class="bi bi-chat-text"></i> Motivo del Despido *
+                            <i class="bi bi-chat-text"></i> Motivo de la Baja *
                         </label>
                         <textarea class="form-control" 
                                   id="motivo" 
@@ -69,7 +69,7 @@
                                   rows="3" 
                                   minlength="10"
                                   maxlength="500"
-                                  placeholder="Descripción detallada del motivo del despido..."
+                                  placeholder="Descripción detallada del motivo de la baja..."
                                   required></textarea>
                         <div class="form-text">
                             Mínimo 10 caracteres, máximo 500. <span id="contadorMotivo">0/500</span>
@@ -94,22 +94,15 @@
                         <div class="invalid-feedback"></div>
                     </div>
 
-                    <!-- Confirmación -->
-                    <div class="form-check">
-                        <input class="form-check-input" type="checkbox" id="confirmarDespido" required>
-                        <label class="form-check-label" for="confirmarDespido">
-                            <strong>Confirmo que he revisado toda la información y deseo proceder con el despido</strong>
-                        </label>
-                        <div class="invalid-feedback"></div>
-                    </div>
+
                 </div>
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x"></i> Cancelar
                     </button>
-                    <button type="submit" class="btn btn-danger" id="btnConfirmarDespido" disabled>
-                        <i class="bi bi-person-x"></i> Confirmar Despido
+                    <button type="submit" class="btn btn-danger" id="btnConfirmarDespido">
+                        <i class="bi bi-person-x"></i> Confirmar Baja
                     </button>
                 </div>
             </form>
@@ -127,7 +120,6 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaBaja = document.getElementById('fecha_baja');
     const motivo = document.getElementById('motivo');
     const observaciones = document.getElementById('observaciones');
-    const confirmarDespido = document.getElementById('confirmarDespido');
     const btnConfirmarDespido = document.getElementById('btnConfirmarDespido');
     const contadorMotivo = document.getElementById('contadorMotivo');
     const contadorObservaciones = document.getElementById('contadorObservaciones');
@@ -153,8 +145,6 @@ document.addEventListener('DOMContentLoaded', function() {
             // Limpiar formulario
             formDespido.reset();
             fechaBaja.value = new Date().toISOString().split('T')[0];
-            confirmarDespido.checked = false;
-            btnConfirmarDespido.disabled = true;
             
             // Resetear contadores
             if (contadorMotivo) contadorMotivo.textContent = '0/500';
@@ -183,13 +173,6 @@ document.addEventListener('DOMContentLoaded', function() {
             const length = this.value.length;
             contadorObservaciones.textContent = `${length}/1000`;
             contadorObservaciones.className = length > 900 ? 'text-warning' : 'text-muted';
-        });
-    }
-    
-    // ✅ HABILITAR/DESHABILITAR BOTÓN SEGÚN CHECKBOX
-    if (confirmarDespido && btnConfirmarDespido) {
-        confirmarDespido.addEventListener('change', function() {
-            btnConfirmarDespido.disabled = !this.checked;
         });
     }
     
@@ -222,12 +205,6 @@ document.addEventListener('DOMContentLoaded', function() {
                 isValid = false;
             } else if (motivo.value.trim().length < 10) {
                 showFieldError(motivo, 'El motivo debe tener al menos 10 caracteres');
-                isValid = false;
-            }
-            
-            // Validar confirmación
-            if (!confirmarDespido.checked) {
-                showFieldError(confirmarDespido, 'Debe confirmar que desea proceder');
                 isValid = false;
             }
             
@@ -264,8 +241,7 @@ document.addEventListener('DOMContentLoaded', function() {
             
             // Resetear botón
             if (btnConfirmarDespido) {
-                btnConfirmarDespido.disabled = true;
-                btnConfirmarDespido.innerHTML = '<i class="bi bi-person-x"></i> Confirmar Despido';
+                btnConfirmarDespido.innerHTML = '<i class="bi bi-person-x"></i> Confirmar Baja';
             }
             
             // Resetear contadores

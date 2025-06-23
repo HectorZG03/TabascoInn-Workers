@@ -9,7 +9,7 @@ use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
-use App\Http\Controllers\AdminContratosController; // ✅ NUEVA IMPORTACIÓN
+use App\Http\Controllers\AdminContratosController; 
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login

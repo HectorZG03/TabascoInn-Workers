@@ -133,15 +133,6 @@
                             <div id="contenidoInformacion"></div>
                         </div>
                     </div>
-
-                    <!-- Confirmación -->
-                    <div class="form-check mt-3">
-                        <input class="form-check-input" type="checkbox" id="confirmarPermiso" required>
-                        <label class="form-check-label" for="confirmarPermiso">
-                            <strong id="textoConfirmacion">Confirmo que he revisado la información y deseo proceder</strong>
-                        </label>
-                        <div class="invalid-feedback"></div>
-                    </div>
                 </div>
 
                 <div class="modal-footer">
@@ -174,13 +165,11 @@ document.addEventListener('DOMContentLoaded', function() {
     const fechaFin = document.getElementById('fecha_fin');
     const observacionesPermiso = document.getElementById('observaciones_permiso');
     const contadorObservacionesPermiso = document.getElementById('contadorObservacionesPermiso');
-    const confirmarPermiso = document.getElementById('confirmarPermiso');
     const btnConfirmarPermiso = document.getElementById('btnConfirmarPermiso');
     const duracionPermiso = document.getElementById('duracionPermiso');
     const informacionTipo = document.getElementById('informacionTipo');
     const tituloInformacion = document.getElementById('tituloInformacion');
     const contenidoInformacion = document.getElementById('contenidoInformacion');
-    const textoConfirmacion = document.getElementById('textoConfirmacion');
     const textoBoton = document.getElementById('textoBoton');
     
     // ✅ VERIFICAR ELEMENTOS CRÍTICOS
@@ -234,7 +223,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             • Puede finalizar o cancelar antes del vencimiento
                         </small>
                     `;
-                    textoConfirmacion.textContent = 'Confirmo que deseo asignar este permiso laboral';
                     textoBoton.textContent = 'Asignar Permiso';
                 } else {
                     tituloInformacion.textContent = 'Información sobre Suspensiones';
@@ -245,7 +233,6 @@ document.addEventListener('DOMContentLoaded', function() {
                             • Requiere acción administrativa para reactivar
                         </small>
                     `;
-                    textoConfirmacion.textContent = 'Confirmo que deseo suspender a este trabajador';
                     textoBoton.textContent = 'Suspender';
                 }
             } else {
@@ -340,10 +327,10 @@ document.addEventListener('DOMContentLoaded', function() {
         fechaFin.addEventListener('change', calcularDuracion);
     }
     
-    // ✅ VALIDACIÓN SIN MOTIVO
+    // ✅ VALIDACIÓN SIN MOTIVO Y SIN CONFIRMACIÓN
     function validarFormulario() {
         // Verificar que todos los elementos existan
-        if (!tipoPermiso || !fechaInicio || !fechaFin || !confirmarPermiso || !btnConfirmarPermiso) {
+        if (!tipoPermiso || !fechaInicio || !fechaFin || !btnConfirmarPermiso) {
             console.log('❌ Faltan elementos para validación');
             return;
         }
@@ -351,13 +338,11 @@ document.addEventListener('DOMContentLoaded', function() {
         const tipo = tipoPermiso.value;
         const inicio = fechaInicio.value;
         const fin = fechaFin.value;
-        const confirmado = confirmarPermiso.checked;
         
-        // Validación simple SIN MOTIVO
+        // Validación simple SIN MOTIVO Y SIN CONFIRMACIÓN
         const tipoOk = tipo !== '';
         const fechaInicioOk = inicio !== '';
         const fechaFinOk = fin !== '';
-        const confirmadoOk = confirmado;
         
         // Validar fechas si ambas están llenas
         let fechasOk = true;
@@ -367,26 +352,24 @@ document.addEventListener('DOMContentLoaded', function() {
             fechasOk = finDate >= inicioDate;
         }
         
-        const esValido = tipoOk && fechaInicioOk && fechaFinOk && fechasOk && confirmadoOk;
+        const esValido = tipoOk && fechaInicioOk && fechaFinOk && fechasOk;
         
         // Habilitar/deshabilitar botón
         btnConfirmarPermiso.disabled = !esValido;
         
-        console.log('🔍 Validación SIN MOTIVO:', {
+        console.log('🔍 Validación SIN MOTIVO Y SIN CONFIRMACIÓN:', {
             tipo: tipoOk ? '✅' : '❌',
             fechaInicio: fechaInicioOk ? '✅' : '❌',
             fechaFin: fechaFinOk ? '✅' : '❌',
             fechasValidas: fechasOk ? '✅' : '❌',
-            confirmado: confirmadoOk ? '✅' : '❌',
             resultado: esValido ? '✅ VÁLIDO' : '❌ INVÁLIDO'
         });
     }
     
-    // ✅ EVENTOS PARA VALIDACIÓN - SIN MOTIVO
+    // ✅ EVENTOS PARA VALIDACIÓN - SIN MOTIVO Y SIN CONFIRMACIÓN
     if (tipoPermiso) tipoPermiso.addEventListener('change', validarFormulario);
     if (fechaInicio) fechaInicio.addEventListener('change', validarFormulario);
     if (fechaFin) fechaFin.addEventListener('change', validarFormulario);
-    if (confirmarPermiso) confirmarPermiso.addEventListener('change', validarFormulario);
     
     // ✅ ENVÍO DEL FORMULARIO
     if (formPermisos) {
@@ -414,7 +397,6 @@ document.addEventListener('DOMContentLoaded', function() {
         if (motivoContainer) motivoContainer.style.display = 'none';
         if (informacionTipo) informacionTipo.style.display = 'none';
         if (btnConfirmarPermiso) {
-            btnConfirmarPermiso.disabled = true;
             btnConfirmarPermiso.innerHTML = '<i class="bi bi-check-circle"></i> Confirmar';
         }
         
