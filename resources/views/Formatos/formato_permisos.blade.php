@@ -5,7 +5,7 @@
     <title>Solicitud de Permiso - {{ $trabajador['nombre_completo'] }}</title>
     <style>
         body {
-            font-family: DejaVu Sans, sans-serif;
+            font-family: Helvetica;
             font-size: 12pt;
             margin: 60px;
             line-height: 1.6;
