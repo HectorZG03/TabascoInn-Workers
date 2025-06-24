@@ -12,7 +12,7 @@ use Carbon\Carbon;
 class FormatoPermisosController extends Controller
 {
     /**
-     * ✅ GENERAR Y DESCARGAR PDF DEL PERMISO
+     * ✅ GENERAR Y DESCARGAR PDF DEL PERMISO - FORMATO ACTUALIZADO
      */
     public function generarPDF(PermisosLaborales $permiso)
     {
@@ -40,48 +40,70 @@ class FormatoPermisosController extends Controller
                 'correo' => $permiso->trabajador->correo ?? 'No disponible',
             ];
 
-            // ✅ PREPARAR DATOS DEL PERMISO
+            // ✅ PREPARAR DATOS DEL PERMISO CON FECHAS ESPECÍFICAS
             $fechaInicio = Carbon::parse($permiso->fecha_inicio);
             $fechaFin = Carbon::parse($permiso->fecha_fin);
-            $fechaRegreso = $fechaFin->addDay();
+            $fechaRegreso = $fechaFin->copy()->addDay();
             $diasTotales = $permiso->dias_de_permiso;
 
-            // ✅ GENERAR LISTA DE FECHAS (si son pocos días)
-            $fechasDetalle = [];
-            if ($diasTotales <= 10) {
-                $fechaActual = Carbon::parse($permiso->fecha_inicio);
-                while ($fechaActual->lte(Carbon::parse($permiso->fecha_fin))) {
-                    $fechasDetalle[] = $fechaActual->locale('es')->translatedFormat('l d \d\e F \d\e Y');
-                    $fechaActual->addDay();
+            // ✅ GENERAR FECHAS ESPECÍFICAS POR MES
+            $fechasPorMes = [];
+            $fechaActual = $fechaInicio->copy();
+            
+            while ($fechaActual->lte($fechaFin)) {
+                $mesAño = $fechaActual->locale('es')->translatedFormat('F Y');
+                if (!isset($fechasPorMes[$mesAño])) {
+                    $fechasPorMes[$mesAño] = [];
                 }
+                $fechasPorMes[$mesAño][] = $fechaActual->day;
+                $fechaActual->addDay();
             }
 
-            // ✅ PREPARAR MOTIVO DESCRIPTIVO
-            $motivoDescriptivo = $this->generarMotivoDescriptivo($permiso->tipo_permiso, $permiso->motivo_texto);
+            // ✅ CONSTRUIR CADENA DE FECHAS COMO EN EL EJEMPLO
+            $fechasTexto = '';
+            $contador = 0;
+            foreach ($fechasPorMes as $mesAño => $dias) {
+                if ($contador > 0) {
+                    $fechasTexto .= ' y ';
+                }
+                $fechasTexto .= implode(', ', $dias) . ' de ' . $mesAño;
+                $contador++;
+            }
 
             $permisoData = [
                 'id' => $permiso->id_permiso,
-                'tipo' => strtoupper($permiso->tipo_permiso_texto),
-                'motivo' => $motivoDescriptivo,
+                'tipo_permiso' => $permiso->tipo_permiso, // permiso o suspendido
+                'motivo_raw' => $permiso->motivo, // motivo sin procesar
+                'motivo_texto' => $permiso->motivo_texto, // motivo legible
                 'fecha_inicio' => $fechaInicio->locale('es')->translatedFormat('l d \d\e F \d\e Y'),
-                'fecha_fin' => Carbon::parse($permiso->fecha_fin)->locale('es')->translatedFormat('l d \d\e F \d\e Y'),
+                'fecha_fin' => $fechaFin->locale('es')->translatedFormat('l d \d\e F \d\e Y'),
                 'fecha_regreso' => $fechaRegreso->locale('es')->translatedFormat('l d \d\e F \d\e Y'),
                 'dias_totales' => $diasTotales,
-                'dias_texto' => $this->numeroATexto($diasTotales),
-                'fechas_detalle' => $fechasDetalle,
+                'dias_texto' => $this->numeroATextoMejorado($diasTotales),
+                'fechas_especificas' => $fechasTexto, // ✅ NUEVO: fechas como en el ejemplo
                 'observaciones' => $permiso->observaciones ?? '',
                 'estatus' => $permiso->estatus_permiso_texto,
             ];
 
             // ✅ DATOS FIJOS DE LA EMPRESA
             $lugar = 'Villahermosa, Tabasco';
-            $fechaActual = Carbon::now()->locale('es')->translatedFormat('d \d\e F \d\e Y');
+            $fechaActual = Carbon::now()->locale('es')->translatedFormat('d \d\e F Y');
 
-            // ✅ FIRMAS (puedes personalizar esto según tus necesidades)
+            // ✅ FIRMAS
             $firmas = [
-                'trabajador' => strtoupper($trabajador['nombre_completo']),
-                'director' => 'LIC. JORGE ANTONIO ZURITA SILVA', // Personalizar según tu empresa
+                'trabajador' => $trabajador['nombre_completo'],
+                'director' => 'L.F.C.P. Alberto Zurita del Rivero',
             ];
+
+
+
+            $watermarkData = null;
+            $watermarkPath = public_path('image/estaticas/watermark.jpg'); // o tu imagen
+            if (file_exists($watermarkPath)) {
+                $watermarkContent = base64_encode(file_get_contents($watermarkPath));
+                $watermarkMimeType = mime_content_type($watermarkPath);
+                $watermarkData = 'data:' . $watermarkMimeType . ';base64,' . $watermarkContent; 
+            }
 
             // ✅ GENERAR PDF
             $pdf = PDF::loadView('formatos.formato_permisos', [
@@ -90,8 +112,18 @@ class FormatoPermisosController extends Controller
                 'lugar' => $lugar,
                 'fecha_actual' => $fechaActual,
                 'firmas' => $firmas,
+                'watermark' => $watermarkData,
             ]);
 
+            $pdf->setPaper('letter', 'portrait');
+            $pdf->setOptions([
+                'dpi' => 300, // ✅ Aumentar DPI de 150 a 300 para mejor calidad
+                'defaultFont' => 'DejaVu Sans',
+                'isHtml5ParserEnabled' => true,
+                'isRemoteEnabled' => true,
+                'fontSubsetting' => false,
+                'chroot' => public_path(), // ✅ Permite mejor acceso a imágenes
+            ]);
 
             // ✅ CONFIGURAR PDF
             $pdf->setPaper('letter', 'portrait');
@@ -119,7 +151,6 @@ class FormatoPermisosController extends Controller
             $permiso->update([
                 'ruta_pdf' => $rutaArchivo
             ]);
-
 
             Log::info('PDF de permiso generado exitosamente', [
                 'permiso_id' => $permiso->id_permiso,
@@ -273,19 +304,61 @@ class FormatoPermisosController extends Controller
     }
 
     /**
-     * ✅ HELPER: CONVERTIR NÚMERO A TEXTO
+     * ✅ HELPER: CONVERTIR NÚMERO A TEXTO MEJORADO (sin "días")
      */
-    private function numeroATexto(int $numero): string
+    private function numeroATextoMejorado(int $numero): string
     {
         $numeros = [
-            1 => 'un día', 2 => 'dos días', 3 => 'tres días', 4 => 'cuatro días', 5 => 'cinco días',
-            6 => 'seis días', 7 => 'siete días', 8 => 'ocho días', 9 => 'nueve días', 10 => 'diez días',
-            11 => 'once días', 12 => 'doce días', 13 => 'trece días', 14 => 'catorce días', 15 => 'quince días',
-            16 => 'dieciséis días', 17 => 'diecisiete días', 18 => 'dieciocho días', 19 => 'diecinueve días', 20 => 'veinte días',
-            21 => 'veintiún días', 22 => 'veintidós días', 23 => 'veintitrés días', 24 => 'veinticuatro días', 25 => 'veinticinco días',
-            26 => 'veintiséis días', 27 => 'veintisiete días', 28 => 'veintiocho días', 29 => 'veintinueve días', 30 => 'treinta días'
+            1 => 'Un día', 2 => 'Dos días', 3 => 'Tres días', 4 => 'Cuatro días', 5 => 'Cinco días',
+            6 => 'Seis días', 7 => 'Siete días', 8 => 'Ocho días', 9 => 'Nueve días', 10 => 'Diez días',
+            11 => 'Once días', 12 => 'Doce días', 13 => 'Trece días', 14 => 'Catorce días', 15 => 'Quince días',
+            16 => 'Dieciséis días', 17 => 'Diecisiete días', 18 => 'Dieciocho días', 19 => 'Diecinueve días', 20 => 'Veinte días',
+            21 => 'Veintiún días', 22 => 'Veintidós días', 23 => 'Veintitrés días', 24 => 'Veinticuatro días', 25 => 'Veinticinco días',
+            26 => 'Veintiséis días', 27 => 'Veintisiete días', 28 => 'Veintiocho días', 29 => 'Veintinueve días', 30 => 'Treinta días'
         ];
 
-        return $numeros[$numero] ?? "$numero días";
+        return $numeros[$numero] ?? ucfirst($this->numeroEnLetras($numero)) . ' días';
+    }
+
+    /**
+     * ✅ HELPER: CONVERTIR NÚMEROS GRANDES A LETRAS
+     */
+    private function numeroEnLetras(int $numero): string
+    {
+        if ($numero < 31) {
+            $numerosBase = [
+                1 => 'un', 2 => 'dos', 3 => 'tres', 4 => 'cuatro', 5 => 'cinco',
+                6 => 'seis', 7 => 'siete', 8 => 'ocho', 9 => 'nueve', 10 => 'diez',
+                11 => 'once', 12 => 'doce', 13 => 'trece', 14 => 'catorce', 15 => 'quince',
+                16 => 'dieciséis', 17 => 'diecisiete', 18 => 'dieciocho', 19 => 'diecinueve', 20 => 'veinte',
+                21 => 'veintiún', 22 => 'veintidós', 23 => 'veintitrés', 24 => 'veinticuatro', 25 => 'veinticinco',
+                26 => 'veintiséis', 27 => 'veintisiete', 28 => 'veintiocho', 29 => 'veintinueve', 30 => 'treinta'
+            ];
+            return $numerosBase[$numero] ?? (string)$numero;
+        }
+        
+        // Para números mayores a 30, usar lógica básica
+        $decenas = [
+            30 => 'treinta', 40 => 'cuarenta', 50 => 'cincuenta', 
+            60 => 'sesenta', 70 => 'setenta', 80 => 'ochenta', 90 => 'noventa'
+        ];
+        
+        $unidades = [
+            1 => 'uno', 2 => 'dos', 3 => 'tres', 4 => 'cuatro', 5 => 'cinco',
+            6 => 'seis', 7 => 'siete', 8 => 'ocho', 9 => 'nueve'
+        ];
+        
+        if ($numero < 100) {
+            $decena = floor($numero / 10) * 10;
+            $unidad = $numero % 10;
+            
+            if ($unidad == 0) {
+                return $decenas[$decena] ?? (string)$numero;
+            } else {
+                return ($decenas[$decena] ?? (string)$decena) . ' y ' . ($unidades[$unidad] ?? (string)$unidad);
+            }
+        }
+        
+        return (string)$numero; // Fallback para números muy grandes
     }
 }

@@ -304,9 +304,9 @@
                                                 
                                                 <button type="button" 
                                                         class="btn btn-outline-danger"
-                                                        title="Cancelar Permiso"
+                                                        title="Eliminar Permiso Definitivamente"
                                                         onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
-                                                    <i class="bi bi-x-circle"></i>
+                                                    <i class="bi bi-trash"></i>
                                                 </button>
                                             @else
                                                 {{-- ✅ SI EL PERMISO NO ESTÁ ACTIVO, MOSTRAR OPCIONES LIMITADAS --}}
@@ -464,7 +464,7 @@ function finalizarPermiso(permisoId, nombreTrabajador) {
 }
 
 function cancelarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`¿Está seguro de cancelar el permiso de ${nombreTrabajador}? Esta acción marcará el permiso como cancelado y reactivará al trabajador.`)) {
+    if (confirm(`⚠️ ¿Está seguro de ELIMINAR DEFINITIVAMENTE el permiso de ${nombreTrabajador}?\n\nEsta acción:\n• Eliminará el permiso de la base de datos\n• Eliminará el archivo PDF asociado\n• Reactivará al trabajador\n• NO SE PUEDE DESHACER\n\n¿Continuar?`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/permisos/${permisoId}/cancelar`;

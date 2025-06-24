@@ -320,105 +320,57 @@ class PermisosLaboralesController extends Controller
         }
 
         DB::beginTransaction();
-        
-        try {
-            // ✅ MARCAR COMO CANCELADO EN LUGAR DE ELIMINAR
-            $permiso->update([
-                'estatus_permiso' => 'cancelado',
-                'observaciones' => $permiso->observaciones . 
-                    "\n[CANCELADO EL " . now()->format('d/m/Y') . " por " . (Auth::user()->email ?? 'Sistema') . "]"
-            ]);
 
-            // ✅ REACTIVAR TRABAJADOR
+        try{
+            // Eliminar el pdf si existe:
+            if ($permiso->tiene_pdf){
+                $permiso->eliminarPdf();
+            }
+
+            // Guardar datos para log antes de eliminar:
+            $datosPermiso = [
+                'permiso_id' => $permiso->id_permiso,
+                'trabajador_id' => $trabajador->id_trabajador,
+                'trabajador_nombre' => $trabajador->nombre_completo,
+                'tipo_permiso' => $permiso->tipo_permiso,
+                'motivo' => $permiso->motivo_texto,
+                'fecha_inicio' => $permiso->fecha_inicio->format('d/m/Y'),
+                'fecha_fin' => $permiso->fecha_fin->format('d/m/Y'),
+            ];
+
+            // Reactivar trabajador primero:
             $trabajador->update([
                 'estatus' => 'activo',
             ]);
 
+            //Elminacion del registro definitivamente:
+            $permiso->delete();
+
             DB::commit();
 
-            Log::info('Permiso cancelado con historial', [
-                'trabajador_id' => $trabajador->id_trabajador,
-                'permiso_id' => $permiso->id_permiso,
-                'tipo_permiso' => $permiso->tipo_permiso,
-                'estatus_anterior' => 'activo',
-                'estatus_nuevo' => 'cancelado',
-                'usuario' => Auth::user()->email ?? 'Sistema'
+            Log::info('Permiso eliminado exitosamente', [
+                'datos_permiso' => $datosPermiso,
+                'usuario' => Auth::user()->email ?? 'Sistema',
+                'fecha_eliminacion' => now()->format('d/m/Y H:i:s'),
             ]);
 
-            $tipoTexto = $permiso->tipo_permiso === 'permiso' ? 'Permiso' : 'Suspensión';
-
+            $tipoTexto = $datosPermiso['tipo_permiso'] === 'permiso' ? 'Permiso' : 'Suspensión';
             return redirect()->route('permisos.index')
                            ->with('success', 
-                               "{$tipoTexto} cancelado. {$trabajador->nombre_completo} ha sido reactivado"
+                               "{$tipoTexto} eliminado exitosamente. {$datosPermiso['trabajador_nombre']} ha sido reactivado"
                            );
-
         } catch (\Exception $e) {
             DB::rollback();
-            
-            Log::error('Error al cancelar permiso', [
+
+            Log::error('Error al eliminar permiso', [
                 'permiso_id' => $permiso->id_permiso,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
+            return back()->withErrors(['error' => 'Error al eliminar: ' . $e->getMessage()]);
 
-            return back()->withErrors(['error' => 'Error al cancelar: ' . $e->getMessage()]);
         }
-    }
-
-    /**
-     * ✅ VERIFICAR PERMISOS VENCIDOS - ACTUALIZADO
-     */
-    public function verificarVencidos()
-    {
-        // ✅ BUSCAR PERMISOS ACTIVOS VENCIDOS
-        $permisosVencidos = PermisosLaborales::with('trabajador')
-            ->where('fecha_fin', '<', now()->format('Y-m-d'))
-            ->where('estatus_permiso', 'activo') // Solo activos
-            ->get();
-
-        $procesados = 0;
-
-        foreach ($permisosVencidos as $permiso) {
-            try {
-                DB::beginTransaction();
-
-                // ✅ MARCAR PERMISO COMO FINALIZADO
-                $permiso->update([
-                    'estatus_permiso' => 'finalizado',
-                    'observaciones' => $permiso->observaciones . 
-                        "\n[AUTO-FINALIZADO POR VENCIMIENTO EL " . now()->format('d/m/Y') . "]"
-                ]);
-
-                // ✅ SOLO REACTIVAR PERMISOS, NO SUSPENSIONES
-                if ($permiso->tipo_permiso === 'permiso') {
-                    $permiso->trabajador->update(['estatus' => 'activo']);
-                }
-
-                DB::commit();
-                $procesados++;
-                
-                Log::info('Permiso auto-finalizado por vencimiento', [
-                    'trabajador_id' => $permiso->trabajador->id_trabajador,
-                    'permiso_id' => $permiso->id_permiso,
-                    'tipo_permiso' => $permiso->tipo_permiso,
-                    'fecha_vencimiento' => $permiso->fecha_fin,
-                    'reactivado' => $permiso->tipo_permiso === 'permiso'
-                ]);
-
-            } catch (\Exception $e) {
-                DB::rollback();
-                Log::error('Error al auto-finalizar permiso vencido', [
-                    'permiso_id' => $permiso->id_permiso,
-                    'error' => $e->getMessage()
-                ]);
-            }
-        }
-
-        return response()->json([
-            'permisos_vencidos_encontrados' => $permisosVencidos->count(),
-            'permisos_procesados' => $procesados,
-            'suspensiones_requieren_revision' => $permisosVencidos->where('tipo_permiso', 'suspendido')->count()
-        ]);
     }
 
     /**

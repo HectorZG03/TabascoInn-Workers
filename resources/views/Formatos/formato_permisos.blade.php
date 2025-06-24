@@ -10,113 +10,171 @@
             margin: 60px;
             line-height: 1.6;
         }
+        .espacios-iniciales {
+            height: 150px; /* Espacios en blanco arriba */
+        }
+        .fecha-lugar {
+            text-align: right;
+            margin-bottom: 80px; /* ✅ Más espacio abajo (era 60px) */
+            font-size: 10pt; /* ✅ Más pequeña (era 12pt del body) */
+        }
         .titulo {
             text-align: center;
             font-weight: bold;
             text-decoration: underline;
-            margin: 40px 0;
+            margin: 40px 0 80px 0;
             font-size: 14pt;
         }
-        .justificado {
+        .contenido-principal {
             text-align: justify;
-            margin-bottom: 20px;
-        }
-        .firma-container {
-            display: flex;
-            justify-content: space-between;
-            margin-top: 80px;
-        }
-        .firma {
-            text-align: center;
-            width: 45%;
-        }
-        .ccp {
-            margin-top: 60px;
-        }
-        .fecha-lugar {
-            text-align: right;
             margin-bottom: 40px;
+            line-height: 1.8;
         }
-        .datos-trabajador {
-            margin-bottom: 20px;
+        .despedida {
+            text-align: justify;
+            margin: 40px 0 100px 0;
         }
-        .observaciones {
-            margin-top: 20px;
-            padding: 10px;
-            border-left: 3px solid #007bff;
-            background-color: #f8f9fa;
+        .firmas-container {
+            margin-top: 120px;
+            font-size: 12pt; /* ✅ Tamaño 12 para toda la sección de firmas */
+        }
+        .firmas-header {
+            width: 100%;
+            margin-bottom: 100px;
+            font-size: 12pt; /* ✅ Tamaño 12 para headers de firmas */
+        }
+        .firmas-header table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .firma-izq, .firma-der {
+            width: 50%;
+            text-align: center;
+            font-weight: bold;
+            padding: 0;
+            font-size: 12pt; /* ✅ Tamaño 12 para ATENTAMENTE/AUTORIZA */
+        }
+        .firmas-nombres {
+            width: 100%;
+            font-size: 12pt; /* ✅ Tamaño 12 para nombres */
+        }
+        .firmas-nombres table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        .nombre-trabajador, .nombre-director {
+            width: 50%;
+            text-align: center;
+            padding: 0;
+            vertical-align: top;
+            font-size: 12pt; /* ✅ Tamaño 12 para nombres */
+        }
+        .cargo {
+            font-weight: normal;
+            margin-top: 10px;
+            font-size: 12pt; /* ✅ Tamaño 12 para cargos */
+        }
+        /* ✅ MARCA DE AGUA QUE ABARCA TODA LA HOJA - HASTA LOS MÁRGENES */
+        .watermark-image {
+            position: fixed;
+            top: -60px; /* ✅ Extender hacia arriba cubriendo margen superior */
+            left: -60px; /* ✅ Extender hacia la izquierda cubriendo margen izquierdo */
+            width: calc(100% + 120px); /* ✅ Ancho total + márgenes (60px x 2) */
+            height: calc(100% + 120px); /* ✅ Alto total + márgenes (60px x 2) */
+            opacity: 1; /* SIN transparencia - imagen completa */
+            z-index: -1; /* Detrás de todo el contenido */
+            pointer-events: none; /* No interfiere con el contenido */
+            object-fit: cover; /* La imagen se ajusta cubriendo toda el área */
         }
     </style>
 </head>
 <body>
-
-    {{-- ✅ FECHA Y LUGAR DINÁMICOS --}}
-    <p class="fecha-lugar">{{ $lugar }}, {{ $fecha_actual }}.</p>
-
-    {{-- ✅ TÍTULO DINÁMICO SEGÚN TIPO DE PERMISO --}}
-    <h2 class="titulo">SOLICITUD DE {{ $permiso['tipo'] }}</h2>
-
-    {{-- ✅ CUERPO PRINCIPAL CON DATOS DINÁMICOS --}}
-    <p class="justificado">
-        Por medio de la presente, <strong>{{ $trabajador['nombre_completo'] }}</strong>, 
-        quien labora en el área de <strong>{{ $trabajador['area'] }}</strong> 
-        como <strong>{{ $trabajador['categoria'] }}</strong>, 
-        solicito un permiso por <strong>{{ $permiso['dias_totales'] }} días ({{ $permiso['dias_texto'] }})</strong>, 
-        comprendiendo del <strong>{{ $permiso['fecha_inicio'] }}</strong> 
-        al <strong>{{ $permiso['fecha_fin'] }}</strong>, 
-        presentándome a laborar el día <strong>{{ $permiso['fecha_regreso'] }}</strong>, 
-        {{ $permiso['motivo'] }}
-    </p>
-
-    {{-- ✅ DETALLES DE FECHAS (si son muchos días, mostrar rango; si son pocos, mostrar lista) --}}
-    @if($permiso['dias_totales'] <= 10)
-        <p class="justificado">
-            <strong>Fechas específicas del permiso:</strong><br>
-            @foreach($permiso['fechas_detalle'] as $index => $fecha)
-                {{ $fecha }}@if(!$loop->last), @endif
-            @endforeach
-        </p>
+    {{-- ✅ MARCA DE AGUA CON IMAGEN --}}
+    @if($watermark ?? null)
+        <img 
+            src="{{ $watermark }}" 
+            alt="Marca de Agua" 
+            class="watermark-image"
+        >
     @endif
 
-    {{-- ✅ OBSERVACIONES ADICIONALES SI EXISTEN --}}
-    @if($permiso['observaciones'] && strlen($permiso['observaciones']) > 100)
-        <div class="observaciones">
-            <strong>Observaciones adicionales:</strong><br>
-            {{ $permiso['observaciones'] }}
-        </div>
-    @endif
-
-    <p class="justificado">
-        Sin más por el momento me despido de usted con un cordial saludo, 
-        agradeciendo de antemano la atención prestada a la presente solicitud.
-    </p>
-
-    {{-- ✅ FIRMAS DINÁMICAS --}}
-    <div class="firma-container">
-        <div class="firma">
-            <p><strong>ATENTAMENTE</strong></p>
-            <br><br><br>
-            <p><strong>{{ $firmas['trabajador'] }}</strong><br>Trabajador(a)</p>
-        </div>
-        <div class="firma">
-            <p><strong>AUTORIZA</strong></p>
-            <br><br><br>
-            <p><strong>{{ $firmas['director'] }}</strong><br>Director General</p>
-        </div>
+    {{-- ✅ LOGO DESDE CONTROLADOR --}>
+    <div style="text-align: center; margin-bottom: 20px;">
+        @if($logo)
+            <img 
+                src="{{ $logo }}" 
+                alt="Logo" 
+                style="width: 120px; height: auto;"
+            >
+        @else
+            <div style="width: 200px; height: 200px; border: 1px solid #ccc; display: inline-block; text-align: center; line-height: 60px; font-size: 10px; color: #999;">
+                LOGO
+            </div>
+        @endif
     </div>
 
-    {{-- ✅ COPIAS --}}
-    <div class="ccp">
-        <p><strong>C.C.P.</strong> Recursos Humanos - Grupo Zurita</p>
-        <p><strong>C.C.P.</strong> Recursos Humanos - Hotel Tabasco Inn</p>
-        <p><strong>C.C.P.</strong> Expediente del Trabajador</p>
+    {{-- ✅ ESPACIOS EN BLANCO INICIALES --}}
+    <div class="espacios-iniciales"></div>
+
+    {{-- ✅ FECHA Y LUGAR --}}
+    <div class="fecha-lugar">
+        {{ $lugar }}, {{ $fecha_actual }}.
     </div>
 
-    {{-- ✅ PIE DE PÁGINA CON INFORMACIÓN ADICIONAL --}}
-    <div style="position: fixed; bottom: 20px; left: 60px; right: 60px; font-size: 10pt; color: #666; text-align: center; border-top: 1px solid #ccc; padding-top: 10px;">
-        Documento generado el {{ now()->locale('es')->translatedFormat('d \d\e F \d\e Y \a \l\a\s H:i') }} hrs. | 
-        Permiso ID: {{ $permiso['id'] ?? 'N/A' }} | 
-        Tipo: {{ $permiso['tipo'] }}
+    {{-- ✅ TÍTULO SIMPLE CON MOTIVO ESPECÍFICO --}}
+    <div class="titulo">
+        SOLICITUD DE {{ strtoupper($permiso['motivo_texto']) }}
+    </div>
+
+    {{-- ✅ CONTENIDO PRINCIPAL CON MOTIVO ESPECÍFICO --}}
+    <div class="contenido-principal">
+        Por medio de la presente, solicito un {{ strtolower($permiso['motivo_texto']) }} por <strong>{{ $permiso['dias_totales'] }} días ({{ $permiso['dias_texto'] }})</strong>, 
+        
+        @if($permiso['dias_totales'] <= 31)
+            mencionando las siguientes fechas {{ $permiso['fechas_especificas'] }}, 
+        @else
+            comprendiendo del {{ $permiso['fecha_inicio'] }} al {{ $permiso['fecha_fin'] }}, 
+        @endif
+        
+        presentándome a laborar el día {{ $permiso['fecha_regreso'] }} del presente año
+
+        @if($permiso['observaciones'] && strlen(trim($permiso['observaciones'])) > 0)
+            , debido a que {{ $permiso['observaciones'] }}
+        @else
+            .
+        @endif
+    </div>
+
+    {{-- ✅ DESPEDIDA --}}
+    <div class="despedida">
+        Sin más por el momento me despido de usted con un cordial saludo.
+    </div>
+
+    {{-- ✅ FIRMAS --}}
+    <div class="firmas-container">
+        <div class="firmas-header">
+            <table>
+                <tr>
+                    <td class="firma-izq">ATENTAMENTE</td>
+                    <td class="firma-der">AUTORIZA</td>
+                </tr>
+            </table>
+        </div>
+
+        <div class="firmas-nombres">
+            <table>
+                <tr>
+                    <td class="nombre-trabajador">
+                        <strong>C. {{ $trabajador['nombre_completo'] }}</strong>
+                        <div class="cargo">Trabajador{{ substr($trabajador['nombre_completo'], -1) === 'a' ? 'a' : '' }}</div>
+                    </td>
+                    <td class="nombre-director">
+                        <strong>{{ $firmas['director'] }}</strong>
+                        <div class="cargo">Director General</div>
+                    </td>
+                </tr>
+            </table>
+        </div>
     </div>
 
 </body>

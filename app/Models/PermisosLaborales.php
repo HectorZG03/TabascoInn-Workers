@@ -255,9 +255,6 @@ class PermisosLaborales extends Model
         return $this->updated_at->timestamp > $fechaModificacion;
     }
 
-    /**
-     * ✅ ELIMINAR PDF DEL STORAGE
-     */
     public function eliminarPdf(): bool
     {
         if (!$this->ruta_pdf) {
@@ -265,23 +262,44 @@ class PermisosLaborales extends Model
         }
         
         try {
-            if (Storage::exists('public/' . $this->ruta_pdf)) {
-                Storage::delete('public/' . $this->ruta_pdf);
+            // ✅ CONSTRUIR RUTA COMPLETA PARA Storage::
+            $rutaCompleta = 'public/' . $this->ruta_pdf;
+            
+            // ✅ VERIFICAR Y ELIMINAR CON RUTA COMPLETA
+            if (Storage::exists($rutaCompleta)) {
+                $eliminado = Storage::delete($rutaCompleta);
+                
+                if ($eliminado) {
+                    Log::info('PDF de permiso eliminado del storage', [
+                        'permiso_id' => $this->id_permiso,
+                        'ruta_eliminada' => $rutaCompleta,
+                        'ruta_relativa' => $this->ruta_pdf,
+                    ]);
+                } else {
+                    Log::warning('No se pudo eliminar el PDF del storage', [
+                        'permiso_id' => $this->id_permiso,
+                        'ruta_intentada' => $rutaCompleta,
+                    ]);
+                    return false;
+                }
+            } else {
+                Log::info('PDF no existe en storage, posiblemente ya eliminado', [
+                    'permiso_id' => $this->id_permiso,
+                    'ruta_buscada' => $rutaCompleta,
+                ]);
             }
             
+            // ✅ LIMPIAR RUTA EN BD
             $this->update(['ruta_pdf' => null]);
             
-            Log::info('PDF de permiso eliminado', [
-                'permiso_id' => $this->id_permiso,
-                'ruta_anterior' => $this->ruta_pdf,
-            ]);
-            
             return true;
+            
         } catch (\Exception $e) {
             Log::error('Error al eliminar PDF de permiso', [
                 'permiso_id' => $this->id_permiso,
                 'ruta_pdf' => $this->ruta_pdf,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             
             return false;
