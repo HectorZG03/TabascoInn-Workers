@@ -272,6 +272,9 @@
                                         @endif
                                     </td>
                                     <td>
+                                    {{-- ✅ REEMPLAZAR LA SECCIÓN DE ACCIONES EN LA TABLA DE permisos_lista.blade.php --}}
+
+                                    <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             <!-- Ver detalles -->
                                             <button type="button" 
@@ -282,7 +285,15 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
-                                            {{-- ✅ SOLO MOSTRAR ACCIONES SI EL PERMISO ESTÁ ACTIVO --}}
+                                            {{-- ✅ BOTÓN PARA GENERAR/DESCARGAR PDF --}}
+                                            <a href="{{ route('permisos.pdf', $permiso->id_permiso) }}" 
+                                            class="btn btn-outline-success"
+                                            title="Generar y Descargar PDF"
+                                            target="_blank">
+                                                <i class="bi bi-file-earmark-pdf"></i>
+                                            </a>
+                                            
+                                            {{-- ✅ SOLO MOSTRAR ACCIONES DE GESTIÓN SI EL PERMISO ESTÁ ACTIVO --}}
                                             @if($permiso->estatus_permiso === 'activo')
                                                 <button type="button" 
                                                         class="btn btn-outline-warning"
@@ -297,197 +308,84 @@
                                                         onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
                                                     <i class="bi bi-x-circle"></i>
                                                 </button>
+                                            @else
+                                                {{-- ✅ SI EL PERMISO NO ESTÁ ACTIVO, MOSTRAR OPCIONES LIMITADAS --}}
+                                                @if($permiso->tiene_pdf && $permiso->pdf_necesita_regeneracion)
+                                                    <button type="button" 
+                                                            class="btn btn-outline-info"
+                                                            title="Regenerar PDF (datos actualizados)"
+                                                            onclick="regenerarPdf({{ $permiso->id_permiso }})">
+                                                        <i class="bi bi-arrow-clockwise"></i>
+                                                    </button>
+                                                @endif
                                             @endif
                                         </div>
 
-                                        <!-- Modal de detalles del permiso -->
-                                        <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1">
-                                            <div class="modal-dialog modal-lg">
-                                                <div class="modal-content">
-                                                    <div class="modal-header" style="background-color: #17a2b8; color: white;">
-                                                        <h5 class="modal-title">
-                                                            <i class="bi bi-calendar-event-fill"></i> Detalles del Permiso Laboral
-                                                        </h5>
-                                                        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-                                                    </div>
-                                                    <div class="modal-body">
-                                                        <div class="row">
-                                                            <!-- Información del trabajador -->
-                                                            <div class="col-md-6 mb-4">
-                                                                <div class="card border-primary">
-                                                                    <div class="card-header bg-primary text-white">
-                                                                        <h6 class="mb-0"><i class="bi bi-person"></i> Datos del Trabajador</h6>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div class="text-center mb-3">
-                                                                            <div class="avatar-circle mx-auto" style="background-color: #007bff; width: 60px; height: 60px; font-size: 18px;">
-                                                                                {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
-                                                                            </div>
-                                                                        </div>
-                                                                        <h5 class="text-center text-primary mb-3">{{ $permiso->trabajador->nombre_completo }}</h5>
-                                                                        
-                                                                        <div class="row text-sm">
-                                                                            <div class="col-12 mb-2">
-                                                                                <strong>ID:</strong> {{ $permiso->trabajador->id_trabajador }}
-                                                                            </div>
-                                                                            @if($permiso->trabajador->fichaTecnica)
-                                                                            <div class="col-12 mb-2">
-                                                                                <strong>Área:</strong> {{ $permiso->trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
-                                                                            </div>
-                                                                            <div class="col-12 mb-2">
-                                                                                <strong>Cargo:</strong> {{ $permiso->trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
-                                                                            </div>
-                                                                            @endif
-                                                                            <div class="col-12 mb-2">
-                                                                                <strong>Fecha Ingreso:</strong> 
-                                                                                <span class="badge bg-success">{{ $permiso->trabajador->fecha_ingreso->format('d/m/Y') }}</span>
-                                                                            </div>
-                                                                            <div class="col-12">
-                                                                                <strong>Estado Actual:</strong> 
-                                                                                <span class="badge bg-{{ $permiso->trabajador->estatus_color }}">
-                                                                                    {{ $permiso->trabajador->estatus_texto }}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
+                                        {{-- ✅ BADGE INDICADOR DE PDF --}}
+                                        @if($permiso->tiene_pdf)
+                                            <div class="mt-1">
+                                                <span class="badge bg-success" title="PDF disponible">
+                                                    <i class="bi bi-file-earmark-pdf"></i> PDF
+                                                </span>
+                                                @if($permiso->pdf_necesita_regeneracion)
+                                                    <span class="badge bg-warning text-dark" title="PDF desactualizado">
+                                                        <i class="bi bi-exclamation-triangle"></i>
+                                                    </span>
+                                                @endif
+                                            </div>
+                                        @else
+                                            <div class="mt-1">
+                                                <span class="badge bg-light text-muted" title="Sin PDF generado">
+                                                    <i class="bi bi-file-earmark"></i> Sin PDF
+                                                </span>
+                                            </div>
+                                        @endif
 
-                                                            <!-- Información del permiso -->
-                                                            <div class="col-md-6 mb-4">
-                                                                <div class="card border-info">
-                                                                    <div class="card-header bg-info text-white">
-                                                                        <h6 class="mb-0"><i class="bi bi-calendar-check"></i> Datos del Permiso</h6>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Tipo de Permiso:</label>
-                                                                            <div>
-                                                                                <span class="badge bg-{{ $coloresPermiso[$permiso->tipo_permiso] ?? 'secondary' }} fs-6">
-                                                                                    <i class="{{ $iconosPermiso[$permiso->tipo_permiso] ?? 'bi-calendar' }}"></i>
-                                                                                    {{ $tiposPermisos[$permiso->tipo_permiso] ?? $permiso->tipo_permiso }}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
+                                    <!-- Modal de detalles del permiso -->
+                                    <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1" aria-labelledby="modalDetallesLabel{{ $permiso->id_permiso }}" aria-hidden="true">
+                                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                            <div class="modal-content">
 
-                                                                        <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Motivo:</label>
-                                                                            <div>
-                                                                                <span class="badge bg-light text-dark border fs-6">
-                                                                                    {{ $permiso->motivo_texto }}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Periodo:</label>
-                                                                            <div class="row">
-                                                                                <div class="col-6">
-                                                                                    <small class="text-muted">Inicio:</small>
-                                                                                    <div class="fw-medium">{{ $permiso->fecha_inicio->format('d/m/Y') }}</div>
-                                                                                </div>
-                                                                                <div class="col-6">
-                                                                                    <small class="text-muted">Fin:</small>
-                                                                                    <div class="fw-medium">{{ $permiso->fecha_fin->format('d/m/Y') }}</div>
-                                                                                </div>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Duración:</label>
-                                                                            <div>
-                                                                                <span class="badge bg-light text-dark border fs-6">
-                                                                                    {{ $permiso->dias_de_permiso }} día{{ $permiso->dias_de_permiso != 1 ? 's' : '' }}
-                                                                                </span>
-                                                                            </div>
-                                                                        </div>
-
-                                                                        {{-- ✅ ESTADO USANDO ESTATUS_PERMISO --}}
-                                                                        <div class="mb-3">
-                                                                            <label class="form-label fw-bold">Estado:</label>
-                                                                            <div>
-                                                                                @if($permiso->estatus_permiso === 'activo')
-                                                                                    @if($permiso->fecha_fin >= now())
-                                                                                        <span class="badge bg-success fs-6">Activo</span>
-                                                                                        @if($permiso->dias_restantes <= 3 && $permiso->dias_restantes > 0)
-                                                                                            <div class="text-warning small mt-1">
-                                                                                                <i class="bi bi-exclamation-triangle"></i> Próximo a vencer en {{ $permiso->dias_restantes }} día{{ $permiso->dias_restantes != 1 ? 's' : '' }}
-                                                                                            </div>
-                                                                                        @elseif($permiso->dias_restantes > 0)
-                                                                                            <div class="text-muted small mt-1">
-                                                                                                Finaliza en {{ $permiso->dias_restantes }} día{{ $permiso->dias_restantes != 1 ? 's' : '' }}
-                                                                                            </div>
-                                                                                        @else
-                                                                                            <div class="text-info small mt-1">
-                                                                                                <i class="bi bi-clock"></i> Finaliza hoy
-                                                                                            </div>
-                                                                                        @endif
-                                                                                    @else
-                                                                                        <span class="badge bg-warning text-dark fs-6">Vencido</span>
-                                                                                        <div class="text-muted small mt-1">
-                                                                                            Venció hace {{ $permiso->dias_vencidos }} día{{ $permiso->dias_vencidos != 1 ? 's' : '' }}
-                                                                                        </div>
-                                                                                    @endif
-                                                                                @elseif($permiso->estatus_permiso === 'finalizado')
-                                                                                    <span class="badge bg-primary fs-6">Finalizado</span>
-                                                                                    <div class="text-muted small mt-1">
-                                                                                        <i class="bi bi-check-circle"></i> Completado exitosamente
-                                                                                    </div>
-                                                                                @elseif($permiso->estatus_permiso === 'cancelado')
-                                                                                    <span class="badge bg-secondary fs-6">Cancelado</span>
-                                                                                    <div class="text-muted small mt-1">
-                                                                                        <i class="bi bi-x-circle"></i> Cancelado por administración
-                                                                                    </div>
-                                                                                @endif
-                                                                            </div>
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-
-                                                            <!-- Observaciones (si existen) -->
-                                                            @if($permiso->observaciones)
-                                                            <div class="col-12">
-                                                                <div class="card border-warning">
-                                                                    <div class="card-header bg-warning">
-                                                                        <h6 class="mb-0"><i class="bi bi-sticky"></i> Observaciones</h6>
-                                                                    </div>
-                                                                    <div class="card-body">
-                                                                        <div class="bg-light p-3 rounded" style="white-space: pre-line;">
-                                                                            {{ $permiso->observaciones }}
-                                                                        </div>
-                                                                    </div>
-                                                                </div>
-                                                            </div>
-                                                            @endif
-                                                        </div>
-                                                    </div>
-                                                    <div class="modal-footer">
-                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                            <i class="bi bi-x-circle"></i> Cerrar
-                                                        </button>
-                                                        
-                                                        {{-- ✅ SOLO MOSTRAR ACCIONES SI EL PERMISO ESTÁ ACTIVO --}}
-                                                        @if($permiso->estatus_permiso === 'activo')
-                                                            <button type="button" 
-                                                                    class="btn btn-warning" 
-                                                                    onclick="finalizarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')"
-                                                                    data-bs-dismiss="modal">
-                                                                <i class="bi bi-check-circle"></i> Finalizar Permiso
-                                                            </button>
-                                                            
-                                                            <button type="button" 
-                                                                    class="btn btn-danger" 
-                                                                    onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')"
-                                                                    data-bs-dismiss="modal">
-                                                                <i class="bi bi-x-circle"></i> Cancelar Permiso
-                                                            </button>
-                                                        @endif
-                                                    </div>
+                                                {{-- ✅ Header del modal --}}
+                                                <div class="modal-header">
+                                                    <h5 class="modal-title" id="modalDetallesLabel{{ $permiso->id_permiso }}">
+                                                        Detalles del Permiso #{{ $permiso->id_permiso }}
+                                                    </h5>
+                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                                 </div>
+
+                                                {{-- ✅ Body del modal --}}
+                                                <div class="modal-body">
+                                                    <ul class="list-group list-group-flush">
+                                                        <li class="list-group-item"><strong>Trabajador:</strong> {{ $permiso->trabajador->nombre_completo ?? 'N/A' }}</li>
+                                                        <li class="list-group-item"><strong>Tipo:</strong> {{ $permiso->tipo_permiso_texto }}</li>
+                                                        <li class="list-group-item"><strong>Motivo:</strong> {{ $permiso->motivo_texto }}</li>
+                                                        <li class="list-group-item"><strong>Fechas:</strong> {{ $permiso->fecha_inicio->format('d/m/Y') }} al {{ $permiso->fecha_fin->format('d/m/Y') }}</li>
+                                                        <li class="list-group-item"><strong>Observaciones:</strong> {{ $permiso->observaciones ?? 'Ninguna' }}</li>
+                                                        <li class="list-group-item"><strong>Estatus:</strong> {{ $permiso->estatus_permiso_texto }}</li>
+                                                        {{-- Puedes agregar más campos aquí --}}
+                                                    </ul>
+                                                </div>
+
+                                                {{-- ✅ Footer del modal --}}
+                                                <div class="modal-footer">
+                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                        <i class="bi bi-x-circle"></i> Cerrar
+                                                    </button>
+
+                                                    <a href="{{ route('permisos.pdf', $permiso->id_permiso) }}" 
+                                                    class="btn btn-success" title="Generar y Descargar PDF" target="_blank">
+                                                        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
+                                                    </a>
+                                                </div>
+
                                             </div>
                                         </div>
+                                    </div>
+
                                     </td>
+
+
                                 </tr>
                             @endforeach
                         </tbody>
@@ -587,6 +485,52 @@ function cancelarPermiso(permisoId, nombreTrabajador) {
         form.submit();
     }
 }
+
+/**
+ * ✅ NUEVA FUNCIÓN PARA REGENERAR PDF
+ */
+function regenerarPdf(permisoId) {
+    if (confirm('¿Desea regenerar el PDF con los datos actualizados? El archivo anterior será reemplazado.')) {
+        // Crear formulario para regenerar PDF
+        const form = document.createElement('form');
+        form.method = 'POST';
+        form.action = `/permisos/${permisoId}/pdf/regenerar`;
+        
+        const csrfToken = document.createElement('input');
+        csrfToken.type = 'hidden';
+        csrfToken.name = '_token';
+        csrfToken.value = '{{ csrf_token() }}';
+        
+        form.appendChild(csrfToken);
+        document.body.appendChild(form);
+        form.submit();
+    }
+}
+
+    /**
+     * ✅ FUNCIÓN PARA MOSTRAR LOADING EN BOTONES PDF
+     */
+    function mostrarLoadingPdf(elemento) {
+        const iconoOriginal = elemento.innerHTML;
+        elemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
+        elemento.disabled = true;
+        
+        // Restaurar después de 3 segundos
+        setTimeout(() => {
+            elemento.innerHTML = iconoOriginal;
+            elemento.disabled = false;
+        }, 3000);
+    }
+
+    // ✅ AÑADIR LOADING A BOTONES PDF
+    document.addEventListener('DOMContentLoaded', function() {
+        const botonesPdf = document.querySelectorAll('a[href*="/pdf"]');
+        botonesPdf.forEach(boton => {
+            boton.addEventListener('click', function() {
+                mostrarLoadingPdf(this);
+            });
+        });
+    });
 </script>
 
 @endsection

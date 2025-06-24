@@ -38,6 +38,9 @@ return new class extends Migration
             // ✅ ESTATUS DEL PERMISO
             $table->enum('estatus_permiso', ['activo', 'finalizado', 'cancelado'])->default('activo');
             
+            // ✅ NUEVO: RUTA DEL PDF GENERADO
+            $table->string('ruta_pdf', 500)->nullable()->comment('Ruta del PDF generado del permiso');
+            
             // ✅ TIMESTAMPS
             $table->timestamps();
             

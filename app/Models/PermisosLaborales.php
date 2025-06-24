@@ -4,6 +4,9 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 use Carbon\Carbon;
 
 class PermisosLaborales extends Model
@@ -13,7 +16,7 @@ class PermisosLaborales extends Model
     protected $table = 'permisos_laborales';
     protected $primaryKey = 'id_permiso';
     public $timestamps = true;
-    
+
     protected $fillable = [
         'id_trabajador',
         'tipo_permiso',
@@ -21,7 +24,8 @@ class PermisosLaborales extends Model
         'fecha_inicio',
         'fecha_fin',
         'observaciones',
-        'estatus_permiso', // ✅ NUEVO CAMPO
+        'estatus_permiso',
+        'ruta_pdf', // ✅ NUEVO CAMPO
     ];
     
     protected $casts = [
@@ -79,7 +83,7 @@ class PermisosLaborales extends Model
         return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador');
     }
 
-    // ✅ ACCESSORS
+    // ✅ ACCESSORS PRINCIPALES
     public function getDiasDePermisoAttribute()
     {
         if (!$this->fecha_inicio || !$this->fecha_fin) return null;
@@ -169,6 +173,119 @@ class PermisosLaborales extends Model
         ];
         
         return $iconos[$this->estatus_permiso] ?? 'bi-question-circle';
+    }
+
+    // ✅ NUEVOS ACCESSORS PARA PDF - CORREGIDOS SIN BARRAS INVERSAS
+    
+    /**
+     * ✅ VERIFICAR SI TIENE PDF GENERADO
+     */
+    public function getTienePdfAttribute(): bool
+    {
+        return !empty($this->ruta_pdf) && Storage::disk('public')->exists($this->ruta_pdf);
+    }
+
+    /**
+     * ✅ OBTENER URL PÚBLICA DEL PDF
+     */
+    public function getUrlPdfAttribute(): ?string
+    {
+        if (!$this->tiene_pdf) {
+            return null;
+        }
+        
+        return Storage::url($this->ruta_pdf);
+    }
+
+    /**
+     * ✅ OBTENER NOMBRE DEL ARCHIVO PDF
+     */
+    public function getNombrePdfAttribute(): ?string
+    {
+        if (!$this->ruta_pdf) {
+            return null;
+        }
+        
+        return basename($this->ruta_pdf);
+    }
+
+    /**
+     * ✅ OBTENER TAMAÑO DEL ARCHIVO PDF EN BYTES
+     */
+    public function getTamanoPdfAttribute(): ?int
+    {
+        if (!$this->tiene_pdf) {
+            return null;
+        }
+        
+        return Storage::size('public/' . $this->ruta_pdf);
+    }
+
+    /**
+     * ✅ OBTENER TAMAÑO DEL ARCHIVO PDF FORMATEADO
+     */
+    public function getTamanoPdfFormateadoAttribute(): ?string
+    {
+        $tamano = $this->tamano_pdf;
+        
+        if (!$tamano) {
+            return null;
+        }
+        
+        if ($tamano < 1024) {
+            return $tamano . ' B';
+        } elseif ($tamano < 1048576) {
+            return round($tamano / 1024, 2) . ' KB';
+        } else {
+            return round($tamano / 1048576, 2) . ' MB';
+        }
+    }
+
+    /**
+     * ✅ VERIFICAR SI EL PDF NECESITA REGENERARSE
+     */
+    public function pdfNecesitaRegeneracion(): bool
+    {
+        if (!$this->tiene_pdf) {
+            return true;
+        }
+        
+        // ✅ VERIFICAR SI EL PERMISO HA SIDO MODIFICADO DESPUÉS DE GENERAR EL PDF
+        $fechaModificacion = Storage::lastModified('public/' . $this->ruta_pdf);
+        return $this->updated_at->timestamp > $fechaModificacion;
+    }
+
+    /**
+     * ✅ ELIMINAR PDF DEL STORAGE
+     */
+    public function eliminarPdf(): bool
+    {
+        if (!$this->ruta_pdf) {
+            return true;
+        }
+        
+        try {
+            if (Storage::exists('public/' . $this->ruta_pdf)) {
+                Storage::delete('public/' . $this->ruta_pdf);
+            }
+            
+            $this->update(['ruta_pdf' => null]);
+            
+            Log::info('PDF de permiso eliminado', [
+                'permiso_id' => $this->id_permiso,
+                'ruta_anterior' => $this->ruta_pdf,
+            ]);
+            
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Error al eliminar PDF de permiso', [
+                'permiso_id' => $this->id_permiso,
+                'ruta_pdf' => $this->ruta_pdf,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return false;
+        }
     }
 
     // ✅ SCOPES ACTUALIZADOS CON ESTATUS_PERMISO
@@ -351,7 +468,7 @@ class PermisosLaborales extends Model
         ]);
     }
 
-    // ✅ MÉTODO RESUMEN ACTUALIZADO
+    // ✅ MÉTODO RESUMEN ACTUALIZADO CON INFO DEL PDF
     public function getResumenAttribute()
     {
         return [
@@ -378,6 +495,12 @@ class PermisosLaborales extends Model
             'icono_estatus' => $this->icono_estatus,
             'observaciones' => $this->observaciones,
             'fecha_creacion' => $this->created_at ? $this->created_at->format('d/m/Y H:i') : null,
+            // ✅ NUEVOS CAMPOS PARA PDF
+            'tiene_pdf' => $this->tiene_pdf,
+            'url_pdf' => $this->url_pdf,
+            'nombre_pdf' => $this->nombre_pdf,
+            'tamano_pdf' => $this->tamano_pdf_formateado,
+            'pdf_necesita_regeneracion' => $this->pdfNecesitaRegeneracion(),
         ];
     }
 
