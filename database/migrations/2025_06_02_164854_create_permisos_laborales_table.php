@@ -22,8 +22,8 @@ return new class extends Migration
                   ->on('trabajadores')
                   ->onDelete('cascade');
             
-            // ✅ TIPO DE PERMISO (SOLO 2 OPCIONES)
-            $table->enum('tipo_permiso', ['permiso', 'suspendido']);
+            // ✅ TIPO DE PERMISO VARIAS OPCIONES
+            $table->string('tipo_permiso', 100);
             
             // ✅ MOTIVO ESPECÍFICO
             $table->string('motivo', 100);

@@ -25,7 +25,7 @@ class PermisosLaborales extends Model
         'fecha_fin',
         'observaciones',
         'estatus_permiso',
-        'ruta_pdf', // ✅ NUEVO CAMPO
+        'ruta_pdf',
     ];
     
     protected $casts = [
@@ -35,46 +35,27 @@ class PermisosLaborales extends Model
         'updated_at' => 'datetime',
     ];
 
-    // ✅ CONSTANTES PARA TIPOS DE PERMISO
+    // ✅ TIPOS DE PERMISO (Categorías que van al select)
     const TIPOS_PERMISO = [
-        'permiso' => 'Con Permiso',
-        'suspendido' => 'Suspendido',
+        'Vacaciones' => 'Vacaciones',
+        'Licencia Médica' => 'Licencia Médica',
+        'Licencia por Maternidad' => 'Licencia por Maternidad',
+        'Licencia por Paternidad' => 'Licencia por Paternidad',
+        'Permiso Personal' => 'Permiso Personal',
+        'Permiso por Estudios' => 'Permiso por Estudios',
+        'Permiso por Capacitación' => 'Permiso por Capacitación',
+        'Licencia sin Goce de Sueldo' => 'Licencia sin Goce de Sueldo',
+        'Permiso Especial' => 'Permiso Especial',
+        'Permiso por Duelo' => 'Permiso por Duelo',
+        'Permiso por Matrimonio' => 'Permiso por Matrimonio',
+        'Incapacidad Temporal' => 'Incapacidad Temporal',
     ];
 
-    // ✅ CONSTANTES PARA ESTATUS DEL PERMISO
+    // ✅ ESTATUS DEL PERMISO
     const ESTATUS_PERMISO = [
         'activo' => 'Activo',
         'finalizado' => 'Finalizado',
         'cancelado' => 'Cancelado',
-    ];
-
-    // ✅ MOTIVOS PREDEFINIDOS PARA PERMISOS
-    const MOTIVOS_PERMISO = [
-        'vacaciones' => 'Vacaciones',
-        'incapacidad_medica' => 'Incapacidad Médica',
-        'licencia_maternidad' => 'Licencia por Maternidad',
-        'licencia_paternidad' => 'Licencia por Paternidad',
-        'licencia_sin_goce' => 'Licencia sin Goce de Sueldo',
-        'permiso_especial' => 'Permiso Especial',
-        'asuntos_personales' => 'Asuntos Personales',
-        'emergencia_familiar' => 'Emergencia Familiar',
-        'estudios' => 'Permiso por Estudios',
-        'cita_medica' => 'Cita Médica',
-        'tramites_oficiales' => 'Trámites Oficiales',
-    ];
-
-    // ✅ MOTIVOS PREDEFINIDOS PARA SUSPENSIONES
-    const MOTIVOS_SUSPENSION = [
-        'falta_disciplinaria' => 'Falta Disciplinaria',
-        'incumplimiento_normas' => 'Incumplimiento de Normas',
-        'investigacion_interna' => 'Investigación Interna',
-        'ausencia_injustificada' => 'Ausencia Injustificada',
-        'bajo_rendimiento' => 'Bajo Rendimiento',
-        'conducta_inapropiada' => 'Conducta Inapropiada',
-        'violacion_politicas' => 'Violación de Políticas',
-        'proceso_administrativo' => 'Proceso Administrativo',
-        'falta_grave' => 'Falta Grave',
-        'insubordinacion' => 'Insubordinación',
     ];
 
     // ✅ RELACIONES
@@ -101,15 +82,10 @@ class PermisosLaborales extends Model
         if (!$this->estaVencido()) return 0;
         return (int) now()->startOfDay()->diffInDays($this->fecha_fin->startOfDay());
     }
-    
-    public function getDiasDesdeFinAttribute(): int
-    {
-        return (int) $this->fecha_fin->startOfDay()->diffInDays(now()->startOfDay());
-    }
 
     public function getTipoPermisoTextoAttribute()
     {
-        return self::TIPOS_PERMISO[$this->tipo_permiso] ?? 'Tipo Desconocido';
+        return self::TIPOS_PERMISO[$this->tipo_permiso] ?? ucfirst($this->tipo_permiso);
     }
 
     public function getEstatusPermisoTextoAttribute()
@@ -119,25 +95,25 @@ class PermisosLaborales extends Model
 
     public function getMotivoTextoAttribute()
     {
-        // Buscar en motivos de permisos primero
-        if (array_key_exists($this->motivo, self::MOTIVOS_PERMISO)) {
-            return self::MOTIVOS_PERMISO[$this->motivo];
-        }
-        
-        // Luego en motivos de suspensiones
-        if (array_key_exists($this->motivo, self::MOTIVOS_SUSPENSION)) {
-            return self::MOTIVOS_SUSPENSION[$this->motivo];
-        }
-        
-        // Si no está predefinido, devolver el valor tal como está (personalizado)
-        return ucfirst(str_replace('_', ' ', $this->motivo));
+        // Como el motivo ahora es texto libre, devolver tal como está
+        return $this->motivo;
     }
 
-    public function getColorPermisoAttribute()
+    public function getColorTipoAttribute()
     {
         $colores = [
-            'permiso' => 'info',
-            'suspendido' => 'danger',
+            'Vacaciones' => 'success',
+            'Licencia Médica' => 'danger',
+            'Licencia por Maternidad' => 'info',
+            'Licencia por Paternidad' => 'info', 
+            'Permiso Personal' => 'warning',
+            'Permiso por Estudios' => 'primary',
+            'Permiso por Capacitación' => 'primary',
+            'Licencia sin Goce de Sueldo' => 'secondary',
+            'Permiso Especial' => 'dark',
+            'Permiso por Duelo' => 'dark',
+            'Permiso por Matrimonio' => 'success',
+            'Incapacidad Temporal' => 'danger',
         ];
         
         return $colores[$this->tipo_permiso] ?? 'secondary';
@@ -154,14 +130,24 @@ class PermisosLaborales extends Model
         return $colores[$this->estatus_permiso] ?? 'secondary';
     }
 
-    public function getIconoPermisoAttribute()
+    public function getIconoTipoAttribute()
     {
         $iconos = [
-            'permiso' => 'bi-calendar-event',
-            'suspendido' => 'bi-exclamation-triangle',
+            'Vacaciones' => 'bi-sun',
+            'Licencia Médica' => 'bi-heart-pulse',
+            'Licencia por Maternidad' => 'bi-person-hearts',
+            'Licencia por Paternidad' => 'bi-person-hearts', 
+            'Permiso Personal' => 'bi-person',
+            'Permiso por Estudios' => 'bi-mortarboard',
+            'Permiso por Capacitación' => 'bi-book',
+            'Licencia sin Goce de Sueldo' => 'bi-dash-circle',
+            'Permiso Especial' => 'bi-star',
+            'Permiso por Duelo' => 'bi-heart',
+            'Permiso por Matrimonio' => 'bi-suit-heart',
+            'Incapacidad Temporal' => 'bi-bandaid',
         ];
         
-        return $iconos[$this->tipo_permiso] ?? 'bi-question-circle';
+        return $iconos[$this->tipo_permiso] ?? 'bi-calendar-event';
     }
 
     public function getIconoEstatusAttribute()
@@ -175,19 +161,12 @@ class PermisosLaborales extends Model
         return $iconos[$this->estatus_permiso] ?? 'bi-question-circle';
     }
 
-    // ✅ NUEVOS ACCESSORS PARA PDF - CORREGIDOS SIN BARRAS INVERSAS
-    
-    /**
-     * ✅ VERIFICAR SI TIENE PDF GENERADO
-     */
+    // ✅ ACCESSORS PARA PDF
     public function getTienePdfAttribute(): bool
     {
         return !empty($this->ruta_pdf) && Storage::disk('public')->exists($this->ruta_pdf);
     }
 
-    /**
-     * ✅ OBTENER URL PÚBLICA DEL PDF
-     */
     public function getUrlPdfAttribute(): ?string
     {
         if (!$this->tiene_pdf) {
@@ -197,9 +176,6 @@ class PermisosLaborales extends Model
         return Storage::url($this->ruta_pdf);
     }
 
-    /**
-     * ✅ OBTENER NOMBRE DEL ARCHIVO PDF
-     */
     public function getNombrePdfAttribute(): ?string
     {
         if (!$this->ruta_pdf) {
@@ -209,66 +185,13 @@ class PermisosLaborales extends Model
         return basename($this->ruta_pdf);
     }
 
-    /**
-     * ✅ OBTENER TAMAÑO DEL ARCHIVO PDF EN BYTES
-     */
-    public function getTamanoPdfAttribute(): ?int
-    {
-        if (!$this->tiene_pdf) {
-            return null;
-        }
-        
-        return Storage::size('public/' . $this->ruta_pdf);
-    }
-
-    /**
-     * ✅ OBTENER TAMAÑO DEL ARCHIVO PDF FORMATEADO
-     */
-    public function getTamanoPdfFormateadoAttribute(): ?string
-    {
-        $tamano = $this->tamano_pdf;
-        
-        if (!$tamano) {
-            return null;
-        }
-        
-        if ($tamano < 1024) {
-            return $tamano . ' B';
-        } elseif ($tamano < 1048576) {
-            return round($tamano / 1024, 2) . ' KB';
-        } else {
-            return round($tamano / 1048576, 2) . ' MB';
-        }
-    }
-
-    /**
-     * ✅ VERIFICAR SI EL PDF NECESITA REGENERARSE
-     */
-    public function pdfNecesitaRegeneracion(): bool
-    {
-        if (!$this->tiene_pdf) {
-            return true;
-        }
-        
-        // ✅ VERIFICAR SI EL PERMISO HA SIDO MODIFICADO DESPUÉS DE GENERAR EL PDF
-        $fechaModificacion = Storage::lastModified('public/' . $this->ruta_pdf);
-        return $this->updated_at->timestamp > $fechaModificacion;
-    }
-
-    /**
-     * ✅ CORREGIDO: Eliminar PDF del storage correctamente
-     */
     public function eliminarPdf(): bool
     {
         if (!$this->ruta_pdf) {
-            Log::info('No hay ruta PDF para eliminar', [
-                'permiso_id' => $this->id_permiso,
-            ]);
             return true;
         }
         
         try {
-            // ✅ USAR EL DISCO 'public' DIRECTAMENTE (como se guardó)
             if (Storage::disk('public')->exists($this->ruta_pdf)) {
                 $eliminado = Storage::disk('public')->delete($this->ruta_pdf);
                 
@@ -276,7 +199,6 @@ class PermisosLaborales extends Model
                     Log::info('PDF de permiso eliminado exitosamente', [
                         'permiso_id' => $this->id_permiso,
                         'ruta_eliminada' => $this->ruta_pdf,
-                        'ruta_completa' => storage_path('app/public/' . $this->ruta_pdf),
                     ]);
                 } else {
                     Log::warning('No se pudo eliminar el PDF del storage', [
@@ -285,15 +207,9 @@ class PermisosLaborales extends Model
                     ]);
                     return false;
                 }
-            } else {
-                Log::warning('PDF no existe en storage, posiblemente ya eliminado', [
-                    'permiso_id' => $this->id_permiso,
-                    'ruta_buscada' => $this->ruta_pdf,
-                    'ruta_completa' => storage_path('app/public/' . $this->ruta_pdf),
-                ]);
             }
             
-            // ✅ LIMPIAR RUTA EN BD (siempre, aunque el archivo no exista)
+            // Limpiar ruta en BD
             $this->update(['ruta_pdf' => null]);
             
             return true;
@@ -303,30 +219,13 @@ class PermisosLaborales extends Model
                 'permiso_id' => $this->id_permiso,
                 'ruta_pdf' => $this->ruta_pdf,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
             ]);
             
             return false;
         }
     }
 
-    // ✅ SCOPES ACTUALIZADOS CON ESTATUS_PERMISO
-    public function scopePorTipo($query, $tipo)
-    {
-        return $query->where('tipo_permiso', $tipo);
-    }
-    
-    public function scopePermisos($query)
-    {
-        return $query->where('tipo_permiso', 'permiso');
-    }
-    
-    public function scopeSuspensiones($query)
-    {
-        return $query->where('tipo_permiso', 'suspendido');
-    }
-    
-    // ✅ SCOPES POR ESTATUS DEL PERMISO
+    // ✅ SCOPES
     public function scopeActivos($query)
     {
         return $query->where('estatus_permiso', 'activo');
@@ -345,13 +244,13 @@ class PermisosLaborales extends Model
     public function scopeVencidos($query)
     {
         return $query->where('fecha_fin', '<', now())
-                    ->where('estatus_permiso', 'activo'); // Solo activos vencidos
+                    ->where('estatus_permiso', 'activo');
     }
     
     public function scopeVigentes($query)
     {
         return $query->where('fecha_fin', '>=', now())
-                    ->where('estatus_permiso', 'activo'); // Solo activos vigentes
+                    ->where('estatus_permiso', 'activo');
     }
     
     public function scopeDelMes($query, $año = null, $mes = null)
@@ -363,14 +262,14 @@ class PermisosLaborales extends Model
                     ->whereMonth('fecha_inicio', $mes);
     }
     
-    public function scopeEntreFechas($query, $fechaInicio, $fechaFin)
+    public function scopePorTipo($query, $tipo)
     {
-        return $query->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin]);
+        return $query->where('tipo_permiso', $tipo);
     }
 
     public function scopePorMotivo($query, $motivo)
     {
-        return $query->where('motivo', $motivo);
+        return $query->where('motivo', 'like', "%{$motivo}%");
     }
 
     public function scopePorEstatus($query, $estatus)
@@ -378,7 +277,7 @@ class PermisosLaborales extends Model
         return $query->where('estatus_permiso', $estatus);
     }
 
-    // ✅ MÉTODOS DE VERIFICACIÓN ACTUALIZADOS
+    // ✅ MÉTODOS DE VERIFICACIÓN
     public function estaActivo()
     {
         return $this->estatus_permiso === 'activo';
@@ -404,16 +303,6 @@ class PermisosLaborales extends Model
         return $this->estaActivo() && $this->fecha_fin >= now()->startOfDay();
     }
 
-    public function esPermiso()
-    {
-        return $this->tipo_permiso === 'permiso';
-    }
-
-    public function esSuspension()
-    {
-        return $this->tipo_permiso === 'suspendido';
-    }
-
     public function puedeFinalizarse()
     {
         return $this->estaActivo();
@@ -424,37 +313,15 @@ class PermisosLaborales extends Model
         return $this->estaActivo();
     }
 
-    public function diasRestantes()
-    {
-        return $this->dias_restantes;
-    }
-
     // ✅ MÉTODOS ESTÁTICOS
-    public static function getMotivosPorTipo($tipoPermiso)
+    public static function getTiposDisponibles()
     {
-        switch ($tipoPermiso) {
-            case 'permiso':
-                return self::MOTIVOS_PERMISO;
-            case 'suspendido':
-                return self::MOTIVOS_SUSPENSION;
-            default:
-                return [];
-        }
-    }
-
-    public static function getTodosLosMotivos()
-    {
-        return array_merge(self::MOTIVOS_PERMISO, self::MOTIVOS_SUSPENSION);
+        return self::TIPOS_PERMISO;
     }
 
     public static function getEstatusValidos()
     {
         return array_keys(self::ESTATUS_PERMISO);
-    }
-
-    public static function getTiposValidos()
-    {
-        return array_keys(self::TIPOS_PERMISO);
     }
 
     // ✅ MÉTODOS DE ACCIÓN
@@ -490,7 +357,7 @@ class PermisosLaborales extends Model
         ]);
     }
 
-    // ✅ MÉTODO RESUMEN ACTUALIZADO CON INFO DEL PDF
+    // ✅ RESUMEN COMPLETO
     public function getResumenAttribute()
     {
         return [
@@ -498,10 +365,10 @@ class PermisosLaborales extends Model
             'trabajador' => $this->trabajador->nombre_completo ?? 'Sin trabajador',
             'tipo_permiso' => $this->tipo_permiso,
             'tipo_permiso_texto' => $this->tipo_permiso_texto,
-            'estatus_permiso' => $this->estatus_permiso,
-            'estatus_permiso_texto' => $this->estatus_permiso_texto,
             'motivo' => $this->motivo,
             'motivo_texto' => $this->motivo_texto,
+            'estatus_permiso' => $this->estatus_permiso,
+            'estatus_permiso_texto' => $this->estatus_permiso_texto,
             'fecha_inicio' => $this->fecha_inicio->format('d/m/Y'),
             'fecha_fin' => $this->fecha_fin->format('d/m/Y'),
             'dias_permiso' => $this->dias_de_permiso,
@@ -511,33 +378,23 @@ class PermisosLaborales extends Model
             'dias_restantes' => $this->dias_restantes,
             'puede_finalizarse' => $this->puedeFinalizarse(),
             'puede_cancelarse' => $this->puedeCancelarse(),
-            'color_tipo' => $this->color_permiso,
+            'color_tipo' => $this->color_tipo,
             'color_estatus' => $this->color_estatus,
-            'icono_tipo' => $this->icono_permiso,
+            'icono_tipo' => $this->icono_tipo,
             'icono_estatus' => $this->icono_estatus,
             'observaciones' => $this->observaciones,
             'fecha_creacion' => $this->created_at ? $this->created_at->format('d/m/Y H:i') : null,
-            // ✅ NUEVOS CAMPOS PARA PDF
             'tiene_pdf' => $this->tiene_pdf,
             'url_pdf' => $this->url_pdf,
             'nombre_pdf' => $this->nombre_pdf,
-            'tamano_pdf' => $this->tamano_pdf_formateado,
-            'pdf_necesita_regeneracion' => $this->pdfNecesitaRegeneracion(),
         ];
     }
 
-    // ✅ MÉTODO PARA VALIDAR MOTIVO SEGÚN TIPO
-    public function validarMotivoParaTipo()
-    {
-        $motivosValidos = self::getMotivosPorTipo($this->tipo_permiso);
-        return array_key_exists($this->motivo, $motivosValidos);
-    }
-
-    // ✅ MÉTODO PARA OBTENER CONFLICTOS
+    // ✅ BUSCAR CONFLICTOS
     public static function buscarConflictos($trabajadorId, $fechaInicio, $fechaFin, $excluirPermisoId = null)
     {
         $query = self::where('id_trabajador', $trabajadorId)
-            ->where('estatus_permiso', 'activo') // Solo activos
+            ->where('estatus_permiso', 'activo')
             ->where(function($q) use ($fechaInicio, $fechaFin) {
                 $q->whereBetween('fecha_inicio', [$fechaInicio, $fechaFin])
                   ->orWhereBetween('fecha_fin', [$fechaInicio, $fechaFin])

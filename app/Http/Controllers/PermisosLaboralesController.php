@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class PermisosLaboralesController extends Controller
 {
     /**
-     * ✅ PROCESAR ASIGNACIÓN DE PERMISO O SUSPENSIÓN - CORREGIDO CON ESTATUS_PERMISO
+     * ✅ PROCESAR ASIGNACIÓN DE PERMISO - TIPO Y MOTIVO SEPARADOS
      */
     public function store(Request $request, Trabajador $trabajador)
     {
@@ -24,40 +24,31 @@ class PermisosLaboralesController extends Controller
             ]);
         }
 
-        // ✅ VALIDACIONES ACTUALIZADAS
+        // ✅ VALIDACIONES - TIPO SELECT + MOTIVO TEXTO LIBRE
+        $tiposValidos = array_keys(PermisosLaborales::getTiposDisponibles());
+        
         $validated = $request->validate([
-            'tipo_permiso' => 'required|in:permiso,suspendido',
-            'motivo' => 'required|string|max:100',
+            'tipo_permiso' => 'required|string|in:' . implode(',', $tiposValidos),
+            'motivo' => 'required|string|min:3|max:100',
             'fecha_inicio' => 'required|date|after_or_equal:today',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
-            'observaciones' => 'nullable|string|max:1000',
+            'observaciones' => 'nullable|string|max:500',
         ], [
-            'tipo_permiso.required' => 'El tipo de acción es obligatorio',
-            'tipo_permiso.in' => 'El tipo debe ser "Permiso" o "Suspendido"',
+            'tipo_permiso.required' => 'El tipo de permiso es obligatorio',
+            'tipo_permiso.in' => 'El tipo de permiso seleccionado no es válido',
             'motivo.required' => 'El motivo es obligatorio',
+            'motivo.min' => 'El motivo debe tener al menos 3 caracteres',
             'motivo.max' => 'El motivo no puede exceder 100 caracteres',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
             'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
             'fecha_fin.required' => 'La fecha de fin es obligatoria',
             'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
-            'observaciones.max' => 'Las observaciones no pueden exceder 1000 caracteres',
+            'observaciones.max' => 'Las observaciones no pueden exceder 500 caracteres',
         ]);
 
-        // ✅ VALIDAR MOTIVO SEGÚN TIPO DE PERMISO
-        $motivosValidos = PermisosLaborales::getMotivosPorTipo($validated['tipo_permiso']);
-        
-        if (!empty($motivosValidos) && !array_key_exists($validated['motivo'], $motivosValidos)) {
-            Log::info('Motivo personalizado usado', [
-                'tipo_permiso' => $validated['tipo_permiso'],
-                'motivo_personalizado' => $validated['motivo'],
-                'trabajador_id' => $trabajador->id_trabajador,
-                'usuario' => Auth::user()->email ?? 'Sistema'
-            ]);
-        }
-
-        // ✅ VALIDAR CONFLICTOS SOLO CON PERMISOS ACTIVOS
+        // ✅ VALIDAR CONFLICTOS CON PERMISOS ACTIVOS
         $permisoActivoExistente = PermisosLaborales::where('id_trabajador', $trabajador->id_trabajador)
-            ->where('estatus_permiso', 'activo') // ✅ SOLO PERMISOS ACTIVOS
+            ->where('estatus_permiso', 'activo')
             ->where(function($query) use ($validated) {
                 $query->whereBetween('fecha_inicio', [$validated['fecha_inicio'], $validated['fecha_fin']])
                       ->orWhereBetween('fecha_fin', [$validated['fecha_inicio'], $validated['fecha_fin']])
@@ -69,14 +60,14 @@ class PermisosLaboralesController extends Controller
 
         if ($permisoActivoExistente) {
             return back()->withErrors([
-                'fecha_inicio' => 'Ya existe un permiso/suspensión ACTIVO en el rango de fechas seleccionado'
+                'fecha_inicio' => 'Ya existe un permiso ACTIVO en el rango de fechas seleccionado'
             ])->withInput();
         }
 
         DB::beginTransaction();
         
         try {
-            // ✅ CREAR REGISTRO CON ESTATUS_PERMISO
+            // ✅ CREAR REGISTRO CON TIPO Y MOTIVO SEPARADOS
             $permiso = PermisosLaborales::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'tipo_permiso' => $validated['tipo_permiso'],
@@ -84,17 +75,17 @@ class PermisosLaboralesController extends Controller
                 'fecha_inicio' => $validated['fecha_inicio'],
                 'fecha_fin' => $validated['fecha_fin'],
                 'observaciones' => $validated['observaciones'],
-                'estatus_permiso' => 'activo', // ✅ NUEVO CAMPO
+                'estatus_permiso' => 'activo',
             ]);
 
             // ✅ ACTUALIZAR ESTADO DEL TRABAJADOR
             $trabajador->update([
-                'estatus' => $validated['tipo_permiso'],
+                'estatus' => 'permiso',
             ]);
 
             DB::commit();
 
-            Log::info('Permiso/suspensión asignado con historial', [
+            Log::info('Permiso asignado exitosamente', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'permiso_id' => $permiso->id_permiso,
@@ -107,18 +98,15 @@ class PermisosLaboralesController extends Controller
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            $tipoTexto = $validated['tipo_permiso'] === 'permiso' ? 'Permiso' : 'Suspensión';
-            $motivoTexto = $permiso->motivo_texto;
-
             return redirect()->route('trabajadores.index')
                            ->with('success', 
-                               "{$tipoTexto} asignado exitosamente a {$trabajador->nombre_completo}. Motivo: {$motivoTexto}"
+                               "Permiso asignado exitosamente a {$trabajador->nombre_completo}. Tipo: {$validated['tipo_permiso']} - Motivo: {$validated['motivo']}"
                            );
 
         } catch (\Exception $e) {
             DB::rollback();
             
-            Log::error('Error al asignar permiso/suspensión', [
+            Log::error('Error al asignar permiso', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'tipo_permiso' => $validated['tipo_permiso'],
                 'motivo' => $validated['motivo'],
@@ -127,169 +115,163 @@ class PermisosLaboralesController extends Controller
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            return back()->withErrors(['error' => 'Error al asignar: ' . $e->getMessage()])
+            return back()->withErrors(['error' => 'Error al asignar permiso: ' . $e->getMessage()])
                         ->withInput();
         }
     }
 
-    /**
-     * ✅ LISTAR PERMISOS - CORREGIDO CON TODAS LAS VARIABLES
-     */
-    public function index(Request $request)
-    {
-        $query = PermisosLaborales::with([
-            'trabajador.fichaTecnica.categoria.area'
-        ]);
+  /**
+ * ✅ LISTAR PERMISOS - VERSIÓN CORREGIDA
+ */
+public function index(Request $request)
+{
+    $query = PermisosLaborales::with([
+        'trabajador.fichaTecnica.categoria.area'
+    ]);
 
-        // ✅ FILTROS ACTUALIZADOS
-        if ($request->filled('search')) {
-            $search = $request->search;
-            $query->whereHas('trabajador', function($q) use ($search) {
-                $q->where('nombre_trabajador', 'like', "%{$search}%")
-                  ->orWhere('ape_pat', 'like', "%{$search}%")
-                  ->orWhere('ape_mat', 'like', "%{$search}%");
-            });
-        }
-
-        if ($request->filled('tipo_permiso')) {
-            $query->where('tipo_permiso', $request->tipo_permiso);
-        }
-
-        if ($request->filled('motivo')) {
-            $query->where('motivo', $request->motivo);
-        }
-
-        if ($request->filled('fecha_desde')) {
-            $query->whereDate('fecha_inicio', '>=', $request->fecha_desde);
-        }
-
-        if ($request->filled('fecha_hasta')) {
-            $query->whereDate('fecha_fin', '<=', $request->fecha_hasta);
-        }
-
-        // ✅ FILTRO POR ESTADO MEJORADO
-        if ($request->filled('estado')) {
-            if ($request->estado === 'activos') {
-                $query->where('estatus_permiso', 'activo');
-            } elseif ($request->estado === 'finalizados') {
-                $query->where('estatus_permiso', 'finalizado');
-            } elseif ($request->estado === 'cancelados') {
-                $query->where('estatus_permiso', 'cancelado');
-            } elseif ($request->estado === 'vencidos') {
-                $query->where('fecha_fin', '<', now())
-                      ->where('estatus_permiso', 'activo');
-            }
-        }
-
-        $permisos = $query->orderBy('created_at', 'desc')->paginate(20);
-
-        // ✅ ESTADÍSTICAS CON ESTATUS_PERMISO
-        $stats = [
-            'total' => PermisosLaborales::count(),
-            'activos' => PermisosLaborales::where('estatus_permiso', 'activo')->count(),
-            'permisos_activos' => PermisosLaborales::where('tipo_permiso', 'permiso')
-                                                  ->where('estatus_permiso', 'activo')->count(),
-            'suspensiones_activas' => PermisosLaborales::where('tipo_permiso', 'suspendido')
-                                                       ->where('estatus_permiso', 'activo')->count(),
-            'este_mes' => PermisosLaborales::whereMonth('fecha_inicio', now()->month)
-                                         ->whereYear('fecha_inicio', now()->year)
-                                         ->count(),
-            'finalizados' => PermisosLaborales::where('estatus_permiso', 'finalizado')->count(),
-            'cancelados' => PermisosLaborales::where('estatus_permiso', 'cancelado')->count(),
-            'vencidos' => PermisosLaborales::where('fecha_fin', '<', now())
-                                         ->where('estatus_permiso', 'activo')
-                                         ->count(),
-        ];
-
-        // ✅ VARIABLES NECESARIAS PARA LA VISTA
-        $tiposPermisos = PermisosLaborales::TIPOS_PERMISO;
-        $estatusPermisos = PermisosLaborales::ESTATUS_PERMISO;
-        $motivosPermiso = PermisosLaborales::MOTIVOS_PERMISO;
-        $motivosSuspension = PermisosLaborales::MOTIVOS_SUSPENSION;
-        
-        // ✅ COLORES E ICONOS PARA VISTA
-        $coloresPermiso = [
-            'permiso' => 'info',
-            'suspendido' => 'danger',
-        ];
-        
-        $iconosPermiso = [
-            'permiso' => 'bi-calendar-event',
-            'suspendido' => 'bi-exclamation-triangle',
-        ];
-
-        $coloresEstatus = [
-            'activo' => 'success',
-            'finalizado' => 'primary',
-            'cancelado' => 'secondary',
-        ];
-
-        return view('trabajadores.estatus.permisos_lista', compact(
-            'permisos', 
-            'stats', 
-            'tiposPermisos', 
-            'estatusPermisos',
-            'motivosPermiso',
-            'motivosSuspension',
-            'coloresPermiso',
-            'iconosPermiso',
-            'coloresEstatus'
-        ));
+    // ✅ FILTROS
+    if ($request->filled('search')) {
+        $search = $request->search;
+        $query->whereHas('trabajador', function($q) use ($search) {
+            $q->where('nombre_trabajador', 'like', "%{$search}%")
+              ->orWhere('ape_pat', 'like', "%{$search}%")
+              ->orWhere('ape_mat', 'like', "%{$search}%");
+        });
     }
 
+    if ($request->filled('tipo_permiso')) {
+        $query->where('tipo_permiso', $request->tipo_permiso);
+    }
+
+    if ($request->filled('motivo')) {
+        $query->where('motivo', 'like', "%{$request->motivo}%");
+    }
+
+    if ($request->filled('fecha_desde')) {
+        $query->whereDate('fecha_inicio', '>=', $request->fecha_desde);
+    }
+
+    if ($request->filled('fecha_hasta')) {
+        $query->whereDate('fecha_fin', '<=', $request->fecha_hasta);
+    }
+
+    if ($request->filled('estado')) {
+        if ($request->estado === 'activos') {
+            $query->where('estatus_permiso', 'activo');
+        } elseif ($request->estado === 'finalizados') {
+            $query->where('estatus_permiso', 'finalizado');
+        } elseif ($request->estado === 'cancelados') {
+            $query->where('estatus_permiso', 'cancelado');
+        } elseif ($request->estado === 'vencidos') {
+            $query->where('fecha_fin', '<', now())
+                  ->where('estatus_permiso', 'activo');
+        }
+    }
+
+    $permisos = $query->orderBy('created_at', 'desc')->paginate(20);
+
+    // ✅ ESTADÍSTICAS
+    $stats = [
+        'total' => PermisosLaborales::count(),
+        'activos' => PermisosLaborales::where('estatus_permiso', 'activo')->count(),
+        'este_mes' => PermisosLaborales::whereMonth('fecha_inicio', now()->month)
+                                     ->whereYear('fecha_inicio', now()->year)
+                                     ->count(),
+        'finalizados' => PermisosLaborales::where('estatus_permiso', 'finalizado')->count(),
+        'cancelados' => PermisosLaborales::where('estatus_permiso', 'cancelado')->count(),
+        'vencidos' => PermisosLaborales::where('fecha_fin', '<', now())
+                                     ->where('estatus_permiso', 'activo')
+                                     ->count(),
+    ];
+
+    // ✅ DATOS PARA LA VISTA - ESTO ES LO QUE FALTABA
+    $tiposPermisos = PermisosLaborales::getTiposDisponibles();
+    
+    // ✅ COLORES PARA LOS BADGES
+    $coloresPermiso = [
+        'Vacaciones' => 'success',
+        'Licencia Médica' => 'danger',
+        'Licencia por Maternidad' => 'info',
+        'Licencia por Paternidad' => 'info', 
+        'Permiso Personal' => 'warning',
+        'Permiso por Estudios' => 'primary',
+        'Permiso por Capacitación' => 'primary',
+        'Licencia sin Goce de Sueldo' => 'secondary',
+        'Permiso Especial' => 'dark',
+        'Permiso por Duelo' => 'dark',
+        'Permiso por Matrimonio' => 'success',
+        'Incapacidad Temporal' => 'danger',
+    ];
+
+    // ✅ ICONOS PARA LOS BADGES
+    $iconosPermiso = [
+        'Vacaciones' => 'bi-sun',
+        'Licencia Médica' => 'bi-heart-pulse',
+        'Licencia por Maternidad' => 'bi-person-hearts',
+        'Licencia por Paternidad' => 'bi-person-hearts', 
+        'Permiso Personal' => 'bi-person',
+        'Permiso por Estudios' => 'bi-mortarboard',
+        'Permiso por Capacitación' => 'bi-book',
+        'Licencia sin Goce de Sueldo' => 'bi-dash-circle',
+        'Permiso Especial' => 'bi-star',
+        'Permiso por Duelo' => 'bi-heart',
+        'Permiso por Matrimonio' => 'bi-suit-heart',
+        'Incapacidad Temporal' => 'bi-bandaid',
+    ];
+
+    // ✅ PASAR TODAS LAS VARIABLES A LA VISTA
+    return view('trabajadores.estatus.permisos_lista', compact(
+        'permisos', 
+        'stats', 
+        'tiposPermisos', 
+        'coloresPermiso', 
+        'iconosPermiso'
+    ));
+}
     /**
-     * ✅ FINALIZAR PERMISO - ACTUALIZADO CON ESTATUS
+     * ✅ FINALIZAR PERMISO
      */
     public function finalizar(PermisosLaborales $permiso)
     {
         $trabajador = $permiso->trabajador;
 
-        // ✅ VERIFICAR QUE EL PERMISO ESTÉ ACTIVO
         if ($permiso->estatus_permiso !== 'activo') {
             return back()->withErrors([
                 'error' => 'Solo se pueden finalizar permisos que estén activos'
             ]);
         }
 
-        // Verificar que el trabajador esté en el estado correcto
-        if (!in_array($trabajador->estatus, ['permiso', 'suspendido'])) {
+        if ($trabajador->estatus !== 'permiso') {
             return back()->withErrors([
-                'error' => 'El trabajador debe estar en estado de permiso o suspendido'
+                'error' => 'El trabajador debe estar en estado de permiso'
             ]);
         }
 
         DB::beginTransaction();
         
         try {
-            // ✅ ACTUALIZAR PERMISO COMO FINALIZADO
             $permiso->update([
                 'fecha_fin' => now()->format('Y-m-d'),
-                'estatus_permiso' => 'finalizado', // ✅ CAMBIAR ESTATUS
+                'estatus_permiso' => 'finalizado',
                 'observaciones' => $permiso->observaciones . 
                     "\n[FINALIZADO EL " . now()->format('d/m/Y') . " por " . (Auth::user()->email ?? 'Sistema') . "]"
             ]);
 
-            // ✅ REACTIVAR TRABAJADOR
-            $trabajador->update([
-                'estatus' => 'activo',
-            ]);
+            $trabajador->update(['estatus' => 'activo']);
 
             DB::commit();
 
-            Log::info('Permiso finalizado con historial', [
+            Log::info('Permiso finalizado exitosamente', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'permiso_id' => $permiso->id_permiso,
                 'tipo_permiso' => $permiso->tipo_permiso,
-                'estatus_anterior' => 'activo',
-                'estatus_nuevo' => 'finalizado',
+                'motivo' => $permiso->motivo,
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            $tipoTexto = $permiso->tipo_permiso === 'permiso' ? 'Permiso' : 'Suspensión';
-
             return redirect()->route('permisos.index')
                            ->with('success', 
-                               "{$tipoTexto} finalizado. {$trabajador->nombre_completo} ha sido reactivado"
+                               "Permiso finalizado. {$trabajador->nombre_completo} ha sido reactivado"
                            );
 
         } catch (\Exception $e) {
@@ -306,13 +288,12 @@ class PermisosLaboralesController extends Controller
     }
 
     /**
-     * ✅ CANCELAR PERMISO MEJORADO - Elimina registro y PDF
+     * ✅ CANCELAR PERMISO
      */
     public function cancelar(PermisosLaborales $permiso)
     {
         $trabajador = $permiso->trabajador;
 
-        // ✅ VERIFICAR QUE EL PERMISO ESTÉ ACTIVO
         if ($permiso->estatus_permiso !== 'activo') {
             return back()->withErrors([
                 'error' => 'Solo se pueden cancelar permisos que estén activos'
@@ -322,55 +303,34 @@ class PermisosLaboralesController extends Controller
         DB::beginTransaction();
 
         try {
-            // ✅ GUARDAR DATOS PARA LOG ANTES DE ELIMINAR
+            // Guardar datos para log
             $datosPermiso = [
                 'permiso_id' => $permiso->id_permiso,
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'tipo_permiso' => $permiso->tipo_permiso,
-                'motivo' => $permiso->motivo_texto,
+                'motivo' => $permiso->motivo,
                 'fecha_inicio' => $permiso->fecha_inicio->format('d/m/Y'),
                 'fecha_fin' => $permiso->fecha_fin->format('d/m/Y'),
-                'ruta_pdf' => $permiso->ruta_pdf,
-                'tenia_pdf' => $permiso->tiene_pdf,
             ];
 
-            // ✅ ELIMINAR PDF PRIMERO (antes de eliminar el registro)
-            $pdfEliminado = true;
-            if ($permiso->tiene_pdf) {
-                $pdfEliminado = $permiso->eliminarPdf();
-                
-                if (!$pdfEliminado) {
-                    Log::warning('No se pudo eliminar el PDF, pero continuando con la eliminación del registro', [
-                        'permiso_id' => $permiso->id_permiso,
-                        'ruta_pdf' => $permiso->ruta_pdf,
-                    ]);
-                }
-            }
-
-            // ✅ REACTIVAR TRABAJADOR
+            // Reactivar trabajador
             $trabajador->update(['estatus' => 'activo']);
 
-            // ✅ ELIMINAR REGISTRO DE LA BD
+            // Eliminar registro
             $permiso->delete();
 
             DB::commit();
 
-            // ✅ LOG EXITOSO
             Log::info('Permiso eliminado exitosamente', [
                 'datos_permiso' => $datosPermiso,
-                'pdf_eliminado' => $pdfEliminado,
                 'usuario' => Auth::user()->email ?? 'Sistema',
                 'fecha_eliminacion' => now()->format('d/m/Y H:i:s'),
             ]);
-
-            $tipoTexto = $datosPermiso['tipo_permiso'] === 'permiso' ? 'Permiso' : 'Suspensión';
-            $mensajePdf = $datosPermiso['tenia_pdf'] ? 
-                ($pdfEliminado ? ' y su PDF asociado' : ' (PDF no pudo eliminarse)') : '';
             
             return redirect()->route('permisos.index')
                         ->with('success', 
-                            "{$tipoTexto} eliminado exitosamente{$mensajePdf}. {$datosPermiso['trabajador_nombre']} ha sido reactivado"
+                            "Permiso eliminado exitosamente. {$datosPermiso['trabajador_nombre']} ha sido reactivado"
                         );
 
         } catch (\Exception $e) {
@@ -379,7 +339,6 @@ class PermisosLaboralesController extends Controller
             Log::error('Error al eliminar permiso', [
                 'permiso_id' => $permiso->id_permiso,
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
@@ -390,7 +349,7 @@ class PermisosLaboralesController extends Controller
     }
 
     /**
-     * ✅ ESTADÍSTICAS ACTUALIZADAS
+     * ✅ ESTADÍSTICAS
      */
     public function estadisticas()
     {
@@ -406,9 +365,9 @@ class PermisosLaboralesController extends Controller
                                              ->whereYear('fecha_inicio', now()->year)
                                              ->count(),
             ],
-            'por_tipo_y_estatus' => PermisosLaborales::selectRaw('tipo_permiso, estatus_permiso, COUNT(*) as total')
+            'por_tipo' => PermisosLaborales::selectRaw('tipo_permiso, COUNT(*) as total')
                                           ->whereYear('fecha_inicio', $añoActual)
-                                          ->groupBy(['tipo_permiso', 'estatus_permiso'])
+                                          ->groupBy('tipo_permiso')
                                           ->orderBy('total', 'desc')
                                           ->get(),
             'por_motivo' => PermisosLaborales::selectRaw('motivo, COUNT(*) as total')
@@ -425,22 +384,6 @@ class PermisosLaboralesController extends Controller
         ];
 
         return response()->json($estadisticas);
-    }
-
-    /**
-     * ✅ API PARA OBTENER MOTIVOS SEGÚN TIPO
-     */
-    public function getMotivosPorTipo(Request $request)
-    {
-        $tipo = $request->get('tipo');
-        
-        if (!in_array($tipo, ['permiso', 'suspendido'])) {
-            return response()->json(['error' => 'Tipo de permiso no válido'], 400);
-        }
-        
-        $motivos = PermisosLaborales::getMotivosPorTipo($tipo);
-        
-        return response()->json($motivos);
     }
 
     /**
