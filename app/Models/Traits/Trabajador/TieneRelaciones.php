@@ -1,8 +1,10 @@
 <?php
 
 namespace App\Models\Traits\Trabajador;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
-use App\Models\{FichaTecnica, Despidos, DocumentoTrabajador, HistorialPromocion, ContactoEmergencia, PermisosLaborales, ContratoTrabajador};
+
+use App\Models\{FichaTecnica, Despidos, DocumentoTrabajador, HistorialPromocion, ContactoEmergencia, PermisosLaborales, ContratoTrabajador, HorasExtra};
 
 trait TieneRelaciones
 {
@@ -45,5 +47,46 @@ trait TieneRelaciones
     {
         return $this->hasMany(ContratoTrabajador::class, 'id_trabajador');
     }
+
+    // ✅ AGREGAR ESTA RELACIÓN Y MÉTODOS AL MODELO TRABAJADOR EXISTENTE
+
+
+
+    // ✅ RELACIÓN CON HORAS EXTRA (agregar en la sección de relaciones)
+    public function horasExtra(): HasMany
+    {
+        return $this->hasMany(HorasExtra::class, 'id_trabajador', 'id_trabajador');
+    }
+
+    public function horasExtraAcumuladas(): HasMany
+    {
+        return $this->horasExtra()->acumuladas();
+    }
+
+    public function horasExtraDevueltas(): HasMany
+    {
+        return $this->horasExtra()->devueltas();
+    }
+
+    // ✅ MÉTODOS PARA GESTIÓN DE HORAS EXTRA (agregar en el modelo Trabajador)
+
+    /**
+     * Obtener saldo actual de horas extra
+     */
+    public function getSaldoHorasExtraAttribute(): float
+    {
+        return HorasExtra::calcularSaldo($this->id_trabajador);
+    }
+
+    /**
+     * Obtener total de horas acumuladas
+     */
+    public function getTotalHorasAcumuladasAttribute(): float
+    {
+        return $this->horasExtraAcumuladas()->sum('horas');
+    }
+
+
+
 
 }

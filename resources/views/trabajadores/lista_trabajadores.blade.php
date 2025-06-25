@@ -362,36 +362,62 @@
                                         @endif
                                     </td>
                                     <td>
-                                        <div class="btn-group btn-group-sm" role="group">
+                                        <div class="d-flex flex-wrap gap-1">
                                             <!-- Ver Perfil Completo -->
                                             <a href="{{ route('trabajadores.perfil.show', $trabajador) }}" 
-                                               class="btn btn-outline-primary" 
-                                               title="Ver Perfil Completo">
-                                                <i class="bi bi-person-circle"></i>
+                                            class="btn btn-outline-primary btn-sm" 
+                                            title="Ver Perfil Completo">
+                                                <i class="bi bi-person-lines-fill"></i>
                                             </a>
                                             
-                                            <!-- Asignar Permisos - Solo para trabajadores activos -->
+                                            <!-- Asignar Permisos -->
                                             @if($trabajador->estaActivo())
                                                 <button type="button" 
-                                                        class="btn btn-outline-info btn-permisos" 
+                                                        class="btn btn-outline-info btn-sm btn-permisos" 
                                                         title="Asignar Permisos"
                                                         data-id="{{ $trabajador->id_trabajador }}"
                                                         data-nombre="{{ $trabajador->nombre_completo }}">
-                                                    <i class="bi bi-calendar-event"></i>
+                                                    <i class="bi bi-file-earmark-plus"></i>
                                                 </button>
                                             @endif
                                             
-                                            <!-- Despedir - Solo para trabajadores activos -->
+                                            <!-- Despedir -->
                                             @if($trabajador->estaActivo())
                                                 <button type="button" 
-                                                        class="btn btn-outline-danger btn-despedir" 
+                                                        class="btn btn-outline-danger btn-sm btn-despedir" 
                                                         title="Despedir Trabajador"
                                                         data-id="{{ $trabajador->id_trabajador }}"
                                                         data-nombre="{{ $trabajador->nombre_completo }}"
                                                         data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
-                                                    <i class="bi bi-person-x"></i>
+                                                    <i class="bi bi-person-dash"></i>
                                                 </button>
                                             @endif
+
+                                            {{-- Asignar Horas Extra --}}
+                                            <button type="button" 
+                                                    class="btn btn-success btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
+                                                    title="Asignar Horas Extra">
+                                                <i class="bi bi-clock-plus"></i>
+                                                <span class="d-none d-md-inline">Asignar Horas</span>
+                                            </button>
+
+                                            @php
+                                                $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
+                                                $botonRestarDeshabilitado = $saldoActual <= 0;
+                                            @endphp
+
+                                            {{-- Compensar Horas Extra --}}
+                                            <button type="button" 
+                                                    class="btn btn-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
+                                                    title="Compensar Horas Extra"
+                                                    {{ $botonRestarDeshabilitado ? 'disabled' : '' }}>
+                                                <i class="bi bi-clock-minus"></i>
+                                                <span class="d-none d-md-inline">Compensar ({{ $saldoActual }}h)</span>
+                                            </button>
                                         </div>
                                     </td>
                                 </tr>
@@ -566,10 +592,21 @@
     </div>
 </div>
 
-{{-- ✅ INCLUIR MODALES --}}
+{{-- ✅ INCLUIR MODALES PRINCIPALES --}}
 @include('trabajadores.modales.despidos')
 @include('trabajadores.modales.permisos')
 @include('trabajadores.modales.importacion')
+
+{{-- ✅ MODALES DE HORAS EXTRAS - Generados solo si hay trabajadores --}}
+@if($trabajadores->count() > 0)
+    @foreach($trabajadores as $trabajador)
+        @include('trabajadores.modales.asignar_horas_extras', ['trabajador' => $trabajador])
+        @include('trabajadores.modales.restar_horas_extras', [
+            'trabajador' => $trabajador,
+            'saldoActual' => \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador)
+        ])
+    @endforeach
+@endif
 
 {{-- ✅ SCRIPTS DE LA VISTA PRINCIPAL --}}
 <script>

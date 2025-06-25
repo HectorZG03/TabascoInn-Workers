@@ -4,7 +4,7 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Traits\Trabajador\{TieneRelaciones, TieneAccessors, TieneMutators, TieneLogicaEstados, TieneHelpersTemporales};
+use App\Models\Traits\Trabajador\{TieneRelaciones, TieneAccessors, TieneMutators, TieneLogicaEstados, TieneHelpersTemporales };
 
 class Trabajador extends Model
 {

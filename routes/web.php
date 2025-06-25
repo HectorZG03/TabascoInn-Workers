@@ -5,6 +5,7 @@ use App\Http\Controllers\TrabajadorController;
 use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
 use App\Http\Controllers\PermisosLaboralesController;
+use App\Http\Controllers\HorasExtraController;
 use App\Http\Controllers\FormatoPermisosController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\ContratoController;
@@ -154,8 +155,14 @@ Route::middleware(['auth'])->group(function () {
             // API para categorías por área (AJAX) - Específico para perfil
             Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
         });
+
     });
 
+        Route::prefix('trabajadores/{trabajador}/horas-extra')->name('trabajadores.horas-extra.')->group(function () {
+            Route::post('/asignar', [HorasExtraController::class, 'asignar'])->name('asignar');
+            Route::post('/restar', [HorasExtraController::class, 'restar'])->name('restar');
+            Route::get('/saldo', [HorasExtraController::class, 'obtenerSaldo'])->name('saldo');
+        });
     // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
     // Agrega estas rutas en tu archivo routes/web.php
 
