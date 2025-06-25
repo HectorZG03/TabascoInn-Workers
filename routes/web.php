@@ -158,10 +158,15 @@ Route::middleware(['auth'])->group(function () {
 
     });
 
-        Route::prefix('trabajadores/{trabajador}/horas-extra')->name('trabajadores.horas-extra.')->group(function () {
-            Route::post('/asignar', [HorasExtraController::class, 'asignar'])->name('asignar');
-            Route::post('/restar', [HorasExtraController::class, 'restar'])->name('restar');
-            Route::get('/saldo', [HorasExtraController::class, 'obtenerSaldo'])->name('saldo');
+       Route::prefix('trabajadores/{trabajador}/horas-extra')->name('trabajadores.horas-extra.')->group(function () {
+        // ✅ RUTAS BÁSICAS para asignar y compensar
+        Route::post('asignar', [HorasExtraController::class, 'asignar'])->name('asignar');
+        Route::post('restar', [HorasExtraController::class, 'restar'])->name('restar');
+        
+        // ✅ RUTAS API para el perfil
+        Route::get('saldo', [HorasExtraController::class, 'obtenerSaldo'])->name('saldo');
+        Route::get('historial', [HorasExtraController::class, 'obtenerHistorial'])->name('historial');
+        Route::get('estadisticas', [HorasExtraController::class, 'obtenerEstadisticas'])->name('estadisticas');
         });
     // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
     // Agrega estas rutas en tu archivo routes/web.php

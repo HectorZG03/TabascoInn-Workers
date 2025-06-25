@@ -8,6 +8,7 @@ use App\Models\Trabajador;
 use App\Models\FichaTecnica;
 use App\Models\DocumentoTrabajador;
 use App\Models\HistorialPromocion; // ✅ NUEVA IMPORTACIÓN
+use App\Models\HorasExtra; // ✅ NUEVA IMPORTACIÓN
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -18,12 +19,12 @@ use Carbon\Carbon;
 
 class ActPerfilTrabajadorController extends Controller
 {
-    /**
-     * Mostrar perfil completo del trabajador ✅ CORREGIDO
+/**
+     * Mostrar perfil completo del trabajador ✅ CORREGIDO + HORAS EXTRA
      */
     public function show(Trabajador $trabajador)
     {
-        // ✅ Una sola carga de relaciones optimizada
+        // ✅ Una sola carga de relaciones optimizada + HORAS EXTRA
         $trabajador->load([
             'fichaTecnica.categoria.area', 
             'documentos', 
@@ -31,10 +32,14 @@ class ActPerfilTrabajadorController extends Controller
             'historialPromociones' => function($query) {
                 $query->with(['categoriaAnterior', 'categoriaNueva'])
                       ->latest('fecha_cambio');
+            },
+            // ✅ NUEVA: Cargar horas extra
+            'horasExtra' => function($query) {
+                $query->orderBy('fecha', 'desc')->orderBy('created_at', 'desc');
             }
         ]);
 
-        // ✅ Calcular todas las estadísticas en un solo método
+        // ✅ Calcular todas las estadísticas en un solo método (ahora incluye horas extra)
         $stats = $this->calcularTodasLasEstadisticas($trabajador);
 
         // ✅ Obtener datos para formularios
@@ -50,6 +55,10 @@ class ActPerfilTrabajadorController extends Controller
         // ✅ Extraer datos específicos de las estadísticas
         $statsPromociones = $stats['promociones'];
         $historialReciente = $stats['historial_reciente'];
+        
+        // ✅ NUEVAS: Extraer datos de horas extra
+        $stats_horas = $stats['horas_extra'];
+        $historial_horas = $stats['historial_horas'];
 
         return view('trabajadores.perfil_trabajador', compact(
             'trabajador', 
@@ -57,17 +66,20 @@ class ActPerfilTrabajadorController extends Controller
             'categorias', 
             'stats',
             'statsPromociones',
-            'historialReciente'
+            'historialReciente',
+            // ✅ NUEVAS: Variables para horas extra
+            'stats_horas',
+            'historial_horas'
         ));
     }
 
     
-    /**
-     * ✅ MÉTODO UNIFICADO - Reemplaza ambos métodos anteriores
+/**
+     * ✅ MÉTODO UNIFICADO - Reemplaza ambos métodos anteriores + HORAS EXTRA
      */
     private function calcularTodasLasEstadisticas(Trabajador $trabajador): array
     {
-        // ✅ Cálculos básicos
+        // ✅ Cálculos básicos (sin cambios)
         $edad = $trabajador->fecha_nacimiento 
             ? \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age 
             : null;
@@ -83,7 +95,7 @@ class ActPerfilTrabajadorController extends Controller
         // ✅ Obtener historial una sola vez (ya está cargado)
         $historialPromociones = $trabajador->historialPromociones;
         
-        // ✅ Procesar historial reciente
+        // ✅ Procesar historial reciente (sin cambios)
         $historialReciente = $historialPromociones->take(5)->map(function ($promocion) {
             $promocion->diferencia_sueldo = $promocion->sueldo_nuevo - ($promocion->sueldo_anterior ?? 0);
             
@@ -108,7 +120,7 @@ class ActPerfilTrabajadorController extends Controller
             return $promocion;
         });
 
-        // ✅ Estadísticas de promociones
+        // ✅ Estadísticas de promociones (sin cambios)
         $statsPromociones = [
             'total_cambios' => $historialPromociones->count(),
             'promociones' => $historialPromociones->where('tipo_cambio', 'promocion')->count(),
@@ -118,8 +130,29 @@ class ActPerfilTrabajadorController extends Controller
             'ultimo_cambio' => $historialPromociones->first()
         ];
 
+        // ✅ NUEVO: HISTORIAL DE HORAS EXTRA (últimos 6 meses para performance)
+        $historial_horas = \App\Models\HorasExtra::delTrabajador($trabajador->id_trabajador)
+            ->where('fecha', '>=', now()->subMonths(6))
+            ->orderBy('fecha', 'desc')
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        // ✅ NUEVO: ESTADÍSTICAS DE HORAS EXTRA
+        $stats_horas = [
+            'total_acumuladas' => \App\Models\HorasExtra::delTrabajador($trabajador->id_trabajador)
+                ->acumuladas()
+                ->sum('horas'),
+            'total_devueltas' => \App\Models\HorasExtra::delTrabajador($trabajador->id_trabajador)
+                ->devueltas()
+                ->sum('horas'),
+            'total_registros' => \App\Models\HorasExtra::delTrabajador($trabajador->id_trabajador)->count(),
+            'ultimo_registro' => \App\Models\HorasExtra::delTrabajador($trabajador->id_trabajador)
+                ->orderBy('fecha', 'desc')
+                ->first()?->fecha,
+        ];
+
         return [
-            // Estadísticas generales
+            // Estadísticas generales (sin cambios)
             'edad' => $edad,
             'antiguedad_texto' => $antiguedadTexto,
             'porcentaje_documentos' => $trabajador->documentos?->porcentaje_completado ?? 0,
@@ -131,11 +164,15 @@ class ActPerfilTrabajadorController extends Controller
             'ultima_actualizacion' => $trabajador->updated_at->diffForHumans(),
             'es_nuevo' => $antiguedad === 0,
             
-            // Datos de promociones organizados
+            // Datos de promociones organizados (sin cambios)
             'promociones' => $statsPromociones,
             'historial_reciente' => $historialReciente,
             
-            // Mantener compatibilidad
+            // ✅ NUEVOS: Datos de horas extra organizados
+            'horas_extra' => $stats_horas,
+            'historial_horas' => $historial_horas,
+            
+            // Mantener compatibilidad (sin cambios)
             'total_promociones' => $statsPromociones['total_cambios'],
             'ultimo_cambio' => $statsPromociones['ultimo_cambio'],
         ];

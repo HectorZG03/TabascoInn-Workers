@@ -394,30 +394,28 @@
                                             @endif
 
                                             {{-- Asignar Horas Extra --}}
-                                            <button type="button" 
-                                                    class="btn btn-success btn-sm" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
-                                                    title="Asignar Horas Extra">
-                                                <i class="bi bi-clock-plus"></i>
-                                                <span class="d-none d-md-inline">Asignar Horas</span>
-                                            </button>
+                                            <a href="#" 
+                                            class="btn btn-outline-success btn-sm" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
+                                            title="Asignar Horas Extra">
+                                                <i class="bi bi-clock">+</i>
+                                            </a>
+
 
                                             @php
                                                 $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
                                                 $botonRestarDeshabilitado = $saldoActual <= 0;
                                             @endphp
-
-                                            {{-- Compensar Horas Extra --}}
-                                            <button type="button" 
-                                                    class="btn btn-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
-                                                    data-bs-toggle="modal" 
-                                                    data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
-                                                    title="Compensar Horas Extra"
-                                                    {{ $botonRestarDeshabilitado ? 'disabled' : '' }}>
-                                                <i class="bi bi-clock-minus"></i>
-                                                <span class="d-none d-md-inline">Compensar ({{ $saldoActual }}h)</span>
-                                            </button>
+                                            {{-- Compensar Horas Extra (solo ícono con tooltip) --}}
+                                            <a href="#" 
+                                            class="btn btn-outline-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
+                                            title="Compensar Horas Extra (Saldo actual: {{ $saldoActual }}h)"
+                                            {{ $botonRestarDeshabilitado ? 'aria-disabled=true' : '' }}>
+                                                <i class="bi bi-clock">-</i>
+                                            </a>
                                         </div>
                                     </td>
                                 </tr>

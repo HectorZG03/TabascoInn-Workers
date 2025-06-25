@@ -38,17 +38,22 @@
                         </div>
                         <div class="col-md-4">
                             <div class="row text-center">
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="h4 text-primary mb-0">{{ $trabajador->antiguedad_texto ?? 'N/A' }}</div>
                                     <small class="text-muted">Antigüedad</small>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="h4 text-success mb-0">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
                                     <small class="text-muted">Sueldo Diario</small>
                                 </div>
-                                <div class="col-4">
+                                <div class="col-3">
                                     <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
                                     <small class="text-muted">Documentos</small>
+                                </div>
+                                {{-- ✅ NUEVO: Saldo de horas extra --}}
+                                <div class="col-3">
+                                    <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
+                                    <small class="text-muted">Horas Extra</small>
                                 </div>
                             </div>
                         </div>
@@ -73,7 +78,13 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
-                        {{-- ✅ PESTAÑA DE CONTRATOS --}}
+                        {{-- ✅ NUEVA: Pestaña de Horas Extra --}}
+                        <button class="nav-link" id="nav-horas-tab" data-bs-toggle="tab" data-bs-target="#nav-horas" type="button" role="tab">
+                            <i class="bi bi-clock"></i> Horas Extra 
+                            @if($trabajador->saldo_horas_extra > 0)
+                                <span class="badge bg-warning text-dark ms-1">{{ $trabajador->saldo_horas_extra }}</span>
+                            @endif
+                        </button>
                         <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
@@ -107,7 +118,12 @@
                     @include('trabajadores.secciones_perfil.documentos')
                 </div>
 
-                {{-- ✅ PESTAÑA DE CONTRATOS (Carga dinámica via AJAX) --}}
+                {{-- ✅ NUEVA: Pestaña de Horas Extra --}}
+                <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
+                    @include('trabajadores.secciones_perfil.horas_extra')
+                </div>
+
+                <!-- Pestaña de Contratos -->
                 <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
                     <div id="contratos-content">
                         <div class="text-center py-5">
@@ -133,6 +149,13 @@
 @if($trabajador->fichaTecnica)
     @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 @endif
+
+{{-- ✅ MODALES DE HORAS EXTRA --}}
+@include('trabajadores.modales.asignar_horas_extras', ['trabajador' => $trabajador])
+@include('trabajadores.modales.restar_horas_extras', [
+    'trabajador' => $trabajador,
+    'saldoActual' => $trabajador->saldo_horas_extra
+])
 
 {{-- ✅ JAVASCRIPT CENTRALIZADO DEL PERFIL --}}
 @include('trabajadores.secciones_perfil.perfil_scripts')
