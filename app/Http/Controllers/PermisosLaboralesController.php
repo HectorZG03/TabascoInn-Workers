@@ -306,7 +306,7 @@ class PermisosLaboralesController extends Controller
     }
 
     /**
-     * ✅ CANCELAR PERMISO - ACTUALIZADO CON ESTATUS
+     * ✅ CANCELAR PERMISO MEJORADO - Elimina registro y PDF
      */
     public function cancelar(PermisosLaborales $permiso)
     {
@@ -321,13 +321,8 @@ class PermisosLaboralesController extends Controller
 
         DB::beginTransaction();
 
-        try{
-            // Eliminar el pdf si existe:
-            if ($permiso->tiene_pdf){
-                $permiso->eliminarPdf();
-            }
-
-            // Guardar datos para log antes de eliminar:
+        try {
+            // ✅ GUARDAR DATOS PARA LOG ANTES DE ELIMINAR
             $datosPermiso = [
                 'permiso_id' => $permiso->id_permiso,
                 'trabajador_id' => $trabajador->id_trabajador,
@@ -336,29 +331,48 @@ class PermisosLaboralesController extends Controller
                 'motivo' => $permiso->motivo_texto,
                 'fecha_inicio' => $permiso->fecha_inicio->format('d/m/Y'),
                 'fecha_fin' => $permiso->fecha_fin->format('d/m/Y'),
+                'ruta_pdf' => $permiso->ruta_pdf,
+                'tenia_pdf' => $permiso->tiene_pdf,
             ];
 
-            // Reactivar trabajador primero:
-            $trabajador->update([
-                'estatus' => 'activo',
-            ]);
+            // ✅ ELIMINAR PDF PRIMERO (antes de eliminar el registro)
+            $pdfEliminado = true;
+            if ($permiso->tiene_pdf) {
+                $pdfEliminado = $permiso->eliminarPdf();
+                
+                if (!$pdfEliminado) {
+                    Log::warning('No se pudo eliminar el PDF, pero continuando con la eliminación del registro', [
+                        'permiso_id' => $permiso->id_permiso,
+                        'ruta_pdf' => $permiso->ruta_pdf,
+                    ]);
+                }
+            }
 
-            //Elminacion del registro definitivamente:
+            // ✅ REACTIVAR TRABAJADOR
+            $trabajador->update(['estatus' => 'activo']);
+
+            // ✅ ELIMINAR REGISTRO DE LA BD
             $permiso->delete();
 
             DB::commit();
 
+            // ✅ LOG EXITOSO
             Log::info('Permiso eliminado exitosamente', [
                 'datos_permiso' => $datosPermiso,
+                'pdf_eliminado' => $pdfEliminado,
                 'usuario' => Auth::user()->email ?? 'Sistema',
                 'fecha_eliminacion' => now()->format('d/m/Y H:i:s'),
             ]);
 
             $tipoTexto = $datosPermiso['tipo_permiso'] === 'permiso' ? 'Permiso' : 'Suspensión';
+            $mensajePdf = $datosPermiso['tenia_pdf'] ? 
+                ($pdfEliminado ? ' y su PDF asociado' : ' (PDF no pudo eliminarse)') : '';
+            
             return redirect()->route('permisos.index')
-                           ->with('success', 
-                               "{$tipoTexto} eliminado exitosamente. {$datosPermiso['trabajador_nombre']} ha sido reactivado"
-                           );
+                        ->with('success', 
+                            "{$tipoTexto} eliminado exitosamente{$mensajePdf}. {$datosPermiso['trabajador_nombre']} ha sido reactivado"
+                        );
+
         } catch (\Exception $e) {
             DB::rollback();
 
@@ -368,8 +382,10 @@ class PermisosLaboralesController extends Controller
                 'trace' => $e->getTraceAsString(),
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
-            return back()->withErrors(['error' => 'Error al eliminar: ' . $e->getMessage()]);
 
+            return back()->withErrors([
+                'error' => 'Error al eliminar: ' . $e->getMessage()
+            ]);
         }
     }
 
