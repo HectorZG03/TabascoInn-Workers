@@ -19,7 +19,7 @@ Route::get('/', function () {
     return redirect('/login');
 });
 
-/// Rutas de autenticación
+// Rutas de autenticación
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
@@ -29,10 +29,7 @@ Route::middleware(['auth'])->group(function () {
  
     // ✅ RUTAS DE CONFIGURACIÓN DE USUARIO
     Route::prefix('configuracion')->name('users.')->group(function () {
-        // Menú principal de configuración
         Route::get('/', [UserController::class, 'configMenu'])->name('config');
-        
-        // Gestión de usuarios (solo para gerencia)
         Route::middleware('check.gerencia')->group(function () {
             Route::get('/usuarios', [UserController::class, 'manageUsers'])->name('manage');
             Route::get('/sistema', [UserController::class, 'systemConfig'])->name('system.config');
@@ -42,225 +39,123 @@ Route::middleware(['auth'])->group(function () {
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
         ->name('trabajadores.buscar');
-
     Route::get('/api/trabajadores/busqueda-rapida', [BusquedaTrabajadoresController::class, 'busquedaRapida'])
         ->name('trabajadores.busqueda.rapida');
-
     Route::get('/api/trabajadores/sugerencias', [BusquedaTrabajadoresController::class, 'sugerencias'])
         ->name('trabajadores.sugerencias');
-
     Route::get('/api/trabajadores/estadisticas', [BusquedaTrabajadoresController::class, 'estadisticas'])
         ->name('trabajadores.estadisticas');
     
     // Dashboard
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // ✅ NUEVA: RUTA PRINCIPAL DE ADMINISTRACIÓN DE CONTRATOS
-    Route::prefix('contratos')->name('contratos.')->group(function () {
-        // Vista principal de administración de todos los contratos
-        Route::get('/administracion', [AdminContratosController::class, 'index'])->name('admin.index');
-    });
-
     // ✅ RUTAS DE IMPORTACIÓN MASIVA
     Route::prefix('import')->name('import.')->group(function () {
-        // Descargar plantilla Excel
         Route::get('/plantilla', [ImportController::class, 'descargarPlantilla'])->name('plantilla');
-        
-        // Procesar importación masiva
         Route::post('/procesar', [ImportController::class, 'importarTrabajadores'])->name('procesar');
     });
 
     // ✅ RUTAS DE TRABAJADORES - Gestión General
     Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
-        // Lista de trabajadores (index)
+        // CRUD básico de trabajadores
         Route::get('/', [TrabajadorController::class, 'index'])->name('index');
-    
-        // Formulario para crear nuevo trabajador
         Route::get('/crear', [TrabajadorController::class, 'create'])->name('create');
-    
-        // Guardar nuevo trabajador
         Route::post('/', [TrabajadorController::class, 'store'])->name('store');
-    
-        // Ver trabajador específico (vista básica)
         Route::get('/{trabajador}', [TrabajadorController::class, 'show'])->name('show');
-    
-        // Formulario para editar trabajador
         Route::get('/{trabajador}/editar', [TrabajadorController::class, 'edit'])->name('edit');
-    
-        // Actualizar trabajador
         Route::put('/{trabajador}', [TrabajadorController::class, 'update'])->name('update');
-    
-        // Dar de baja trabajador
         Route::delete('/{trabajador}', [TrabajadorController::class, 'destroy'])->name('destroy');
 
-        // ✅ RUTAS DE DESPIDOS
+        // ✅ RUTAS DE ACCIONES ESPECÍFICAS
         Route::post('/{trabajador}/despedir', [DespidosController::class, 'store'])->name('despedir');
-
-        // ✅ RUTAS DE PERMISOS LABORALES
         Route::post('/{trabajador}/permisos', [PermisosLaboralesController::class, 'store'])->name('permisos.store');
-
-        // ✅ NUEVA RUTA PARA VER HISTORIAL COMPLETO - MOVIDA AQUÍ FUERA DEL GRUPO PERFIL
         Route::get('/{trabajador}/historial-promociones', [ActPerfilTrabajadorController::class, 'verHistorialCompleto'])
             ->name('historial-promociones');
 
-       
-    // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - ACTUALIZADAS
-    Route::prefix('{trabajador}/contratos')->name('contratos.')->group(function () {
-        // Mostrar contratos del trabajador (vista principal)
-        Route::get('/', [AdminContratosController::class, 'show'])->name('show');
-        
-        // ✅ NUEVO: Crear contrato (formulario)
-        Route::get('/crear', [AdminContratosController::class, 'create'])->name('crear.form');
-        
-        // ✅ NUEVO: Crear contrato (procesar)
-        Route::post('/crear', [AdminContratosController::class, 'store'])->name('crear');
-        
-        // ✅ CORREGIDO: Vista del formulario de renovación (GET)
-        Route::get('/{contrato}/renovar', [AdminContratosController::class, 'mostrarRenovacion'])->name('renovar.form');
-        
-        // ✅ NUEVO: Procesar renovación (POST)
-        Route::post('/{contrato}/renovar', [AdminContratosController::class, 'renovar'])->name('renovar');
-        
-        // Descargar contrato específico (existente)
-        Route::get('/{contrato}/descargar', [AdminContratosController::class, 'descargar'])->name('descargar');
-        
-        // ✅ ACTUALIZADO: Eliminar contrato permanentemente (cambiado de terminar)
-        Route::delete('/{contrato}/eliminar', [AdminContratosController::class, 'eliminar'])->name('eliminar');
-        
-        // ✅ NUEVO: API para verificar si puede crear contrato
-        Route::get('/api/verificar-creacion', [AdminContratosController::class, 'verificarCreacion'])->name('api.verificar');
-        
-        // API: Obtener resumen de contratos (existente)
-        Route::get('/api/resumen', [AdminContratosController::class, 'obtenerResumen'])->name('api.resumen');
-    });
-
-    
-        // ✅ RUTAS DEL PERFIL AVANZADO - Controlador Sep   arado
+        // ✅ RUTAS DE PERFIL AVANZADO
         Route::prefix('{trabajador}/perfil')->name('perfil.')->group(function () {
-            // Mostrar perfil completo
             Route::get('/', [ActPerfilTrabajadorController::class, 'show'])->name('show');
-        
-            // Actualizar datos personales
             Route::put('/datos', [ActPerfilTrabajadorController::class, 'updateDatos'])->name('update-datos');
-        
-            // Actualizar datos laborales (ficha técnica)
             Route::put('/ficha-tecnica', [ActPerfilTrabajadorController::class, 'updateFichaTecnica'])->name('update-ficha');
-        
-            // Subir documento
             Route::post('/documentos', [ActPerfilTrabajadorController::class, 'uploadDocument'])->name('upload-document');
-        
-            // Eliminar documento
             Route::delete('/documentos', [ActPerfilTrabajadorController::class, 'deleteDocument'])->name('delete-document');
-        
-            // API para categorías por área (AJAX) - Específico para perfil
             Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
         });
 
-    });
-
-       Route::prefix('trabajadores/{trabajador}/horas-extra')->name('trabajadores.horas-extra.')->group(function () {
-        // ✅ RUTAS BÁSICAS para asignar y compensar
-        Route::post('asignar', [HorasExtraController::class, 'asignar'])->name('asignar');
-        Route::post('restar', [HorasExtraController::class, 'restar'])->name('restar');
-        
-        // ✅ RUTAS API para el perfil
-        Route::get('saldo', [HorasExtraController::class, 'obtenerSaldo'])->name('saldo');
-        Route::get('historial', [HorasExtraController::class, 'obtenerHistorial'])->name('historial');
-        Route::get('estadisticas', [HorasExtraController::class, 'obtenerEstadisticas'])->name('estadisticas');
+        // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - OPTIMIZADAS Y CENTRALIZADAS
+        Route::prefix('{trabajador}/contratos')->name('contratos.')->controller(AdminContratosController::class)->group(function () {
+            // Vista principal de contratos del trabajador
+            Route::get('/', 'show')->name('show');
+            
+            // Crear nuevo contrato
+            Route::post('/crear', 'store')->name('crear');
+            
+            // Renovar contrato existente
+            Route::post('/{contrato}/renovar', 'renovar')->name('renovar');
+            
+            // ✅ ÚNICA RUTA DE DESCARGA (eliminada duplicación)
+            Route::get('/{contrato}/descargar', 'descargar')->name('descargar');
+            
+            // Eliminar contrato permanentemente
+            Route::delete('/{contrato}/eliminar', 'eliminar')->name('eliminar');
+            
+            // ✅ APIs para gestión de contratos
+            Route::get('/api/verificar-creacion', 'verificarCreacion')->name('api.verificar');
+            Route::get('/api/resumen', 'obtenerResumen')->name('api.resumen');
         });
-    // ✅ RUTAS PARA EL SISTEMA DE DESPIDOS ACTUALIZADO
-    // Agrega estas rutas en tu archivo routes/web.php
 
-    // Rutas principales de despidos
-    Route::prefix('despidos')->name('despidos.')->group(function () {
-        // Listar todas las bajas (con filtros por estado)
-        Route::get('/', [DespidosController::class, 'index'])->name('index');
-        
-        // Ver detalles de una baja específica
-        Route::get('/{despido}', [DespidosController::class, 'show'])->name('show');
-        
-        // Cancelar/revertir un despido (mantiene historial)
-        Route::delete('/{despido}/cancelar', [DespidosController::class, 'cancelar'])->name('cancelar');
-        
-        // Estadísticas para dashboard
-        Route::get('/api/estadisticas', [DespidosController::class, 'estadisticas'])->name('estadisticas');
+        // ✅ RUTAS DE HORAS EXTRA
+        Route::prefix('{trabajador}/horas-extra')->name('horas-extra.')->controller(HorasExtraController::class)->group(function () {
+            Route::post('asignar', 'asignar')->name('asignar');
+            Route::post('restar', 'restar')->name('restar');
+            Route::get('saldo', 'obtenerSaldo')->name('saldo');
+            Route::get('historial', 'obtenerHistorial')->name('historial');
+            Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');
+        });
     });
 
-    // Rutas de despidos relacionadas con trabajadores
-    Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
-        // Mostrar formulario de despido
-        Route::get('/{trabajador}/despedir', [DespidosController::class, 'create'])->name('despedir.create');
-        
-        // Procesar despido
-        Route::post('/{trabajador}/despedir', [DespidosController::class, 'store'])->name('despedir.store');
-        
-        // ✅ NUEVO: Obtener historial completo de bajas de un trabajador
-        Route::get('/{trabajador}/historial-despidos', [DespidosController::class, 'historial'])->name('historial.despidos');
+    // ✅ RUTAS PARA DESPIDOS
+    Route::prefix('despidos')->name('despidos.')->controller(DespidosController::class)->group(function () {
+        Route::get('/', 'index')->name('index');
+        Route::get('/{despido}', 'show')->name('show');
+        Route::delete('/{despido}/cancelar', 'cancelar')->name('cancelar');
+        Route::get('/api/estadisticas', 'estadisticas')->name('estadisticas');
     });
 
-   // ✅ RUTAS DE GESTIÓN DE PERMISOS LABORALES - REFACTORIZADAS
-Route::prefix('permisos')->name('permisos.')->group(function () {
-    // Lista de permisos y suspensiones
-    Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
-    
-    // Ver detalles de un permiso específico
-    Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
-    
-    // Finalizar permiso/suspensión anticipadamente
-    Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
-    
-    // Cancelar permiso/suspensión (eliminar y reactivar)
-    Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar');
-    
-    // ✅ NUEVAS RUTAS PARA GESTIÓN DE PDFs
-    Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
-        // Generar y descargar PDF del permiso
-        Route::get('/generar', 'generarPDF')->name('generar');
+    // ✅ RUTAS PARA PERMISOS LABORALES
+    Route::prefix('permisos')->name('permisos.')->group(function () {
+        Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
+        Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
+        Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
+        Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar');
         
-        // Descargar PDF existente (si no existe, lo genera)
-        Route::get('/descargar', 'descargarPDF')->name('descargar');
+        // ✅ RUTAS DE PDFs DE PERMISOS
+        Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
+            Route::get('/generar', 'generarPDF')->name('generar');
+            Route::get('/descargar', 'descargarPDF')->name('descargar');
+            Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
+        });
+        Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
         
-        // Regenerar PDF (elimina el anterior y crea uno nuevo)
-        Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
+        // APIs
+        Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
+        Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
+        Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
     });
-    
-    // ✅ RUTA DIRECTA PARA COMPATIBILIDAD (la que ya está referenciada en la vista)
-    Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf');
-    
-    // API para estadísticas
-    Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
-    
-    // ✅ NUEVA: API para obtener motivos según tipo de permiso
-    Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])
-        ->name('api.motivos-por-tipo');
-    
-    // Verificar permisos vencidos (tarea programada)
-    Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
-});
 
-    // ✅ API GENERAL para categorías (para otros formularios)
+    // ✅ RUTAS AJAX PARA CONTRATOS - OPTIMIZADAS (Solo generación)
+    Route::prefix('ajax/contratos')->name('ajax.contratos.')->controller(ContratoController::class)->group(function () {
+        // ✅ SOLO funciones de generación de PDFs
+        Route::post('/preview', 'generarPreview')->name('preview');
+        Route::get('/preview-download/{hash}', 'descargarPreview')->name('preview.download');
+    });
+
+    // ✅ APIs GENERALES
     Route::get('/api/categorias/{area}', [TrabajadorController::class, 'getCategoriasPorArea'])->name('api.categorias');
-
-    // RUTA OPCIONAL PARA OBTENER TODOS LOS MOTIVOS
     Route::get('/api/motivos', function() {
         return response()->json([
-
             'todos' => \App\Models\PermisosLaborales::getTodosLosMotivos()
         ]);
-    })->name('api.motivos')->middleware('auth');
-
-    // Rutas AJAX para contratos durante creación
-    Route::prefix('ajax/contratos')->name('ajax.contratos.')->group(function () {
-        // Generar preview del contrato (sin guardar trabajador aún)
-        Route::post('/preview', [ContratoController::class, 'generarPreview'])->name('preview');
-        
-        // Descargar contrato temporal
-        Route::get('/preview-download/{hash}', [ContratoController::class, 'descargarPreview'])->name('preview.download');
-
-         // Nueva ruta para generar preview
-        Route::post('/preview', [ContratoController::class, 'generarPreview'])
-            ->name('preview');
-        });
-
+    })->name('api.motivos');
     
 });
