@@ -28,16 +28,6 @@
                                         <small class="text-muted">Vigentes</small>
                                     </div>
                                 </div>
-                            @else
-                                {{-- ✅ ACTUALIZADO: Solo mostrar botón crear cuando NO hay contratos --}}
-                                @if($trabajador->fichaTecnica)
-                                    <button type="button" 
-                                            class="btn btn-primary"
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalCrearContrato">
-                                        <i class="bi bi-plus-lg"></i> Crear Contrato
-                                    </button>
-                                @endif
                             @endif
                         </div>
                     </div>
