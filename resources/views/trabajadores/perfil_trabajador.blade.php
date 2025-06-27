@@ -1,10 +1,35 @@
-{{-- resources/views/trabajadores/perfil_trabajador.blade.php --}}
-
 @extends('layouts.app')
 
 @section('title', 'Perfil de ' . $trabajador->nombre_completo . ' - Hotel')
 
 @section('content')
+<style>
+    /* Pestañas nav-pills con texto e iconos negros */
+    .nav-pills .nav-link {
+        color: black; /* texto negro */
+        font-weight: 600;
+        border-radius: 0.5rem;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+    .nav-pills .nav-link:hover {
+        background-color: #e7f1ff;
+        color: black;
+    }
+    .nav-pills .nav-link.active {
+        background-color: #0d6efd; /* azul bootstrap */
+        color: black; /* texto negro */
+        box-shadow: 0 0 8px rgb(13 110 253 / 0.5);
+    }
+    /* Iconos en pestañas (negros) */
+    .nav-pills .nav-link i {
+        margin-right: 6px;
+        font-size: 1.1rem;
+        vertical-align: middle;
+        color: inherit; /* hereda color del texto */
+    }
+</style>
+
+
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->
     <div class="row mb-4">
@@ -50,7 +75,6 @@
                                     <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
                                     <small class="text-muted">Documentos</small>
                                 </div>
-                                {{-- ✅ NUEVO: Saldo de horas extra --}}
                                 <div class="col-3">
                                     <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
                                     <small class="text-muted">Horas Extra</small>
@@ -78,7 +102,6 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
-                        {{-- ✅ NUEVA: Pestaña de Horas Extra --}}
                         <button class="nav-link" id="nav-horas-tab" data-bs-toggle="tab" data-bs-target="#nav-horas" type="button" role="tab">
                             <i class="bi bi-clock"></i> Horas Extra 
                             @if($trabajador->saldo_horas_extra > 0)
@@ -99,31 +122,26 @@
         </div>
     </div>
 
-    <!-- ✅ CONTENIDO DE LAS PESTAÑAS -->
+    <!-- CONTENIDO DE LAS PESTAÑAS -->
     <div class="row">
         <div class="col-12">
             <div class="tab-content" id="nav-tabContent">
-                <!-- Pestaña de Datos Personales -->
                 <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
                     @include('trabajadores.secciones_perfil.datos_personales')
                 </div>
 
-                <!-- Pestaña de Datos Laborales -->
                 <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
                     @include('trabajadores.secciones_perfil.datos_laborales')
                 </div>
 
-                <!-- Pestaña de Documentos -->
                 <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
                     @include('trabajadores.secciones_perfil.documentos')
                 </div>
 
-                {{-- ✅ NUEVA: Pestaña de Horas Extra --}}
                 <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
                     @include('trabajadores.secciones_perfil.horas_extra')
                 </div>
 
-                <!-- Pestaña de Contratos -->
                 <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
                     <div id="contratos-content">
                         <div class="text-center py-5">
@@ -138,26 +156,21 @@
         </div>
     </div>
 
-    <!-- ✅ ALERTAS DESPUÉS DEL CONTENIDO -->
     @include('components.alertas')
 </div>
 
-{{-- ✅ MODALES SEPARADOS --}}
 @include('trabajadores.modales.subir_documento', ['trabajador' => $trabajador])
 
-{{-- ✅ Modal para crear contrato (solo si tiene ficha técnica) --}}
 @if($trabajador->fichaTecnica)
     @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 @endif
 
-{{-- ✅ MODALES DE HORAS EXTRA --}}
 @include('trabajadores.modales.asignar_horas_extras', ['trabajador' => $trabajador])
 @include('trabajadores.modales.restar_horas_extras', [
     'trabajador' => $trabajador,
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-{{-- ✅ JAVASCRIPT CENTRALIZADO DEL PERFIL --}}
 @include('trabajadores.secciones_perfil.perfil_scripts')
 
 @endsection

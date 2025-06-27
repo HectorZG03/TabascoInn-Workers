@@ -268,7 +268,7 @@
                     @endforeach
                 </div>
 
-                <!-- Vista de Tabla (escritorio) -->
+               <!-- Vista de Tabla (escritorio) -->
                 <div class="d-none d-md-block table-responsive">
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
@@ -394,28 +394,32 @@
                                             @endif
 
                                             {{-- Asignar Horas Extra --}}
-                                            <a href="#" 
-                                            class="btn btn-outline-success btn-sm" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
-                                            title="Asignar Horas Extra">
-                                                <i class="bi bi-clock">+</i>
-                                            </a>
+                                            @if($trabajador->estaActivo())
+                                                <!-- Asignar Horas Extra -->
+                                                <a href="#" 
+                                                    class="btn btn-outline-success btn-sm" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
+                                                    title="Asignar Horas Extra">
+                                                    <i class="bi bi-clock">+</i>
+                                                </a>
 
+                                                @php
+                                                    $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
+                                                    $botonRestarDeshabilitado = $saldoActual <= 0;
+                                                @endphp
 
-                                            @php
-                                                $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
-                                                $botonRestarDeshabilitado = $saldoActual <= 0;
-                                            @endphp
-                                            {{-- Compensar Horas Extra (solo ícono con tooltip) --}}
-                                            <a href="#" 
-                                            class="btn btn-outline-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
-                                            data-bs-toggle="modal" 
-                                            data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
-                                            title="Compensar Horas Extra (Saldo actual: {{ $saldoActual }}h)"
-                                            {{ $botonRestarDeshabilitado ? 'aria-disabled=true' : '' }}>
-                                                <i class="bi bi-clock">-</i>
-                                            </a>
+                                                <!-- Compensar Horas Extra -->
+                                                <a href="#" 
+                                                    class="btn btn-outline-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
+                                                    data-bs-toggle="modal" 
+                                                    data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
+                                                    title="Compensar Horas Extra (Saldo actual: {{ $saldoActual }}h)"
+                                                    {{ $botonRestarDeshabilitado ? 'aria-disabled=true' : '' }}>
+                                                    <i class="bi bi-clock">-</i>
+                                                </a>
+                                            @endif
+
                                         </div>
                                     </td>
                                 </tr>
