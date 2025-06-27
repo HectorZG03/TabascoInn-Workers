@@ -31,11 +31,16 @@ class Despidos extends Model
         'fecha_cancelacion',
         'motivo_cancelacion',
         'cancelado_por',
+        'tipo_baja',
+        'fecha_reintegro',
+        'creado_por',
+        'actualizado_por'
     ];
 
     protected $dates = [
         'fecha_baja',
         'fecha_cancelacion',
+        'fecha_reintegro', // <--- AGREGAR AQUÍ
         'created_at',
         'updated_at',
     ];
@@ -43,6 +48,7 @@ class Despidos extends Model
     protected $casts = [
         'fecha_baja' => 'datetime',
         'fecha_cancelacion' => 'datetime',
+        'fecha_reintegro' => 'datetime', // <--- AGREGAR AQUÍ
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -50,6 +56,14 @@ class Despidos extends Model
     // ✅ CONSTANTES PARA ESTADOS
     const ESTADO_ACTIVO = 'activo';
     const ESTADO_CANCELADO = 'cancelado';
+    const TIPO_TEMPORAL = 'temporal';
+    const TIPO_DEFINITIVA = 'definitiva';
+
+    const TIPOS_BAJA = [
+        self::TIPO_TEMPORAL => 'Temporal',
+        self::TIPO_DEFINITIVA => 'Definitiva'
+    ];
+
     
     const ESTADOS = [
         self::ESTADO_ACTIVO => 'Activo',
@@ -241,7 +255,7 @@ class Despidos extends Model
         return in_array($this->condicion_salida, ['Despido con Causa', 'Abandono de Trabajo']);
     }
 
-    public function getTipoBajaAttribute()
+    public function getTipoBajaInferidaAttribute()
     {
         if ($this->esBajaVoluntaria()) {
             return 'Voluntaria';
@@ -307,5 +321,28 @@ class Despidos extends Model
                     ->having('total_bajas', '>', 1)
                     ->orderBy('total_bajas', 'desc')
                     ->get();
+    }
+
+      // ✅ RELACIÓN CON USUARIO QUE CREÓ LA BAJA
+    public function creadoPor()
+    {
+        return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    // ✅ RELACIÓN CON USUARIO QUE ACTUALIZÓ
+    public function actualizadoPor()
+    {
+        return $this->belongsTo(User::class, 'actualizado_por');
+    }
+
+    // ✅ ACCESOR PARA TIPO DE BAJA FORMATEADO
+    public function getTipoBajaTextoAttribute()
+    {
+        return self::TIPOS_BAJA[$this->tipo_baja] ?? 'Desconocido';
+    }
+
+    public function esTemporal()
+    {
+        return $this->tipo_baja === 'temporal';
     }
 }

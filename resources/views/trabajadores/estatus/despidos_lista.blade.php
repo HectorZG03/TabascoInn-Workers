@@ -184,7 +184,9 @@
                             <table class="table table-hover mb-0">
                                 <thead style="background-color: #f8f9fa;">
                                     <tr>
+                                        <th>Tipo de Baja</th>
                                         <th>Trabajador</th>
+                                        <th>Fecha de Reintegro</th>
                                         <th>Área/Cargo</th>
                                         <th>Fecha de Baja</th>
                                         <th>Condición de Salida</th>
@@ -196,27 +198,54 @@
                                 <tbody>
                                     @foreach($despidos as $despido)
                                         <tr class="{{ $despido->es_cancelado ? 'table-warning' : '' }}">
+                                            <!-- Tipo de Baja -->
+                                            <td>
+                                                <span class="badge {{ $despido->tipo_baja === 'temporal' ? 'bg-info' : 'bg-dark' }}">
+                                                    {{ $despido->tipo_baja_texto }}
+                                                </span>
+                                            </td>
+
                                             <!-- Información del trabajador -->
                                             <td>
                                                 <div class="d-flex align-items-center">
                                                     <div class="avatar-circle me-2" 
-                                                         style="background-color: {{ $despido->es_cancelado ? '#f0ad4e' : '#be0b0b' }};">
+                                                        style="background-color: {{ $despido->es_cancelado ? '#f0ad4e' : '#be0b0b' }};">
                                                         {{ substr($despido->trabajador->nombre_trabajador, 0, 1) }}{{ substr($despido->trabajador->ape_pat, 0, 1) }}
                                                     </div>
                                                     <div>
                                                         <strong>{{ $despido->trabajador->nombre_completo }}</strong>
                                                         <br>
                                                         <small class="text-muted">ID: {{ $despido->trabajador->id_trabajador }}</small>
-                                                        {{-- ✅ INDICADOR DE MÚLTIPLES BAJAS --}}
                                                         @if($despido->trabajador->tieneMultiplesBajas())
                                                             <br>
                                                             <span class="badge bg-warning text-dark" 
-                                                                  title="Este trabajador tiene múltiples bajas en su historial">
+                                                                title="Este trabajador tiene múltiples bajas en su historial">
                                                                 <i class="bi bi-exclamation-triangle"></i> Múltiples bajas
                                                             </span>
                                                         @endif
                                                     </div>
                                                 </div>
+                                            </td>
+
+                                            <!-- Fecha de Reintegro -->
+                                            <td>
+                                                @if($despido->tipo_baja === 'temporal')
+                                                    @if($despido->fecha_reintegro->isPast())
+                                                        <span class="badge bg-danger">
+                                                            {{ $despido->fecha_reintegro->format('d/m/Y') }}
+                                                        </span>
+                                                        <div class="text-danger small">Vencido</div>
+                                                    @else
+                                                        <span class="badge bg-success">
+                                                            {{ $despido->fecha_reintegro->format('d/m/Y') }}
+                                                        </span>
+                                                        <div class="text-muted small">
+                                                            {{ $despido->fecha_reintegro->diffForHumans() }}
+                                                        </div>
+                                                    @endif
+                                                @else
+                                                    <span class="text-muted">N/A</span>
+                                                @endif
                                             </td>
 
                                             <!-- Área y cargo -->
@@ -241,7 +270,6 @@
                                                 <small class="text-muted">
                                                     {{ \Carbon\Carbon::parse($despido->fecha_baja)->diffForHumans() }}
                                                 </small>
-                                                {{-- ✅ FECHA DE CANCELACIÓN SI APLICA --}}
                                                 @if($despido->es_cancelado && $despido->fecha_cancelacion)
                                                     <br>
                                                     <small class="text-success">
@@ -268,7 +296,7 @@
                                                 </span>
                                             </td>
 
-                                            <!-- ✅ ESTADO DEL DESPIDO -->
+                                            <!-- Estado -->
                                             <td>
                                                 @if($despido->es_activo)
                                                     <span class="badge bg-danger">
@@ -287,14 +315,14 @@
                                                 @endif
                                             </td>
 
-                                            <!-- Motivo (truncado) -->
+                                            <!-- Motivo -->
                                             <td>
                                                 <div class="motivo-truncado" style="max-width: 200px;">
                                                     {{ Str::limit($despido->motivo, 50) }}
                                                     @if(strlen($despido->motivo) > 50)
                                                         <i class="bi bi-three-dots text-muted" 
-                                                           data-bs-toggle="tooltip" 
-                                                           title="{{ $despido->motivo }}"></i>
+                                                        data-bs-toggle="tooltip" 
+                                                        title="{{ $despido->motivo }}"></i>
                                                     @endif
                                                 </div>
                                             </td>
@@ -311,7 +339,7 @@
                                                         <i class="bi bi-eye"></i>
                                                     </button>
 
-                                                    <!-- ✅ REACTIVAR SOLO SI ES ACTIVO -->
+                                                    <!-- Reactivar -->
                                                     @if($despido->es_activo)
                                                         <button type="button" 
                                                                 class="btn btn-outline-success btn-sm" 
@@ -322,7 +350,7 @@
                                                         </button>
                                                     @endif
 
-                                                    <!-- ✅ VER HISTORIAL COMPLETO -->
+                                                    <!-- Ver historial -->
                                                     <button type="button" 
                                                             class="btn btn-outline-info btn-sm" 
                                                             onclick="verHistorialTrabajador({{ $despido->trabajador->id_trabajador }})"
@@ -331,11 +359,8 @@
                                                     </button>
                                                 </div>
 
-                                                
-                                                <!-- Modal de detalles de la baja -->
+                                                <!-- Modales -->
                                                 @include('trabajadores.modales.modal_detalles_despidos', ['despido' => $despido])
-
-                                                <!-- ✅ MODAL DE REACTIVACIÓN SOLO SI ES ACTIVO -->
                                                 @if($despido->es_activo)
                                                     @include('trabajadores.modales.modal_reactivar', ['despido' => $despido])
                                                 @endif
@@ -343,6 +368,7 @@
                                         </tr>
                                     @endforeach
                                 </tbody>
+
                             </table>
                         </div>
 
@@ -542,42 +568,5 @@ async function verHistorialTrabajador(trabajadorId) {
 }
 </script>
 
-<!-- ✅ ESTILOS PARA TIMELINE -->
-<style>
-.timeline {
-    position: relative;
-    padding-left: 30px;
-}
-
-.timeline::before {
-    content: '';
-    position: absolute;
-    left: 15px;
-    top: 0;
-    bottom: 0;
-    width: 2px;
-    background-color: #e0e0e0;
-}
-
-.timeline-item {
-    position: relative;
-    margin-bottom: 30px;
-}
-
-.timeline-marker {
-    position: absolute;
-    left: -22px;
-    top: 15px;
-    width: 12px;
-    height: 12px;
-    border-radius: 50%;
-    border: 2px solid white;
-    box-shadow: 0 0 0 2px #e0e0e0;
-}
-
-.timeline-content {
-    margin-left: 20px;
-}
-</style>
 
 @endsection

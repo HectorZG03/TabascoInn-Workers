@@ -23,7 +23,7 @@ class DespidosController extends Controller
         }
 
         // ✅ NUEVO: Verificar que no tenga ya un despido ACTIVO
-        if ($trabajador->tieneSpidoActivo()) {
+        if ($trabajador->tieneDespidoActivo()) {
             return back()->withErrors(['error' => 'Este trabajador ya tiene un despido activo']);
         }
 
@@ -44,13 +44,29 @@ class DespidosController extends Controller
         if ($trabajador->tieneDespidoActivo()) {
             return back()->withErrors(['error' => 'Este trabajador ya tiene un despido activo']);
         }
-
         // Validar datos del formulario
         $validated = $request->validate([
             'fecha_baja' => 'required|date|before_or_equal:today|after_or_equal:' . $trabajador->fecha_ingreso->format('Y-m-d'),
             'motivo' => 'required|string|min:10|max:500',
             'condicion_salida' => 'required|in:Voluntaria,Despido con Causa,Despido sin Causa,Mutuo Acuerdo,Abandono de Trabajo,Fin de Contrato',
             'observaciones' => 'nullable|string|max:1000',
+            'tipo_baja' => 'required|in:temporal,definitiva',
+            // Cambia esta línea para validar fecha_reintegro correctamente:
+            'fecha_reintegro' => [
+                'nullable',  // Permitir nulo si no es baja temporal
+                'date',
+                function ($attribute, $value, $fail) use ($request) {
+                    if ($request->tipo_baja === 'temporal') {
+                        if (!$value) {
+                            $fail('La fecha de reintegro es obligatoria para bajas temporales.');
+                        } else {
+                            if (strtotime($value) <= strtotime($request->fecha_baja)) {
+                                $fail('La fecha de reintegro debe ser posterior a la fecha de baja.');
+                            }
+                        }
+                    }
+                }
+            ],
         ], [
             'fecha_baja.required' => 'La fecha de baja es obligatoria',
             'fecha_baja.before_or_equal' => 'La fecha de baja no puede ser futura',
@@ -61,7 +77,11 @@ class DespidosController extends Controller
             'condicion_salida.required' => 'La condición de salida es obligatoria',
             'condicion_salida.in' => 'La condición de salida seleccionada no es válida',
             'observaciones.max' => 'Las observaciones no pueden exceder 1000 caracteres',
+            'tipo_baja.required' => 'El tipo de baja es obligatorio',
+            'tipo_baja.in' => 'El tipo de baja debe ser temporal o definitiva',
         ]);
+
+
 
         DB::beginTransaction();
         
@@ -74,11 +94,16 @@ class DespidosController extends Controller
                 'condicion_salida' => $validated['condicion_salida'],
                 'observaciones' => $validated['observaciones'],
                 'estado' => Despidos::ESTADO_ACTIVO, // ✅ ESTADO ACTIVO
+                'tipo_baja' => $request->tipo_baja,
+                'fecha_reintegro' => $request->tipo_baja === 'temporal' ? $request->fecha_reintegro : null,
+                'creado_por' => Auth::id(), // Registrar usuario creador
             ]);
 
             // Actualizar estado del trabajador a inactivo
             $trabajador->update([
                 'estatus' => 'inactivo',
+                'id_baja' => $despido->id_baja,
+                'estatus' => $request->tipo_baja === 'temporal' ? 'suspendido' : 'inactivo',
                 'id_baja' => $despido->id_baja,
             ]);
 
@@ -202,9 +227,6 @@ class DespidosController extends Controller
         ));
     }
 
-    /**
-     * ✅ CANCELAR DESPIDO (reactivar trabajador) - SIN ELIMINAR REGISTRO
-     */
     public function cancelar(Request $request, Despidos $despido)
     {
         $trabajador = $despido->trabajador;
@@ -214,59 +236,53 @@ class DespidosController extends Controller
             return back()->withErrors(['error' => 'Este despido ya ha sido cancelado']);
         }
 
-        // Verificar que el trabajador esté inactivo
-        if (!$trabajador->estaInactivo()) {
-            return back()->withErrors(['error' => 'Solo se pueden cancelar despidos de trabajadores inactivos']);
+        // Verificar que el trabajador esté suspendido o inactivo
+        if (!in_array($trabajador->estatus, ['inactivo', 'suspendido'])) {
+            return back()->withErrors(['error' => 'Solo se pueden reactivar trabajadores suspendidos o inactivos']);
         }
 
-        // Validar motivo de cancelación (opcional)
         $validated = $request->validate([
             'motivo_cancelacion' => 'nullable|string|max:255',
-        ], [
-            'motivo_cancelacion.max' => 'El motivo de cancelación no puede exceder 255 caracteres',
         ]);
 
         DB::beginTransaction();
-        
+
         try {
-            // ✅ CANCELAR DESPIDO (NO ELIMINAR)
+            // Actualiza despido como cancelado
             $despido->cancelar(
-                $validated['motivo_cancelacion'] ?? 'Trabajador reactivado desde panel administrativo',
+                $validated['motivo_cancelacion'] ?? 'Reactivación del trabajador desde el sistema',
                 Auth::id()
             );
 
             // Reactivar trabajador
             $trabajador->update([
                 'estatus' => 'activo',
-                'id_baja' => null, // Quitar referencia al despido activo
+                'id_baja' => null,
             ]);
 
             DB::commit();
 
-            Log::info('Despido cancelado - Trabajador reactivado', [
+            Log::info('Trabajador reactivado', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'trabajador_nombre' => $trabajador->nombre_completo,
-                'despido_id' => $despido->id_baja,
-                'motivo_cancelacion' => $validated['motivo_cancelacion'] ?? 'Sin motivo específico',
+                'tipo_baja' => $despido->tipo_baja,
                 'usuario' => Auth::user()->email ?? 'Sistema',
-                'fecha_cancelacion' => now(),
             ]);
 
             return redirect()->route('trabajadores.index')
-                           ->with('success', "Despido cancelado. {$trabajador->nombre_completo} ha sido reactivado");
+                            ->with('success', "{$trabajador->nombre_completo} fue reactivado correctamente");
 
         } catch (\Exception $e) {
             DB::rollback();
-            
-            Log::error('Error al cancelar despido', [
-                'despido_id' => $despido->id_baja,
-                'error' => $e->getMessage(),
-                'usuario' => Auth::user()->email ?? 'Sistema'
+
+            Log::error('Error al reactivar trabajador', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'error' => $e->getMessage()
             ]);
 
-            return back()->withErrors(['error' => 'Error al cancelar el despido: ' . $e->getMessage()]);
+            return back()->withErrors(['error' => 'No se pudo reactivar al trabajador: ' . $e->getMessage()]);
         }
     }
+
 
     /**
      * ✅ OBTENER HISTORIAL DE BAJAS DE UN TRABAJADOR

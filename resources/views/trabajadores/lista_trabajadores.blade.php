@@ -385,7 +385,7 @@
                                             @if($trabajador->estaActivo())
                                                 <button type="button" 
                                                         class="btn btn-outline-danger btn-sm btn-despedir" 
-                                                        title="Despedir Trabajador"
+                                                        title="Dar de baja al trabajador"
                                                         data-id="{{ $trabajador->id_trabajador }}"
                                                         data-nombre="{{ $trabajador->nombre_completo }}"
                                                         data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
