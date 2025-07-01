@@ -627,4 +627,25 @@ public function updateFichaTecnica(Request $request, Trabajador $trabajador)
         
         return "{$tipo}_{$nombre}_{$timestamp}.{$extension}";
     }
+
+    // ActPerfilTrabajadorController.php
+    public function updateEstatus(Request $request, Trabajador $trabajador)
+    {
+        $request->validate([
+            'estatus' => 'required|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
+        ]);
+
+        $estatusAnterior = $trabajador->estatus;
+        $trabajador->update(['estatus' => $request->estatus]);
+
+        // Registrar en log
+        Log::info("Estatus del trabajador actualizado", [
+            'trabajador_id' => $trabajador->id_trabajador,
+            'estatus_anterior' => $estatusAnterior,
+            'estatus_nuevo' => $request->estatus,
+            'usuario' => Auth::user()->email ?? 'Sistema',
+        ]);
+
+        return back()->with('success', 'Estatus actualizado correctamente');
+    }
 }

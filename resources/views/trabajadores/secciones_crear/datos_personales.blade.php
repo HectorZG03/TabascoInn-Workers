@@ -247,7 +247,7 @@
                 <input type="text" 
                     class="form-control @error('estado_actual') is-invalid @enderror" 
                     id="estado_actual" 
-                    name="estado_actual" 
+                    name="estado_actual"
                     style="text-transform: uppercase"
                     value="{{ old('estado_actual') }}" 
                     placeholder="Estado donde vive actualmente"

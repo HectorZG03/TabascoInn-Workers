@@ -33,51 +33,75 @@
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->
     <div class="row mb-4">
-        <div class="col-12">
-            <div class="card shadow border-0">
-                <div class="card-body">
-                    <div class="row align-items-center">
-                        <div class="col-md-2 text-center">
-                            <div class="avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mx-auto" 
-                                 style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem;">
-                                {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
+            <div class="col-12">
+                <div class="card shadow border-0">
+                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                        <h5 class="mb-0">
+                            <i class="bi bi-person-badge"></i> Información del Trabajador
+                        </h5>
+                        {{-- Selector de estatus mejorado --}}
+                        <form action="{{ route('trabajadores.perfil.update-estatus', $trabajador) }}" method="POST" class="d-flex gap-2 align-items-center" style="max-width: 300px;">
+                            @csrf
+                            @method('PUT')
+                            <select class="form-select form-select-sm" name="estatus" id="estatus-select">
+                                @foreach(App\Models\Trabajador::TODOS_ESTADOS as $key => $estado)
+                                    <option value="{{ $key }}" {{ $trabajador->estatus == $key ? 'selected' : '' }}>
+                                        {{ $estado }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="submit" class="btn btn-sm btn-primary">
+                                <i class="bi bi-check-lg"></i>
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="card-body">
+                        <div class="row align-items-center">
+                            <div class="col-md-2 text-center">
+                                <div class="avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mx-auto"
+                                    style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem;">
+                                    {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-6">
-                            <h2 class="mb-1">{{ $trabajador->nombre_completo }}</h2>
-                            <p class="text-muted mb-1">
-                                <i class="bi bi-briefcase"></i> 
-                                {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
-                            </p>
-                            <p class="text-muted mb-1">
-                                <i class="bi bi-building"></i> 
-                                {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
-                            </p>
-                            <div class="d-flex gap-2 mt-2">
-                                @if($trabajador->es_nuevo)
-                                    <span class="badge bg-info">
-                                        <i class="bi bi-star"></i> Nuevo
-                                    </span>
-                                @endif
+
+                            <div class="col-md-6">
+                                <h2 class="mb-1">{{ $trabajador->nombre_completo }}</h2>
+                                <p class="text-muted mb-1">
+                                    <i class="bi bi-briefcase"></i>
+                                    {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
+                                </p>
+                                <p class="text-muted mb-1">
+                                    <i class="bi bi-building"></i>
+                                    {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
+                                </p>
+                                <div class="d-flex gap-2 mt-2">
+                                    @if($trabajador->es_nuevo)
+                                        <span class="badge bg-info">
+                                            <i class="bi bi-star"></i> Nuevo
+                                        </span>
+                                    @endif
+                                </div>
                             </div>
-                        </div>
-                        <div class="col-md-4">
-                            <div class="row text-center">
-                                <div class="col-3">
-                                    <div class="h4 text-primary mb-0">{{ $trabajador->antiguedad_texto ?? 'N/A' }}</div>
-                                    <small class="text-muted">Antigüedad</small>
-                                </div>
-                                <div class="col-3">
-                                    <div class="h4 text-success mb-0">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
-                                    <small class="text-muted">Sueldo Diario</small>
-                                </div>
-                                <div class="col-3">
-                                    <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
-                                    <small class="text-muted">Documentos</small>
-                                </div>
-                                <div class="col-3">
-                                    <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
-                                    <small class="text-muted">Horas Extra</small>
+
+                            <div class="col-md-4">
+                                <div class="row text-center">
+                                    <div class="col-3">
+                                        <div class="h4 text-primary mb-0">{{ $trabajador->antiguedad_texto ?? 'N/A' }}</div>
+                                        <small class="text-muted">Antigüedad</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-success mb-0">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
+                                        <small class="text-muted">Sueldo Diario</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
+                                        <small class="text-muted">Documentos</small>
+                                    </div>
+                                    <div class="col-3">
+                                        <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
+                                        <small class="text-muted">Horas Extra</small>
+                                    </div>
                                 </div>
                             </div>
                         </div>
@@ -85,6 +109,7 @@
                 </div>
             </div>
         </div>
+
     </div>
 
     <!-- Navegación -->
