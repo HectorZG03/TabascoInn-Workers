@@ -171,6 +171,6 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-@include('trabajadores.secciones_perfil.perfil_scripts')
+<script src="{{asset('js/perfil_trabajador/perfil_scripts.js')}}"></script>
 
 @endsection

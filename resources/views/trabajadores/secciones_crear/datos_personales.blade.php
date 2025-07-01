@@ -244,16 +244,14 @@
                 <label for="estado_actual" class="form-label">
                     <i class="bi bi-map"></i> Estado Actual
                 </label>
-                <select class="form-select @error('estado_actual') is-invalid @enderror" 
-                        id="estado_actual" 
-                        name="estado_actual">
-                    <option value="">Seleccionar estado...</option>
-                    @foreach(\App\Models\Trabajador::ESTADOS_MEXICO as $valor => $texto)
-                        <option value="{{ $valor }}" {{ old('estado_actual') == $valor ? 'selected' : '' }}>
-                            {{ $texto }}
-                        </option>
-                    @endforeach
-                </select>
+                <input type="text" 
+                    class="form-control @error('estado_actual') is-invalid @enderror" 
+                    id="estado_actual" 
+                    name="estado_actual" 
+                    style="text-transform: uppercase"
+                    value="{{ old('estado_actual') }}" 
+                    placeholder="Estado donde vive actualmente"
+                    maxlength="50">
                 <div class="form-text">Estado donde vive actualmente</div>
                 @error('estado_actual')
                     <div class="invalid-feedback">{{ $message }}</div>

@@ -35,7 +35,7 @@
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">
             <div class="card-body text-center" style="background-color: #FFFFFF;">
                 <i class="bi bi-person-plus-fill fs-1 mb-3" style="color: #007A4D;"></i>
-                <h5 class="card-title" style="color: #2F2F2F;">Creacion Empleados</h5>
+                <h5 class="card-title" style="color: #2F2F2F;">Alta de Empleado</h5>
                 <p class="card-text" style="color: #5D3A1A;">Creación de Nuevos Empleados en el sistema</p>
                 <a href="{{ route('trabajadores.create') }}" class="btn text-white" style="background-color: #007A4D;">
                     <i class="bi bi-arrow-right"></i> Acceder
@@ -63,7 +63,7 @@
         <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">
             <div class="card-body text-center" style="background-color: #FFFFFF;">
                 <i class="bi bi-file-earmark-text fs-1 mb-3" style="color: #be0b0b;"></i>
-                <h5 class="card-title" style="color: #2F2F2F;">Lista de Trabajzdores Inactivos</h5>
+                <h5 class="card-title" style="color: #2F2F2F;">Bajas de Empleados</h5>
                 <p class="card-text" style="color: #5D3A1A;">Lista y administracion de los Trabajadores dados de baja en el sistema</p>
                 <a href="{{ route('despidos.index') }}" class="btn text-white" style="background-color: #be0b0b;">
                     <i class="bi bi-arrow-right"></i> Ver lista
