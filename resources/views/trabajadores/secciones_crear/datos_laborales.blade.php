@@ -80,6 +80,7 @@
                        class="form-control @error('hora_entrada') is-invalid @enderror" 
                        id="hora_entrada" 
                        name="hora_entrada" 
+                        pattern="[0-2][0-9]:[0-5][0-9]"
                        value="{{ old('hora_entrada') }}" 
                        required>
                 <div class="form-text">Hora de inicio de la jornada laboral</div>
@@ -97,6 +98,7 @@
                        class="form-control @error('hora_salida') is-invalid @enderror" 
                        id="hora_salida" 
                        name="hora_salida" 
+                        pattern="[0-2][0-9]:[0-5][0-9]"
                        value="{{ old('hora_salida') }}" 
                        required>
                 <div class="form-text">Hora de fin de la jornada laboral</div>

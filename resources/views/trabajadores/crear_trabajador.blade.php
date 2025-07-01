@@ -62,6 +62,5 @@
 
 <!-- ✅ SCRIPTS -->
 @vite('resources/js/app.js')
-<script src="{{ asset('js/crear_trabajador.js') }}"></script>
 
 @endsection

@@ -118,7 +118,14 @@ class TrabajadorController extends Controller
      */
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES ACTUALIZADAS PARA LARAVEL 12 - Incluye nuevos campos
+        // ✅ LOG PARA DEBUGGING - Ver qué datos llegan
+        Log::info('🔍 DEBUGGING - Datos recibidos en store:', [
+            'estatus_recibido' => $request->estatus,
+            'todos_los_datos' => $request->except(['_token', 'password']),
+            'metodo_http' => $request->method()
+        ]);
+
+        // ✅ VALIDACIONES ACTUALIZADAS - CORREGIDO EL ERROR DEL ESPACIO
         $validated = $request->validate([
             // Datos personales básicos (sin cambios)
             'nombre_trabajador' => 'required|string|max:50',
@@ -142,7 +149,9 @@ class TrabajadorController extends Controller
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
             'formacion' => 'nullable|string|max:50',
             'grado_estudios' => 'nullable|string|max:50',
-            'estatus' => 'nullable|in: activo,prueba',
+            
+            // ✅ CORREGIDO: Eliminado el espacio extra que causaba el error
+            'estatus' => 'required|in:activo,prueba',
             
             // ✅ CORREGIDO: Validación de horarios para Laravel 12
             'hora_entrada' => 'required|date_format:H:i',
@@ -238,8 +247,9 @@ class TrabajadorController extends Controller
             'beneficiario_parentesco.required_with' => 'El parentesco es obligatorio cuando se especifica un beneficiario.',
             'beneficiario_parentesco.in' => 'Parentesco no válido.',
 
-            // Menssajes para estatus
-            'estatus.in' => 'Estados inicial debe ser activo o prueba',
+            // ✅ CORREGIDO: Mensaje para estatus
+            'estatus.required' => 'El estado inicial del trabajador es obligatorio.',
+            'estatus.in' => 'El estado inicial debe ser: activo o prueba.',
             
             // Contratos
             'fecha_inicio_contrato.required' => 'La fecha de inicio del contrato es obligatoria.',
@@ -247,6 +257,12 @@ class TrabajadorController extends Controller
             'fecha_fin_contrato.required' => 'La fecha de fin del contrato es obligatoria.',
             'fecha_fin_contrato.after' => 'La fecha de fin debe ser posterior al inicio.',
             'tipo_duracion.required' => 'Debe especificar el tipo de duración.',
+        ]);
+
+        // ✅ LOG DESPUÉS DE VALIDACIÓN
+        Log::info('✅ VALIDACIÓN EXITOSA - Estado del trabajador:', [
+            'estatus_validado' => $validated['estatus'],
+            'usuario' => Auth::user()->email ?? 'Sistema'
         ]);
 
         // ✅ Validación adicional: días laborables únicos
@@ -272,7 +288,7 @@ class TrabajadorController extends Controller
             // ✅ CALCULAR ANTIGÜEDAD
             $antiguedadCalculada = (int) Carbon::parse($validated['fecha_ingreso'])->diffInYears(now());
 
-            // 1️⃣ CREAR TRABAJADOR (sin cambios)
+            // 1️⃣ CREAR TRABAJADOR CON ESTADO DESDE EL FORMULARIO
             $trabajador = Trabajador::create([
                 'nombre_trabajador' => $validated['nombre_trabajador'],
                 'ape_pat' => $validated['ape_pat'],
@@ -288,13 +304,14 @@ class TrabajadorController extends Controller
                 'direccion' => $validated['direccion'],
                 'fecha_ingreso' => $validated['fecha_ingreso'],
                 'antiguedad' => $antiguedadCalculada,
-                'estatus' => $validated['estatus'] ?? 'activo',
+                'estatus' => $validated['estatus'], // ✅ ESTADO DESDE EL MODAL
             ]);
 
-            Log::info('✅ Trabajador creado', [
+            Log::info('✅ Trabajador creado con estado del modal', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'estatus' => $trabajador->estatus,
-                'estatus_origen' => 'modal_contrato',
+                'estatus_asignado' => $trabajador->estatus,
+                'estatus_fuente' => 'modal_contrato',
+                'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
             // 2️⃣ ✅ CREAR FICHA TÉCNICA CON NUEVOS CAMPOS
@@ -404,7 +421,9 @@ class TrabajadorController extends Controller
                 $duracionTexto = $duracion . ' ' . ($duracion === 1 ? 'mes' : 'meses');
             }
 
-            $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente";
+            // ✅ INCLUIR ESTADO EN EL MENSAJE
+            $estadoTexto = $validated['estatus'] === 'activo' ? 'Activo' : 'En Prueba';
+            $mensaje = "Trabajador {$trabajador->nombre_completo} creado exitosamente con estado: {$estadoTexto}";
             
             if ($request->filled('contacto_nombre_completo')) {
                 $mensaje .= " con contacto de emergencia";

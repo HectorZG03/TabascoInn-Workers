@@ -1,12 +1,12 @@
-<!-- ✅ MODAL MEJORADO PARA CONTRATO CON ESTADO -->
+<!-- ✅ MODAL COMPLETAMENTE LIMPIO - SIN botón de preview -->
 <div class="modal fade" id="modalContrato" tabindex="-1" aria-labelledby="modalContratoLabel" aria-hidden="true" data-bs-backdrop="static" data-bs-keyboard="false">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
-            <!-- Header más limpio -->
-            <div class="modal-header bg-gradient-primary text-white">
+            <!-- Header -->
+            <div class="modal-header bg-primary text-white">
                 <h5 class="modal-title" id="modalContratoLabel">
                     <i class="bi bi-file-earmark-text me-2"></i>
-                    Finalizar Registro
+                    Finalizar Registro del Trabajador
                 </h5>
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
@@ -15,16 +15,16 @@
                 <!-- Mensaje introductorio -->
                 <div class="alert alert-info border-0 mb-4">
                     <div class="d-flex align-items-center">
-                        <i class="bi bi-info-circle me-3 fs-4"></i>
+                        <i class="bi bi-info-circle me-3 fs-5"></i>
                         <div>
-                            <h6 class="alert-heading mb-1">¡Ya casi terminamos!</h6>
-                            <p class="mb-0">Configura el estado inicial del trabajador y las fechas del contrato laboral.</p>
+                            <h6 class="mb-1">¡Ya casi terminamos!</h6>
+                            <p class="mb-0">Solo falta configurar el estado inicial y las fechas del contrato.</p>
                         </div>
                     </div>
                 </div>
 
-                <!-- ✅ NUEVA SECCIÓN: Estado del Trabajador -->
-                <div class="card border-0 shadow-sm mb-4">
+                <!-- Estado del Trabajador -->
+                <div class="card mb-4">
                     <div class="card-header bg-primary text-white">
                         <h6 class="mb-0">
                             <i class="bi bi-person-check me-2"></i>
@@ -32,37 +32,35 @@
                         </h6>
                     </div>
                     <div class="card-body">
-                        <div class="row g-3">
+                        <div class="row">
                             <div class="col-12">
                                 <label for="estatus" class="form-label fw-semibold">
                                     <i class="bi bi-gear me-1"></i>
-                                    Seleccionar Estado Inicial
+                                    Seleccionar Estado Inicial *
                                 </label>
-                                <select class="form-select form-select-lg @error('estatus') is-invalid @enderror" 
+                                <select class="form-select form-select-lg" 
                                         id="estatus" 
                                         name="estatus" 
                                         required>
                                     <option value="">Seleccionar estado...</option>
-                                    <option value="activo" {{ old('estatus', 'activo') == 'activo' ? 'selected' : '' }}>
+                                    <option value="activo">
                                         ✅ Activo - Trabajador operativo completo
                                     </option>
-                                    <option value="prueba" {{ old('estatus') == 'prueba' ? 'selected' : '' }}>
+                                    <option value="prueba">
                                         🟡 En Prueba - Período de evaluación inicial
                                     </option>
                                 </select>
                                 <div class="form-text">
                                     <small class="text-muted">
-                                        <strong>Activo:</strong> El trabajador opera normalmente desde el primer día.<br>
-                                        <strong>En Prueba:</strong> Período de evaluación (generalmente 30-90 días).
+                                        <strong>Activo:</strong> Opera normalmente desde el primer día.<br>
+                                        <strong>En Prueba:</strong> Período de evaluación (30-90 días típicamente).
                                     </small>
                                 </div>
-                                @error('estatus')
-                                    <div class="invalid-feedback">{{ $message }}</div>
-                                @enderror
+                                <div id="errorEstatus" class="text-danger mt-1" style="display: none;"></div>
                             </div>
                         </div>
 
-                        <!-- Vista previa del estado seleccionado -->
+                        <!-- Vista previa del estado -->
                         <div id="estadoPreview" class="mt-3" style="display: none;">
                             <div class="alert mb-0" id="estadoPreviewAlert">
                                 <div class="d-flex align-items-center">
@@ -77,8 +75,8 @@
                     </div>
                 </div>
 
-                <!-- Configuración del contrato -->
-                <div class="card border-0 shadow-sm">
+                <!-- Fechas del contrato -->
+                <div class="card mb-4">
                     <div class="card-header bg-light">
                         <h6 class="mb-0 text-dark">
                             <i class="bi bi-calendar-range me-2"></i>
@@ -91,7 +89,7 @@
                             <div class="col-md-6">
                                 <label for="fecha_inicio_contrato" class="form-label fw-semibold">
                                     <i class="bi bi-calendar-plus text-success me-1"></i>
-                                    Fecha de Inicio
+                                    Fecha de Inicio *
                                 </label>
                                 <input type="date" 
                                        class="form-control form-control-lg" 
@@ -99,55 +97,51 @@
                                        min="{{ date('Y-m-d') }}" 
                                        value="{{ date('Y-m-d') }}"
                                        required>
-                                <small class="text-muted">Cuando inicia a trabajar</small>
+                                <small class="text-muted">Cuándo inicia a trabajar</small>
                             </div>
 
                             <!-- Fecha de fin -->
                             <div class="col-md-6">
                                 <label for="fecha_fin_contrato" class="form-label fw-semibold">
                                     <i class="bi bi-calendar-x text-warning me-1"></i>
-                                    Fecha de Finalización
+                                    Fecha de Finalización *
                                 </label>
                                 <input type="date" 
                                        class="form-control form-control-lg" 
                                        id="fecha_fin_contrato"
                                        required>
-                                <small class="text-muted">Cuando termina el contrato</small>
+                                <small class="text-muted">Cuándo termina el contrato</small>
                             </div>
                         </div>
 
-                        <!-- Vista previa automática de duración -->
+                        <!-- Vista previa de duración -->
                         <div id="duracionPreview" class="mt-4" style="display: none;">
-                            <div class="row">
-                                <div class="col-12">
-                                    <div class="bg-light rounded-3 p-3 text-center">
-                                        <div class="row g-3">
-                                            <div class="col-md-4">
-                                                <div class="text-primary">
-                                                    <i class="bi bi-hourglass-split fs-4"></i>
-                                                    <div class="mt-1">
-                                                        <div class="fw-bold" id="duracionTexto">-</div>
-                                                        <small class="text-muted">Duración Total</small>
-                                                    </div>
-                                                </div>
+                            <div class="bg-light rounded p-3">
+                                <div class="row text-center">
+                                    <div class="col-md-4">
+                                        <div class="text-primary">
+                                            <i class="bi bi-hourglass-split fs-4"></i>
+                                            <div class="mt-1">
+                                                <div class="fw-bold" id="duracionTexto">-</div>
+                                                <small class="text-muted">Duración Total</small>
                                             </div>
-                                            <div class="col-md-4">
-                                                <div class="text-success">
-                                                    <i class="bi bi-calendar-check fs-4"></i>
-                                                    <div class="mt-1">
-                                                        <div class="fw-bold" id="fechaInicioTexto">-</div>
-                                                        <small class="text-muted">Inicia</small>
-                                                    </div>
-                                                </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-success">
+                                            <i class="bi bi-calendar-check fs-4"></i>
+                                            <div class="mt-1">
+                                                <div class="fw-bold" id="fechaInicioTexto">-</div>
+                                                <small class="text-muted">Inicia</small>
                                             </div>
-                                            <div class="col-md-4">
-                                                <div class="text-warning">
-                                                    <i class="bi bi-calendar-x fs-4"></i>
-                                                    <div class="mt-1">
-                                                        <div class="fw-bold" id="fechaFinTexto">-</div>
-                                                        <small class="text-muted">Termina</small>
-                                                    </div>
-                                                </div>
+                                        </div>
+                                    </div>
+                                    <div class="col-md-4">
+                                        <div class="text-warning">
+                                            <i class="bi bi-calendar-x fs-4"></i>
+                                            <div class="mt-1">
+                                                <div class="fw-bold" id="fechaFinTexto">-</div>
+                                                <small class="text-muted">Termina</small>
                                             </div>
                                         </div>
                                     </div>
@@ -155,7 +149,7 @@
                             </div>
                         </div>
 
-                        <!-- Mensaje de error de fechas -->
+                        <!-- Errores de fechas -->
                         <div id="errorFechas" class="alert alert-warning mt-3" style="display: none;">
                             <i class="bi bi-exclamation-triangle me-2"></i>
                             <span id="errorFechasTexto">Por favor verifica las fechas</span>
@@ -163,64 +157,69 @@
                     </div>
                 </div>
 
-                <!-- Confirmación de acciones -->
-                <div class="mt-4">
-                    <div class="card border-success">
-                        <div class="card-body">
-                            <h6 class="card-title text-success mb-3">
-                                <i class="bi bi-check-circle me-2"></i>
-                                Al confirmar se creará:
-                            </h6>
-                            <div class="row g-2">
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-plus text-primary me-2"></i>
-                                        <small>Perfil del trabajador</small>
-                                    </div>
+                <!-- Resumen de lo que se creará -->
+                <div class="card border-success">
+                    <div class="card-body">
+                        <h6 class="card-title text-success mb-3">
+                            <i class="bi bi-check-circle me-2"></i>
+                            Se creará automáticamente:
+                        </h6>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-plus text-primary me-2 fs-5"></i>
+                                    <span>Perfil completo del trabajador</span>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-briefcase text-success me-2"></i>
-                                        <small>Ficha técnica laboral</small>
-                                    </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-briefcase text-success me-2 fs-5"></i>
+                                    <span>Ficha técnica laboral</span>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-file-earmark-pdf text-danger me-2"></i>
-                                        <small>Contrato en PDF</small>
-                                    </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-file-earmark-pdf text-danger me-2 fs-5"></i>
+                                    <span>Contrato en PDF</span>
                                 </div>
-                                <div class="col-md-3">
-                                    <div class="d-flex align-items-center">
-                                        <i class="bi bi-person-check text-info me-2"></i>
-                                        <small>Estado inicial</small>
-                                    </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-person-check text-info me-2 fs-5"></i>
+                                    <span>Estado inicial configurado</span>
                                 </div>
+                            </div>
+                        </div>
+                        
+                        <!-- Nota importante -->
+                        <div class="mt-3">
+                            <div class="alert alert-success mb-0">
+                                <small>
+                                    <i class="bi bi-lightbulb me-1"></i>
+                                    <strong>¿Necesitas el contrato?</strong> 
+                                    Después de crear el trabajador, podrás descargar el contrato desde su perfil.
+                                </small>
                             </div>
                         </div>
                     </div>
                 </div>
             </div>
 
-            <!-- Footer simplificado -->
-            <div class="modal-footer bg-light">
-                <button type="button" class="btn btn-outline-primary" id="btnGenerarPreview">
-                    <i class="bi bi-file-earmark-pdf me-1"></i>
-                    Generar PDF (Opcional)
-                </button>
-
+            <!-- Footer - SOLO DOS BOTONES -->
+            <div class="modal-footer bg-light d-flex justify-content-between">
                 <button type="button" class="btn btn-outline-secondary" data-bs-dismiss="modal">
                     <i class="bi bi-x-circle me-1"></i>
                     Cancelar
                 </button>
-                <button type="button" class="btn btn-success btn-lg px-4" id="btnCrearTodo">
-                    <span id="btnCrearTexto">
-                        <i class="bi bi-rocket-takeoff me-2"></i>
-                        Crear Trabajador y Contrato
+                
+                <button type="button" class="btn btn-success btn-lg px-4" id="btnCrearTrabajador">
+                    <span id="btnTextoNormal">
+                        <i class="bi bi-plus-circle me-2"></i>
+                        Crear Trabajador Completo
                     </span>
-                    <span id="btnCrearLoading" style="display: none;">
+                    <span id="btnTextoCargando" style="display: none;">
                         <span class="spinner-border spinner-border-sm me-2" role="status"></span>
-                        Creando...
+                        Creando trabajador...
                     </span>
                 </button>
             </div>
@@ -229,10 +228,6 @@
 </div>
 
 <style>
-.bg-gradient-primary {
-    background: linear-gradient(135deg, #0d6efd 0%, #0b5ed7 100%);
-}
-
 .modal-content {
     border: none;
     border-radius: 15px;
@@ -249,97 +244,88 @@
 }
 
 #duracionPreview, #estadoPreview {
-    animation: fadeIn 0.3s ease-in-out;
+    animation: slideIn 0.3s ease-in-out;
 }
 
-@keyframes fadeIn {
-    from { opacity: 0; transform: translateY(-10px); }
-    to { opacity: 1; transform: translateY(0); }
-}
-
-.alert {
-    border-radius: 10px;
+@keyframes slideIn {
+    from { 
+        opacity: 0; 
+        transform: translateY(-10px); 
+    }
+    to { 
+        opacity: 1; 
+        transform: translateY(0); 
+    }
 }
 
 .btn-lg {
     border-radius: 10px;
     font-weight: 600;
 }
-
-.form-select-lg option {
-    padding: 8px;
-}
 </style>
 
 <script>
 /**
- * ✅ JAVASCRIPT MEJORADO - Con manejo de estado del trabajador
+ * ✅ SCRIPT COMPLETAMENTE LIMPIO - SIN función de preview
  */
-class ContratoModalMejorado {
-    constructor() {
-        this.form = null;
-        this.modal = null;
-        this.datosFormulario = {};
-        this.tipoCalculado = null;
-        
-        this.init();
-    }
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos principales
+    const form = document.getElementById('formTrabajador');
+    const modal = new bootstrap.Modal(document.getElementById('modalContrato'));
+    const estatusSelect = document.getElementById('estatus');
+    const fechaInicioInput = document.getElementById('fecha_inicio_contrato');
+    const fechaFinInput = document.getElementById('fecha_fin_contrato');
+    const btnCrear = document.getElementById('btnCrearTrabajador');
+    
+    let tipoCalculado = null;
+    
+    console.log('✅ Modal de contrato inicializado (SIN PREVIEW)');
 
-    init() {
-        document.addEventListener('DOMContentLoaded', () => {
-            this.form = document.getElementById('formTrabajador');
-            this.modal = new bootstrap.Modal(document.getElementById('modalContrato'));
+    // ========================================
+    // 🔵 INTERCEPTAR ENVÍO DEL FORMULARIO
+    // ========================================
+    if (form) {
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
             
-            if (!this.form) {
-                console.error('❌ No se encontró el formulario #formTrabajador');
+            if (!form.checkValidity()) {
+                form.classList.add('was-validated');
+                mostrarToast('Por favor completa todos los campos obligatorios', 'warning');
                 return;
             }
-            
-            this.bindEvents();
-            console.log('✅ ContratoModalMejorado inicializado');
+
+            // Abrir modal directamente
+            modal.show();
         });
     }
 
-    bindEvents() {
-        // Interceptar envío del formulario principal
-        this.form.addEventListener('submit', (e) => this.handleFormSubmit(e));
-        
-        // Botón para generar la vista previa
-        document.getElementById('btnGenerarPreview')?.addEventListener('click', () => this.generarYDescargarPreview());
-        
-        // Evento para crear todo de una vez
-        document.getElementById('btnCrearTodo')?.addEventListener('click', () => this.handleCrearTodo());
-        
-        // Eventos para cálculo automático de fechas
-        document.getElementById('fecha_inicio_contrato')?.addEventListener('change', () => this.handleFechaChange());
-        document.getElementById('fecha_fin_contrato')?.addEventListener('change', () => this.handleFechaChange());
-        
-        // ✅ NUEVO: Event listener para cambio de estado
-        document.getElementById('estatus')?.addEventListener('change', () => this.handleEstadoChange());
-        
-        // Inicializar vista previa de estado
-        this.handleEstadoChange();
+    // ========================================
+    // 🔵 MANEJAR CAMBIO DE ESTADO
+    // ========================================
+    if (estatusSelect) {
+        estatusSelect.addEventListener('change', function() {
+            mostrarVistaEstado();
+        });
     }
 
-    // ✅ NUEVO: Manejar cambio de estado
-    handleEstadoChange() {
-        const estatusSelect = document.getElementById('estatus');
+    function mostrarVistaEstado() {
+        const estadoSeleccionado = estatusSelect.value;
         const estadoPreview = document.getElementById('estadoPreview');
         const previewAlert = document.getElementById('estadoPreviewAlert');
         const previewIcon = document.getElementById('estadoPreviewIcon');
         const previewTexto = document.getElementById('estadoPreviewTexto');
         const previewDescripcion = document.getElementById('estadoPreviewDescripcion');
+        const errorEstatus = document.getElementById('errorEstatus');
         
-        if (!estatusSelect) return;
-        
-        const estadoSeleccionado = estatusSelect.value;
+        // Limpiar errores
+        if (errorEstatus) errorEstatus.style.display = 'none';
+        estatusSelect.classList.remove('is-invalid');
         
         if (!estadoSeleccionado) {
-            estadoPreview.style.display = 'none';
+            if (estadoPreview) estadoPreview.style.display = 'none';
             return;
         }
         
-        // Configurar vista previa según el estado
         let alertClass, iconClass, textoEstado, descripcionEstado;
         
         switch (estadoSeleccionado) {
@@ -347,145 +333,60 @@ class ContratoModalMejorado {
                 alertClass = 'alert-success';
                 iconClass = 'bi-check-circle-fill text-success';
                 textoEstado = 'Trabajador Activo';
-                descripcionEstado = 'El trabajador operará con todos los derechos y responsabilidades desde el primer día.';
+                descripcionEstado = 'Operará normalmente desde el primer día con todos los derechos.';
                 break;
             case 'prueba':
                 alertClass = 'alert-warning';
                 iconClass = 'bi-hourglass-split text-warning';
                 textoEstado = 'En Período de Prueba';
-                descripcionEstado = 'El trabajador estará en evaluación durante un período determinado (generalmente 30-90 días).';
+                descripcionEstado = 'Estará en evaluación durante el período establecido.';
                 break;
             default:
-                estadoPreview.style.display = 'none';
+                if (estadoPreview) estadoPreview.style.display = 'none';
                 return;
         }
         
-        // Actualizar elementos
-        previewAlert.className = `alert ${alertClass} mb-0`;
-        previewIcon.className = `${iconClass} me-2 fs-5`;
-        previewTexto.textContent = textoEstado;
-        previewDescripcion.textContent = descripcionEstado;
+        // Actualizar vista previa
+        if (previewAlert) previewAlert.className = `alert ${alertClass} mb-0`;
+        if (previewIcon) previewIcon.className = `${iconClass} me-2 fs-5`;
+        if (previewTexto) previewTexto.textContent = textoEstado;
+        if (previewDescripcion) previewDescripcion.textContent = descripcionEstado;
+        if (estadoPreview) estadoPreview.style.display = 'block';
         
-        // Mostrar vista previa
-        estadoPreview.style.display = 'block';
-        
-        console.log('✅ Estado actualizado:', estadoSeleccionado);
+        console.log('✅ Estado seleccionado:', estadoSeleccionado);
     }
 
-    async generarYDescargarPreview() {
-        const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
-        const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        const estatus = document.getElementById('estatus')?.value;
-
-        // Validación de campos
-        if (!estatus) {
-            this.mostrarError('Por favor selecciona el estado inicial del trabajador');
-            return;
-        }
-        
-        if (!fechaInicio || !fechaFin) {
-            this.mostrarError('Antes de generar, asigna las fechas del contrato');
-            return;
-        }
-        
-        const inicio = new Date(fechaInicio);
-        const fin = new Date(fechaFin);
-        
-        if (fin <= inicio) {
-            this.mostrarError('Fechas no válidas, la fecha de fin debe ser posterior a la de inicio');
-            return;
-        }
-
-        // Animación de estado de carga
-        const btnPreview = document.getElementById('btnGenerarPreview');
-        const originalBtnHTML = btnPreview.innerHTML;
-        btnPreview.innerHTML = '<span class="spinner-border spinner-border-sm me-2"></span> Generando...';
-        btnPreview.disabled = true;
-
-        try {
-            const formData = new FormData(this.form);
-            // Datos del Contrato
-            formData.append('fecha_inicio_contrato', fechaInicio);
-            formData.append('fecha_fin_contrato', fechaFin);
-            formData.append('tipo_duracion', this.tipoCalculado || 'meses');
-            formData.append('estatus', estatus);
-
-            // Enviar solicitud al servidor
-            const response = await fetch('{{ route("ajax.contratos.preview") }}', {
-                method: 'POST',
-                headers: {
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Accept': 'application/json'
-                },
-                body: formData
-            });
-
-            const data = await response.json();
-
-            if (!response.ok || !data.success) {
-                throw new Error(data.message || 'Error al generar el preview');
-            }
-
-            // Descargar el PDF
-            window.location.href = data.data.download_url;
-            
-        } catch (error) {
-            console.error('Error generando preview:', error);
-            this.mostrarError(error.message || 'Error al generar la vista previa');
-        } finally {
-            // Restaurar estado del botón
-            btnPreview.innerHTML = originalBtnHTML;
-            btnPreview.disabled = false;
-        }
+    // ========================================
+    // 🔵 MANEJAR CAMBIOS DE FECHAS
+    // ========================================
+    if (fechaInicioInput) {
+        fechaInicioInput.addEventListener('change', calcularDuracion);
+    }
+    
+    if (fechaFinInput) {
+        fechaFinInput.addEventListener('change', calcularDuracion);
     }
 
-    handleFormSubmit(e) {
-        e.preventDefault();
+    function calcularDuracion() {
+        const fechaInicio = fechaInicioInput?.value;
+        const fechaFin = fechaFinInput?.value;
         
-        if (!this.form.checkValidity()) {
-            this.form.classList.add('was-validated');
-            this.mostrarToast('Por favor completa todos los campos obligatorios', 'warning');
-            return;
-        }
-
-        // Recopilar datos y abrir modal
-        this.recopilarDatosFormulario();
-        this.modal.show();
-    }
-
-    recopilarDatosFormulario() {
-        const formData = new FormData(this.form);
-        this.datosFormulario = {};
-        
-        for (let [key, value] of formData.entries()) {
-            this.datosFormulario[key] = value;
-        }
-        
-        console.log('✅ Datos recopilados para el modal');
-    }
-
-    handleFechaChange() {
-        const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
-        const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        
-        // Limpiar errores previos
-        this.ocultarError();
+        ocultarError();
         
         if (!fechaInicio) {
-            this.ocultarPreview();
+            ocultarDuracion();
             return;
         }
 
         // Configurar fecha mínima para fecha fin
-        const fechaFinInput = document.getElementById('fecha_fin_contrato');
-        if (fechaFinInput) {
+        if (fechaFinInput && fechaInicio) {
             const minDate = new Date(fechaInicio);
             minDate.setDate(minDate.getDate() + 1);
             fechaFinInput.min = minDate.toISOString().split('T')[0];
         }
 
         if (!fechaFin) {
-            this.ocultarPreview();
+            ocultarDuracion();
             return;
         }
 
@@ -494,22 +395,16 @@ class ContratoModalMejorado {
         const fin = new Date(fechaFin);
         
         if (fin <= inicio) {
-            this.mostrarError('La fecha de finalización debe ser posterior a la fecha de inicio');
-            this.ocultarPreview();
+            mostrarError('La fecha de finalización debe ser posterior a la fecha de inicio');
+            ocultarDuracion();
             return;
         }
 
-        // Calcular y mostrar duración
-        this.calcularYMostrarDuracion(inicio, fin);
-    }
-
-    calcularYMostrarDuracion(inicio, fin) {
+        // Calcular duración
         const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
         
-        let tipoDuracion;
-        let duracionTexto;
+        let tipoDuracion, duracionTexto;
         
-        // Lógica simple: > 30 días = meses, <= 30 días = días
         if (diasTotales > 30) {
             tipoDuracion = 'meses';
             let meses = (fin.getFullYear() - inicio.getFullYear()) * 12 + (fin.getMonth() - inicio.getMonth());
@@ -528,107 +423,167 @@ class ContratoModalMejorado {
             duracionTexto = `${diasTotales} ${diasTotales === 1 ? 'día' : 'días'}`;
         }
         
-        // Guardar tipo calculado
-        this.tipoCalculado = tipoDuracion;
+        tipoCalculado = tipoDuracion;
         
-        // Actualizar vista previa
-        this.setElementText('duracionTexto', duracionTexto);
-        this.setElementText('fechaInicioTexto', inicio.toLocaleDateString('es-MX'));
-        this.setElementText('fechaFinTexto', fin.toLocaleDateString('es-MX'));
+        // Mostrar vista previa
+        const duracionEl = document.getElementById('duracionTexto');
+        const fechaInicioEl = document.getElementById('fechaInicioTexto');
+        const fechaFinEl = document.getElementById('fechaFinTexto');
         
-        this.mostrarPreview();
+        if (duracionEl) duracionEl.textContent = duracionTexto;
+        if (fechaInicioEl) fechaInicioEl.textContent = inicio.toLocaleDateString('es-MX');
+        if (fechaFinEl) fechaFinEl.textContent = fin.toLocaleDateString('es-MX');
+        
+        mostrarDuracion();
         
         console.log('✅ Duración calculada:', { diasTotales, tipoDuracion, duracionTexto });
     }
 
-    async handleCrearTodo() {
-        const fechaInicio = document.getElementById('fecha_inicio_contrato')?.value;
-        const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
-        const estatus = document.getElementById('estatus')?.value;
+    // ========================================
+    // 🔵 CREAR TRABAJADOR (BOTÓN PRINCIPAL)
+    // ========================================
+    if (btnCrear) {
+        btnCrear.addEventListener('click', function() {
+            console.log('🚀 Iniciando creación de trabajador...');
+            
+            const estatus = estatusSelect?.value;
+            const fechaInicio = fechaInicioInput?.value;
+            const fechaFin = fechaFinInput?.value;
+            
+            // Validaciones
+            if (!validarEstado(estatus)) return;
+            if (!validarFechas(fechaInicio, fechaFin)) return;
+            if (!tipoCalculado) {
+                mostrarError('Error en el cálculo de la duración del contrato');
+                return;
+            }
+            
+            // Estado de carga
+            mostrarCargando();
+            
+            try {
+                // Agregar campos al formulario
+                agregarCampoOculto('estatus', estatus);
+                agregarCampoOculto('fecha_inicio_contrato', fechaInicio);
+                agregarCampoOculto('fecha_fin_contrato', fechaFin);
+                agregarCampoOculto('tipo_duracion', tipoCalculado);
+                
+                console.log('✅ Campos agregados, enviando formulario:', {
+                    estatus,
+                    fechaInicio,
+                    fechaFin,
+                    tipo: tipoCalculado
+                });
+                
+                // Enviar formulario después de un pequeño delay
+                setTimeout(() => {
+                    form.submit();
+                }, 100);
+                
+            } catch (error) {
+                console.error('❌ Error al crear trabajador:', error);
+                mostrarError('Error al procesar los datos. Inténtalo de nuevo.');
+                ocultarCargando();
+            }
+        });
+    }
+
+    // ========================================
+    // 🔧 FUNCIONES AUXILIARES
+    // ========================================
+    
+    function validarEstado(estatus) {
+        const errorEstatus = document.getElementById('errorEstatus');
         
-        // Validaciones
         if (!estatus) {
-            this.mostrarError('Por favor selecciona el estado inicial del trabajador');
-            return;
+            if (errorEstatus) {
+                errorEstatus.textContent = 'Por favor selecciona el estado inicial';
+                errorEstatus.style.display = 'block';
+            }
+            estatusSelect.classList.add('is-invalid');
+            estatusSelect.focus();
+            return false;
         }
         
+        if (!['activo', 'prueba'].includes(estatus)) {
+            if (errorEstatus) {
+                errorEstatus.textContent = 'Estado no válido';
+                errorEstatus.style.display = 'block';
+            }
+            estatusSelect.classList.add('is-invalid');
+            return false;
+        }
+        
+        if (errorEstatus) errorEstatus.style.display = 'none';
+        estatusSelect.classList.remove('is-invalid');
+        return true;
+    }
+    
+    function validarFechas(fechaInicio, fechaFin) {
         if (!fechaInicio || !fechaFin) {
-            this.mostrarError('Por favor completa ambas fechas del contrato');
-            return;
+            mostrarError('Por favor completa ambas fechas del contrato');
+            return false;
         }
-
-        if (!this.tipoCalculado) {
-            this.mostrarError('Error en el cálculo de la duración del contrato');
-            return;
-        }
-
-        // Validar fechas una vez más
+        
         const inicio = new Date(fechaInicio);
         const fin = new Date(fechaFin);
         
         if (fin <= inicio) {
-            this.mostrarError('Las fechas del contrato no son válidas');
+            mostrarError('La fecha de fin debe ser posterior a la de inicio');
+            return false;
+        }
+        
+        ocultarError();
+        return true;
+    }
+    
+    function agregarCampoOculto(nombre, valor) {
+        // Remover campo existente
+        const existente = form.querySelector(`input[name="${nombre}"]`);
+        if (existente) {
+            existente.value = valor;
             return;
         }
-
-        // Mostrar estado de carga
-        this.setLoadingState(true);
-
-        try {
-            // Agregar datos del contrato y estado al formulario
-            this.addHiddenInput('fecha_inicio_contrato', fechaInicio);
-            this.addHiddenInput('fecha_fin_contrato', fechaFin);
-            this.addHiddenInput('tipo_duracion', this.tipoCalculado);
-            this.addHiddenInput('estatus', estatus);
-            
-            console.log('✅ Enviando formulario con contrato y estado:', {
-                fechaInicio,
-                fechaFin,
-                tipo: this.tipoCalculado,
-                estatus
-            });
-
-            // Enviar formulario
-            this.form.submit();
-
-        } catch (error) {
-            console.error('❌ Error al procesar:', error);
-            this.mostrarError('Error al procesar los datos. Inténtalo de nuevo.');
-            this.setLoadingState(false);
-        }
-    }
-
-    setLoadingState(loading) {
-        const btnTexto = document.getElementById('btnCrearTexto');
-        const btnLoading = document.getElementById('btnCrearLoading');
-        const btnCrear = document.getElementById('btnCrearTodo');
         
-        if (loading) {
-            btnTexto.style.display = 'none';
-            btnLoading.style.display = 'inline-flex';
-            btnCrear.disabled = true;
-        } else {
-            btnTexto.style.display = 'inline-flex';
-            btnLoading.style.display = 'none';
-            btnCrear.disabled = false;
-        }
+        // Crear nuevo campo
+        const input = document.createElement('input');
+        input.type = 'hidden';
+        input.name = nombre;
+        input.value = valor;
+        form.appendChild(input);
+        
+        console.log(`✅ Campo agregado: ${nombre} = ${valor}`);
     }
-
-    mostrarPreview() {
+    
+    function mostrarCargando() {
+        const textoNormal = document.getElementById('btnTextoNormal');
+        const textoCargando = document.getElementById('btnTextoCargando');
+        
+        if (textoNormal) textoNormal.style.display = 'none';
+        if (textoCargando) textoCargando.style.display = 'inline-flex';
+        btnCrear.disabled = true;
+    }
+    
+    function ocultarCargando() {
+        const textoNormal = document.getElementById('btnTextoNormal');
+        const textoCargando = document.getElementById('btnTextoCargando');
+        
+        if (textoNormal) textoNormal.style.display = 'inline-flex';
+        if (textoCargando) textoCargando.style.display = 'none';
+        btnCrear.disabled = false;
+    }
+    
+    function mostrarDuracion() {
         const preview = document.getElementById('duracionPreview');
-        if (preview) {
-            preview.style.display = 'block';
-        }
+        if (preview) preview.style.display = 'block';
     }
-
-    ocultarPreview() {
+    
+    function ocultarDuracion() {
         const preview = document.getElementById('duracionPreview');
-        if (preview) {
-            preview.style.display = 'none';
-        }
+        if (preview) preview.style.display = 'none';
     }
-
-    mostrarError(mensaje) {
+    
+    function mostrarError(mensaje) {
         const errorDiv = document.getElementById('errorFechas');
         const errorTexto = document.getElementById('errorFechasTexto');
         
@@ -637,35 +592,15 @@ class ContratoModalMejorado {
             errorDiv.style.display = 'block';
         }
     }
-
-    ocultarError() {
+    
+    function ocultarError() {
         const errorDiv = document.getElementById('errorFechas');
-        if (errorDiv) {
-            errorDiv.style.display = 'none';
-        }
+        if (errorDiv) errorDiv.style.display = 'none';
     }
-
-    addHiddenInput(name, value) {
-        // Evitar duplicados
-        const existingInput = this.form.querySelector(`input[name="${name}"]`);
-        if (existingInput && existingInput.type === 'hidden') {
-            existingInput.value = value;
-            return;
-        }
-        
-        const input = document.createElement('input');
-        input.type = 'hidden';
-        input.name = name;
-        input.value = value;
-        this.form.appendChild(input);
-    }
-
-    mostrarToast(mensaje, tipo) {
-        // Implementación simple de toast/alerta
+    
+    function mostrarToast(mensaje, tipo) {
         const alertaExistente = document.querySelector('.toast-alert');
-        if (alertaExistente) {
-            alertaExistente.remove();
-        }
+        if (alertaExistente) alertaExistente.remove();
 
         const alerta = document.createElement('div');
         alerta.className = `alert alert-${tipo} alert-dismissible fade show toast-alert position-fixed`;
@@ -678,19 +613,11 @@ class ContratoModalMejorado {
         document.body.appendChild(alerta);
         
         setTimeout(() => {
-            if (alerta.parentNode) {
-                alerta.remove();
-            }
+            if (alerta.parentNode) alerta.remove();
         }, 5000);
     }
 
-    // Helpers de DOM
-    setElementText(id, text) {
-        const element = document.getElementById(id);
-        if (element) element.textContent = text;
-    }
-}
+    
 
-// Inicializar automáticamente
-new ContratoModalMejorado();
+});
 </script>

@@ -133,11 +133,27 @@ document.addEventListener('DOMContentLoaded', () => {
     };
 
     function validarHorarios() {
-        const e = horaEntradaInput?.value, s = horaSalidaInput?.value;
-        if (e && s) {
+        const e = horaEntradaInput?.value;
+        const s = horaSalidaInput?.value;
+        const formato24h = /^([01]\d|2[0-3]):[0-5]\d$/;
+
+        horaEntradaInput.classList.remove('is-invalid', 'is-valid');
+        horaSalidaInput.classList.remove('is-invalid', 'is-valid');
+        eliminarMensajeValidacion(horaEntradaInput);
+        eliminarMensajeValidacion(horaSalidaInput);
+
+        if (e && !formato24h.test(e)) {
+            horaEntradaInput.classList.add('is-invalid');
+            mostrarMensajeValidacion(horaEntradaInput, 'Formato inválido. Usa el formato 24h (HH:mm)');
+        }
+
+        if (s && !formato24h.test(s)) {
+            horaSalidaInput.classList.add('is-invalid');
+            mostrarMensajeValidacion(horaSalidaInput, 'Formato inválido. Usa el formato 24h (HH:mm)');
+        }
+
+        if (e && s && formato24h.test(e) && formato24h.test(s)) {
             const horas = calcularHoras(e, s);
-            horaEntradaInput.classList.remove('is-invalid', 'is-valid');
-            horaSalidaInput.classList.remove('is-invalid', 'is-valid');
             if (horas < 1 || horas > 16) {
                 horaSalidaInput.classList.add('is-invalid');
                 mostrarMensajeValidacion(horaSalidaInput, `Horario inválido: ${horas} horas. Debe estar entre 1 y 16.`);
@@ -147,6 +163,7 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
     }
+
 
     const mostrarMensajeValidacion = (el, msg) => {
         let feedback = el.parentNode.querySelector('.invalid-feedback');
