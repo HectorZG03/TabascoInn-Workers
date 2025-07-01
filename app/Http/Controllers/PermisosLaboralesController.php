@@ -13,7 +13,7 @@ use Carbon\Carbon;
 class PermisosLaboralesController extends Controller
 {
     /**
-     * ✅ PROCESAR ASIGNACIÓN DE PERMISO - TIPO Y MOTIVO SEPARADOS
+     * ✅ PROCESAR ASIGNACIÓN DE PERMISO CON TIPO PERSONALIZADO
      */
     public function store(Request $request, Trabajador $trabajador)
     {
@@ -23,10 +23,18 @@ class PermisosLaboralesController extends Controller
             ]);
         }
 
-        $tiposValidos = array_keys(PermisosLaborales::getTiposDisponibles());
+        // ✅ TIPOS VÁLIDOS INCLUYENDO "OTRO"
+        $tiposBasicos = array_keys(PermisosLaborales::getTiposDisponibles());
+        $tiposValidos = implode(',', array_merge($tiposBasicos, ['OTRO']));
 
+        // ✅ VALIDACIÓN ACTUALIZADA PARA MANEJAR TIPO PERSONALIZADO
         $validated = $request->validate([
-            'tipo_permiso' => 'required|string|in:' . implode(',', $tiposValidos),
+            // ✅ TIPO DE PERMISO: Acepta opciones predefinidas + "OTRO"
+            'tipo_permiso' => 'required|string|in:' . $tiposValidos,
+            
+            // ✅ TIPO PERSONALIZADO: Requerido solo cuando tipo_permiso = "OTRO"
+            'tipo_personalizado' => 'nullable|required_if:tipo_permiso,OTRO|string|min:3|max:80',
+            
             'motivo' => 'required|string|min:3|max:100',
             'fecha_inicio' => 'required|date|after_or_equal:today',
             'fecha_fin' => 'required|date|after_or_equal:fecha_inicio',
@@ -34,7 +42,35 @@ class PermisosLaboralesController extends Controller
             'es_por_horas' => 'nullable|boolean',
             'hora_inicio' => 'nullable|required_if:es_por_horas,1|date_format:H:i',
             'hora_fin' => 'nullable|required_if:es_por_horas,1|date_format:H:i|after:hora_inicio',
+        ], [
+            // Mensajes básicos
+            'tipo_permiso.required' => 'El tipo de permiso es obligatorio',
+            'tipo_permiso.in' => 'El tipo de permiso seleccionado no es válido',
+            
+            // ✅ MENSAJES PARA TIPO PERSONALIZADO
+            'tipo_personalizado.required_if' => 'Debe especificar el tipo de permiso cuando selecciona "Otro"',
+            'tipo_personalizado.min' => 'El tipo personalizado debe tener al menos 3 caracteres',
+            'tipo_personalizado.max' => 'El tipo personalizado no puede exceder 80 caracteres',
+            
+            'motivo.required' => 'El motivo es obligatorio',
+            'motivo.min' => 'El motivo debe tener al menos 3 caracteres',
+            'motivo.max' => 'El motivo no puede exceder 100 caracteres',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
+            'fecha_fin.required' => 'La fecha de fin es obligatoria',
+            'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
+            'observaciones.max' => 'Las observaciones no pueden exceder 500 caracteres',
+            'hora_inicio.required_if' => 'La hora de inicio es obligatoria para permisos por horas',
+            'hora_inicio.date_format' => 'La hora de inicio debe tener el formato HH:MM',
+            'hora_fin.required_if' => 'La hora de fin es obligatoria para permisos por horas',
+            'hora_fin.date_format' => 'La hora de fin debe tener el formato HH:MM',
+            'hora_fin.after' => 'La hora de fin debe ser posterior a la hora de inicio',
         ]);
+
+        // ✅ DETERMINAR EL TIPO FINAL A GUARDAR
+        $tipoFinal = $validated['tipo_permiso'] === 'OTRO' 
+            ? trim($validated['tipo_personalizado'])
+            : $validated['tipo_permiso'];
 
         $esPorHoras = $request->boolean('es_por_horas');
 
@@ -67,9 +103,10 @@ class PermisosLaboralesController extends Controller
         DB::beginTransaction();
 
         try {
+            // ✅ CREAR PERMISO CON TIPO FINAL
             $permiso = PermisosLaborales::create([
                 'id_trabajador' => $trabajador->id_trabajador,
-                'tipo_permiso' => $validated['tipo_permiso'],
+                'tipo_permiso' => $tipoFinal, // ✅ Usar tipo final
                 'motivo' => $validated['motivo'],
                 'fecha_inicio' => $validated['fecha_inicio'],
                 'fecha_fin' => $validated['fecha_fin'],
@@ -84,10 +121,13 @@ class PermisosLaboralesController extends Controller
 
             DB::commit();
 
+            // ✅ LOG MEJORADO CON TIPO FINAL
             Log::info('Permiso asignado', [
                 'trabajador' => $trabajador->nombre_completo,
                 'permiso_id' => $permiso->id_permiso,
-                'tipo' => $validated['tipo_permiso'],
+                'tipo' => $tipoFinal, // ✅ Log del tipo final
+                'tipo_fue_personalizado' => $validated['tipo_permiso'] === 'OTRO',
+                'motivo' => $validated['motivo'],
                 'es_por_horas' => $esPorHoras,
                 'fecha' => $validated['fecha_inicio'],
                 'hora_inicio' => $validated['hora_inicio'] ?? null,
@@ -95,14 +135,25 @@ class PermisosLaboralesController extends Controller
                 'usuario' => Auth::user()->email ?? 'Sistema',
             ]);
 
-            return redirect()->route('trabajadores.index')
-                ->with('success', "Permiso asignado exitosamente a {$trabajador->nombre_completo}");
+            // ✅ MENSAJE DE ÉXITO MEJORADO
+            $mensaje = "Permiso asignado exitosamente a {$trabajador->nombre_completo}";
+            
+            if ($validated['tipo_permiso'] === 'OTRO') {
+                $mensaje .= " con tipo personalizado: \"{$tipoFinal}\"";
+            }
+
+            return redirect()->route('trabajadores.index')->with('success', $mensaje);
 
         } catch (\Exception $e) {
             DB::rollback();
 
             Log::error('Error al asignar permiso', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_solicitado' => $validated['tipo_permiso'],
+                'tipo_personalizado' => $validated['tipo_personalizado'] ?? null,
                 'error' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
                 'trace' => $e->getTraceAsString()
             ]);
 
@@ -111,7 +162,7 @@ class PermisosLaboralesController extends Controller
     }
 
     /**
-     * ✅ LISTAR PERMISOS - VERSIÓN CORREGIDA
+     * ✅ LISTAR PERMISOS - VERSIÓN MEJORADA CON TIPOS DINÁMICOS
      */
     public function index(Request $request)
     {
@@ -174,10 +225,23 @@ class PermisosLaboralesController extends Controller
                                         ->count(),
         ];
 
-        // ✅ DATOS PARA LA VISTA - ESTO ES LO QUE FALTABA
-        $tiposPermisos = PermisosLaborales::getTiposDisponibles();
+        // ✅ TIPOS DINÁMICOS (básicos + personalizados existentes)
+        $tiposBasicos = PermisosLaborales::getTiposDisponibles();
         
-        // ✅ COLORES PARA LOS BADGES
+        // Obtener tipos personalizados que ya existen en BD
+        $tiposPersonalizados = PermisosLaborales::select('tipo_permiso')
+            ->whereNotIn('tipo_permiso', array_keys($tiposBasicos))
+            ->distinct()
+            ->pluck('tipo_permiso')
+            ->toArray();
+
+        // Combinar tipos básicos con personalizados
+        $tiposCompletos = $tiposBasicos;
+        foreach ($tiposPersonalizados as $tipoPersonalizado) {
+            $tiposCompletos[$tipoPersonalizado] = $tipoPersonalizado;
+        }
+        
+        // ✅ COLORES DINÁMICOS PARA LOS BADGES
         $coloresPermiso = [
             'Vacaciones' => 'success',
             'Licencia Médica' => 'danger',
@@ -191,9 +255,12 @@ class PermisosLaboralesController extends Controller
             'Permiso por Duelo' => 'dark',
             'Permiso por Matrimonio' => 'success',
             'Incapacidad Temporal' => 'danger',
+            'Licencia por Familiar Enfermo' => 'warning',
+            'Permiso por Emergencia' => 'danger',
+            'Licencia Sindical' => 'info',
         ];
 
-        // ✅ ICONOS PARA LOS BADGES
+        // ✅ ICONOS DINÁMICOS PARA LOS BADGES
         $iconosPermiso = [
             'Vacaciones' => 'bi-sun',
             'Licencia Médica' => 'bi-heart-pulse',
@@ -207,17 +274,21 @@ class PermisosLaboralesController extends Controller
             'Permiso por Duelo' => 'bi-heart',
             'Permiso por Matrimonio' => 'bi-suit-heart',
             'Incapacidad Temporal' => 'bi-bandaid',
+            'Licencia por Familiar Enfermo' => 'bi-person-fill-exclamation',
+            'Permiso por Emergencia' => 'bi-exclamation-triangle',
+            'Licencia Sindical' => 'bi-people',
         ];
 
-        // ✅ PASAR TODAS LAS VARIABLES A LA VISTA
+        // ✅ PASAR VARIABLES ACTUALIZADAS A LA VISTA
         return view('trabajadores.estatus.permisos_lista', compact(
             'permisos', 
             'stats', 
-            'tiposPermisos', 
+            'tiposCompletos as tiposPermisos', // ✅ Usar tipos completos
             'coloresPermiso', 
             'iconosPermiso'
         ));
     }
+
     /** 
      * ✅ FINALIZAR PERMISO
      */

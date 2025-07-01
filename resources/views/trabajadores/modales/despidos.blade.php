@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE DESPIDO REDISEÑADO --}}
+{{-- ✅ MODAL DE DESPIDO CON OPCIÓN PERSONALIZADA --}}
 <div class="modal fade" id="modalDespido" tabindex="-1" aria-labelledby="modalDespidoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-danger shadow-sm">
@@ -74,20 +74,44 @@
               <div class="invalid-feedback"></div>
             </div>
             
-            <!-- Condición de Salida -->
+            <!-- ✅ CONDICIÓN DE SALIDA MEJORADA -->
             <div class="col-md-6">
               <label for="condicion_salida" class="form-label fw-semibold">
                 <i class="bi bi-list-check me-1"></i> Condición de Salida <span class="text-danger">*</span>
               </label>
-              <select class="form-select" id="condicion_salida" name="condicion_salida" required>
+              <select class="form-select" id="condicion_salida" name="condicion_salida" required onchange="toggleCondicionPersonalizada()">
                 <option value="" disabled selected>Seleccionar condición...</option>
                 <option value="Voluntaria">Voluntaria (Renuncia)</option>
                 <option value="Despido con Causa">Baja con Causa</option>
                 <option value="Despido sin Causa">Baja sin Causa</option>
+                <option value="Castigo">Castigo</option>
                 <option value="Mutuo Acuerdo">Mutuo Acuerdo</option>
                 <option value="Abandono de Trabajo">Abandono de Trabajo</option>
                 <option value="Fin de Contrato">Fin de Contrato</option>
+                <option value="Incapacidad Permanente">Incapacidad Permanente</option>
+                <option value="Jubilación">Jubilación</option>
+                <option value="Defunción">Defunción</option>
+                <!-- ✅ OPCIÓN PARA ESCRIBIR PERSONALIZADA -->
+                <option value="OTRO">✏️ Otro (especificar)</option>
               </select>
+              <div class="invalid-feedback"></div>
+            </div>
+            
+            <!-- ✅ CAMPO PERSONALIZADO PARA CONDICIÓN -->
+            <div class="col-12" id="condicionPersonalizadaContainer" style="display: none;">
+              <label for="condicion_personalizada" class="form-label fw-semibold">
+                <i class="bi bi-pencil-square me-1"></i> Especificar Condición de Salida <span class="text-danger">*</span>
+              </label>
+              <input type="text" 
+                     class="form-control" 
+                     id="condicion_personalizada" 
+                     name="condicion_personalizada" 
+                     placeholder="Escriba la condición de salida específica..."
+                     maxlength="100">
+              <small class="form-text text-muted">
+                <i class="bi bi-lightbulb-fill text-warning"></i> 
+                Escriba la condición exacta cuando ninguna de las opciones anteriores sea apropiada.
+              </small>
               <div class="invalid-feedback"></div>
             </div>
             
@@ -147,6 +171,24 @@
 </div>
 
 <script>
+// ✅ NUEVA FUNCIÓN: Mostrar u ocultar campo de condición personalizada
+function toggleCondicionPersonalizada() {
+  const select = document.getElementById('condicion_salida');
+  const container = document.getElementById('condicionPersonalizadaContainer');
+  const input = document.getElementById('condicion_personalizada');
+  
+  if (select.value === 'OTRO') {
+    container.style.display = 'block';
+    input.required = true;
+    input.focus(); // Enfocar automáticamente el campo
+  } else {
+    container.style.display = 'none';
+    input.required = false;
+    input.value = ''; // Limpiar el valor
+    input.classList.remove('is-invalid');
+  }
+}
+
 // Mostrar u ocultar campo Fecha Reintegro según tipo de baja
 function toggleReintegroField(show) {
   const container = document.getElementById('fechaReintegroContainer');
@@ -157,7 +199,7 @@ function toggleReintegroField(show) {
   } else {
     container.style.display = 'none';
     input.required = false;
-    input.value = ''; // Limpia el valor para evitar errores en backend
+    input.value = '';
   }
 }
 
@@ -190,6 +232,7 @@ document.addEventListener('DOMContentLoaded', () => {
       // Por defecto baja definitiva
       document.getElementById('tipo_definitiva').checked = true;
       toggleReintegroField(false);
+      toggleCondicionPersonalizada(); // ✅ Resetear condición personalizada
 
       // Limpiar errores y contadores
       document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -213,24 +256,37 @@ document.addEventListener('DOMContentLoaded', () => {
     contadorObservaciones.className = len > 900 ? 'text-warning' : 'text-muted';
   });
 
-  // Validación frontend
+  // ✅ VALIDACIÓN FRONTEND ACTUALIZADA
   formDespido.addEventListener('submit', e => {
     e.preventDefault();
     let isValid = true;
 
     document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
 
+    // Validar fecha de baja
     if (!fechaBaja.value) {
       showFieldError(fechaBaja, 'La fecha de baja es obligatoria');
       isValid = false;
     }
 
+    // ✅ VALIDAR CONDICIÓN DE SALIDA (select + campo personalizado)
     const condicionSalida = document.getElementById('condicion_salida');
+    const condicionPersonalizada = document.getElementById('condicion_personalizada');
+    
     if (!condicionSalida.value) {
       showFieldError(condicionSalida, 'Debe seleccionar una condición de salida');
       isValid = false;
+    } else if (condicionSalida.value === 'OTRO') {
+      if (!condicionPersonalizada.value.trim()) {
+        showFieldError(condicionPersonalizada, 'Debe especificar la condición de salida');
+        isValid = false;
+      } else if (condicionPersonalizada.value.trim().length < 3) {
+        showFieldError(condicionPersonalizada, 'La condición debe tener al menos 3 caracteres');
+        isValid = false;
+      }
     }
 
+    // Validar motivo
     if (!motivo.value.trim()) {
       showFieldError(motivo, 'El motivo es obligatorio');
       isValid = false;
@@ -239,6 +295,7 @@ document.addEventListener('DOMContentLoaded', () => {
       isValid = false;
     }
 
+    // Validar fecha de reintegro si es temporal
     if (document.getElementById('tipo_temporal').checked) {
       const fechaReintegro = document.getElementById('fecha_reintegro');
       if (!fechaReintegro.value) {
@@ -261,7 +318,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (feedback) feedback.textContent = message;
   }
 
-  // Reset modal al cerrar
+  // ✅ RESET MODAL ACTUALIZADO
   modalDespido.addEventListener('hidden.bs.modal', () => {
     formDespido.reset();
     document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
@@ -270,6 +327,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contadorMotivo) contadorMotivo.textContent = '0/500';
     if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
     toggleReintegroField(false);
+    toggleCondicionPersonalizada(); // ✅ Resetear condición personalizada
   });
 });
 </script>

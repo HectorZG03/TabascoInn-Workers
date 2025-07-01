@@ -31,7 +31,7 @@ class DespidosController extends Controller
     }
 
     /**
-     * Procesar despido del trabajador
+     * ✅ PROCESAR DESPIDO CON CONDICIÓN PERSONALIZADA
      */
     public function store(Request $request, Trabajador $trabajador)
     {
@@ -44,16 +44,24 @@ class DespidosController extends Controller
         if ($trabajador->tieneDespidoActivo()) {
             return back()->withErrors(['error' => 'Este trabajador ya tiene un despido activo']);
         }
-        // Validar datos del formulario
+
+        // ✅ VALIDACIÓN ACTUALIZADA PARA MANEJAR CONDICIÓN PERSONALIZADA
         $validated = $request->validate([
             'fecha_baja' => 'required|date|before_or_equal:today|after_or_equal:' . $trabajador->fecha_ingreso->format('Y-m-d'),
             'motivo' => 'required|string|min:10|max:500',
-            'condicion_salida' => 'required|in:Voluntaria,Despido con Causa,Despido sin Causa,Mutuo Acuerdo,Abandono de Trabajo,Fin de Contrato',
+            
+            // ✅ CONDICIÓN DE SALIDA: Acepta opciones predefinidas + "OTRO"
+            'condicion_salida' => 'required|in:Voluntaria,Despido con Causa,Despido sin Causa,Castigo,Mutuo Acuerdo,Abandono de Trabajo,Fin de Contrato,Incapacidad Permanente,Jubilación,Defunción,OTRO',
+            
+            // ✅ CONDICIÓN PERSONALIZADA: Requerida solo cuando condicion_salida = "OTRO"
+            'condicion_personalizada' => 'nullable|required_if:condicion_salida,OTRO|string|min:3|max:100',
+            
             'observaciones' => 'nullable|string|max:1000',
             'tipo_baja' => 'required|in:temporal,definitiva',
-            // Cambia esta línea para validar fecha_reintegro correctamente:
+            
+            // Validación de fecha de reintegro
             'fecha_reintegro' => [
-                'nullable',  // Permitir nulo si no es baja temporal
+                'nullable',
                 'date',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($request->tipo_baja === 'temporal') {
@@ -76,60 +84,83 @@ class DespidosController extends Controller
             'motivo.max' => 'El motivo no puede exceder 500 caracteres',
             'condicion_salida.required' => 'La condición de salida es obligatoria',
             'condicion_salida.in' => 'La condición de salida seleccionada no es válida',
+            
+            // ✅ MENSAJES PARA CONDICIÓN PERSONALIZADA
+            'condicion_personalizada.required_if' => 'Debe especificar la condición de salida cuando selecciona "Otro"',
+            'condicion_personalizada.min' => 'La condición personalizada debe tener al menos 3 caracteres',
+            'condicion_personalizada.max' => 'La condición personalizada no puede exceder 100 caracteres',
+            
             'observaciones.max' => 'Las observaciones no pueden exceder 1000 caracteres',
             'tipo_baja.required' => 'El tipo de baja es obligatorio',
             'tipo_baja.in' => 'El tipo de baja debe ser temporal o definitiva',
         ]);
 
-
+        // ✅ DETERMINAR LA CONDICIÓN FINAL A GUARDAR
+        $condicionFinal = $validated['condicion_salida'] === 'OTRO' 
+            ? trim($validated['condicion_personalizada'])
+            : $validated['condicion_salida'];
 
         DB::beginTransaction();
         
         try {
-            // ✅ CREAR REGISTRO DE DESPIDO CON ESTADO ACTIVO
+            // ✅ CREAR REGISTRO DE DESPIDO CON CONDICIÓN CORRECTA
             $despido = Despidos::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'fecha_baja' => $validated['fecha_baja'],
                 'motivo' => $validated['motivo'],
-                'condicion_salida' => $validated['condicion_salida'],
+                'condicion_salida' => $condicionFinal, // ✅ Usar condición final
                 'observaciones' => $validated['observaciones'],
-                'estado' => Despidos::ESTADO_ACTIVO, // ✅ ESTADO ACTIVO
+                'estado' => Despidos::ESTADO_ACTIVO,
                 'tipo_baja' => $request->tipo_baja,
                 'fecha_reintegro' => $request->tipo_baja === 'temporal' ? $request->fecha_reintegro : null,
-                'creado_por' => Auth::id(), // Registrar usuario creador
+                'creado_por' => Auth::id(),
             ]);
 
-            // Actualizar estado del trabajador a inactivo
+            // ✅ ACTUALIZAR ESTADO DEL TRABAJADOR (corregir duplicación)
+            $nuevoEstatus = $request->tipo_baja === 'temporal' ? 'suspendido' : 'inactivo';
+            
             $trabajador->update([
-                'estatus' => 'inactivo',
-                'id_baja' => $despido->id_baja,
-                'estatus' => $request->tipo_baja === 'temporal' ? 'suspendido' : 'inactivo',
+                'estatus' => $nuevoEstatus,
                 'id_baja' => $despido->id_baja,
             ]);
 
             DB::commit();
 
-            // Log de la acción
+            // ✅ LOG MEJORADO CON CONDICIÓN FINAL
             Log::info('Trabajador despedido', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'despido_id' => $despido->id_baja,
                 'motivo' => $validated['motivo'],
-                'condicion_salida' => $validated['condicion_salida'],
+                'condicion_salida' => $condicionFinal, // ✅ Log de condición final
+                'condicion_fue_personalizada' => $validated['condicion_salida'] === 'OTRO',
                 'fecha_baja' => $validated['fecha_baja'],
+                'tipo_baja' => $request->tipo_baja,
+                'nuevo_estatus' => $nuevoEstatus,
                 'estado' => $despido->estado,
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            return redirect()->route('trabajadores.index')
-                           ->with('success', "Trabajador {$trabajador->nombre_completo} ha sido despedido exitosamente");
+            // ✅ MENSAJE DE ÉXITO MEJORADO
+            $tipoAccion = $request->tipo_baja === 'temporal' ? 'suspendido temporalmente' : 'dado de baja';
+            $mensaje = "Trabajador {$trabajador->nombre_completo} ha sido {$tipoAccion} exitosamente";
+            
+            if ($validated['condicion_salida'] === 'OTRO') {
+                $mensaje .= " con condición personalizada: \"{$condicionFinal}\"";
+            }
+
+            return redirect()->route('trabajadores.index')->with('success', $mensaje);
 
         } catch (\Exception $e) {
             DB::rollback();
             
             Log::error('Error al procesar despido', [
                 'trabajador_id' => $trabajador->id_trabajador,
+                'condicion_solicitada' => $validated['condicion_salida'],
+                'condicion_personalizada' => $validated['condicion_personalizada'] ?? null,
                 'error' => $e->getMessage(),
+                'linea' => $e->getLine(),
+                'archivo' => $e->getFile(),
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
@@ -201,15 +232,28 @@ class DespidosController extends Controller
             'voluntarias' => Despidos::activos()->where('condicion_salida', 'Voluntaria')->count(),
         ];
 
-        // Condiciones de salida para filtro
-        $condiciones = [
+        // ✅ CONDICIONES DINÁMICAS (incluye las personalizadas ya guardadas)
+        $condicionesBasicas = [
             'Voluntaria',
             'Despido con Causa',
             'Despido sin Causa',
+            'Castigo',
             'Mutuo Acuerdo',
             'Abandono de Trabajo',
-            'Fin de Contrato'
+            'Fin de Contrato',
+            'Incapacidad Permanente',
+            'Jubilación',
+            'Defunción'
         ];
+
+        // Obtener condiciones personalizadas que ya existen en BD
+        $condicionesPersonalizadas = Despidos::select('condicion_salida')
+            ->whereNotIn('condicion_salida', $condicionesBasicas)
+            ->distinct()
+            ->pluck('condicion_salida')
+            ->toArray();
+
+        $condiciones = array_merge($condicionesBasicas, $condicionesPersonalizadas);
 
         // ✅ ESTADOS PARA FILTRO
         $estados = [
@@ -265,6 +309,7 @@ class DespidosController extends Controller
             Log::info('Trabajador reactivado', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'tipo_baja' => $despido->tipo_baja,
+                'condicion_original' => $despido->condicion_salida,
                 'usuario' => Auth::user()->email ?? 'Sistema',
             ]);
 
@@ -282,7 +327,6 @@ class DespidosController extends Controller
             return back()->withErrors(['error' => 'No se pudo reactivar al trabajador: ' . $e->getMessage()]);
         }
     }
-
 
     /**
      * ✅ OBTENER HISTORIAL DE BAJAS DE UN TRABAJADOR
