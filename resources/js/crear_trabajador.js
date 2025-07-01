@@ -1,18 +1,36 @@
 document.addEventListener('DOMContentLoaded', () => {
-    console.log('🚀 Iniciando crear_trabajador.js v3.1 - Optimizado');
+    console.log('🚀 Iniciando crear_trabajador.js v3.2 - Mayúsculas forzadas');
 
     const form = document.getElementById('formTrabajador');
     const areaSelect = document.getElementById('id_area');
     const categoriaSelect = document.getElementById('id_categoria');
     const horaEntradaInput = document.getElementById('hora_entrada');
     const horaSalidaInput = document.getElementById('hora_salida');
+
     const camposVistaPrevia = [
-        'nombre_trabajador', 'ape_pat', 'ape_mat', 'fecha_nacimiento',
-        'sueldo_diarios', 'ciudad_actual', 'estado_actual'
+        'nombre_trabajador', 'ape_pat', 'ape_mat',
+        'fecha_nacimiento', 'sueldo_diarios',
+        'ciudad_actual', 'estado_actual'
     ];
 
     const get = id => document.getElementById(id);
-    const setText = (id, text) => { const el = get(id); if (el) el.textContent = text; };
+    const setText = (id, text) => {
+        const el = get(id);
+        if (el) el.textContent = (text || '').toUpperCase();
+    };
+
+    // 🧠 Forzar mayúsculas en campos de texto
+    function forzarMayusculas(id) {
+        const input = get(id);
+        if (input) {
+            input.addEventListener('input', () => {
+                input.value = input.value.toUpperCase();
+                actualizarVistaPrevia();
+            });
+        }
+    }
+
+    ['nombre_trabajador', 'ape_pat', 'ape_mat', 'ciudad_actual', 'estado_actual', 'curp', 'rfc'].forEach(forzarMayusculas);
 
     // 💡 Ocultar alerta de éxito
     const successAlert = get('success-alert');
@@ -102,7 +120,7 @@ document.addEventListener('DOMContentLoaded', () => {
             const horas = calcularHoras(entrada, salida);
             const turno = calcularTurno(entrada, salida);
             setText('preview-horas', `${horas} hrs`);
-            setText('preview-turno', turno.charAt(0).toUpperCase() + turno.slice(1));
+            setText('preview-turno', turno);
         } else {
             setText('preview-horas', '-- hrs');
             setText('preview-turno', '--');
@@ -126,10 +144,10 @@ document.addEventListener('DOMContentLoaded', () => {
     const calcularTurno = (entrada, salida) => {
         const toMin = h => h.split(':').map(Number).reduce((h, m) => h * 60 + m);
         const e = toMin(entrada), s = toMin(salida);
-        if (s <= e) return 'nocturno';
-        if (e >= 360 && s <= 1080) return 'diurno';
-        if (e >= 1080 || s <= 360) return 'nocturno';
-        return 'mixto';
+        if (s <= e) return 'NOCTURNO';
+        if (e >= 360 && s <= 1080) return 'DIURNO';
+        if (e >= 1080 || s <= 360) return 'NOCTURNO';
+        return 'MIXTO';
     };
 
     function validarHorarios() {
@@ -164,7 +182,6 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
-
     const mostrarMensajeValidacion = (el, msg) => {
         let feedback = el.parentNode.querySelector('.invalid-feedback');
         if (!feedback) {
@@ -180,19 +197,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (f && f.textContent.includes('Horario inválido')) f.remove();
     };
 
-    // 💡 Eventos para campos de vista previa
+    // Eventos de cambio en inputs
     camposVistaPrevia.forEach(id => {
         const el = get(id);
         el?.addEventListener('input', actualizarVistaPrevia);
         el?.addEventListener('change', actualizarVistaPrevia);
     });
     categoriaSelect?.addEventListener('change', actualizarVistaPrevia);
-
-    // 💡 Forzar mayúsculas en CURP/RFC
-    ['curp', 'rfc'].forEach(id => {
-        const input = get(id);
-        input?.addEventListener('input', () => input.value = input.value.toUpperCase());
-    });
 
     // 🔄 Función para limpiar formulario
     function limpiarFormulario() {
@@ -207,7 +218,7 @@ document.addEventListener('DOMContentLoaded', () => {
         actualizarVistaPrevia();
     }
 
-    // 🔘 Botón de limpiar
+    // Botón limpiar
     const btnLimpiar = document.createElement('button');
     btnLimpiar.type = 'button';
     btnLimpiar.className = 'btn btn-outline-warning me-2';
@@ -216,7 +227,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const btnCancelar = document.querySelector('a[href*="trabajadores.index"]');
     btnCancelar?.parentNode.insertBefore(btnLimpiar, btnCancelar);
 
-    // 📆 Validación de días laborables
+    // Días laborables
     const validarDiasLaborables = () => {
         const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
         const seleccionados = Array.from(checkboxes).some(cb => cb.checked);
@@ -243,5 +254,5 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // Inicializar
     actualizarVistaPrevia();
-    console.log('✅ crear_trabajador.js v3.1 cargado - Optimizado');
+    console.log('✅ crear_trabajador.js v3.2 cargado - Todo en mayúsculas');
 });

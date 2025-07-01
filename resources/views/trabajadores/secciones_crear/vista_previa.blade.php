@@ -1,5 +1,12 @@
+<!-- 🔘 Botón para ocultar/mostrar la vista previa -->
+<div class="mb-2 text-end">
+    <button id="toggleVistaPrevia" class="btn btn-outline-primary btn-sm">
+        <i class="bi bi-eye-slash"></i> Ocultar Vista Previa
+    </button>
+</div>
+
 <!-- ✅ SECCIÓN: VISTA PREVIA ACTUALIZADA -->
-<div class="card shadow-sm mb-4">
+<div id="seccionVistaPrevia" class="card shadow-sm mb-4">
     <div class="card-header bg-info text-white">
         <h5 class="mb-0">
             <i class="bi bi-eye"></i> Vista Previa
@@ -12,12 +19,12 @@
                  style="width: 60px; height: 60px;">
                 <i class="bi bi-person-circle fs-1 text-secondary"></i>
             </div>
-            <h6 class="mt-2 mb-1" id="preview-nombre">Nombre del Trabajador</h6>
-            <small class="text-muted" id="preview-categoria">Categoría - Área</small>
+            <h6 class="mt-2 mb-1 text-uppercase" id="preview-nombre">Nombre del Trabajador</h6>
+            <small class="text-muted text-uppercase" id="preview-categoria">Categoría - Área</small>
         </div>
 
         <!-- Datos Principales -->
-        <div class="row g-2">
+        <div class="row g-2 text-uppercase">
             <!-- Edad -->
             <div class="col-6">
                 <div class="bg-light rounded p-2 text-center">
@@ -52,7 +59,7 @@
         </div>
 
         <!-- Ubicación -->
-        <div class="mt-3">
+        <div class="mt-3 text-uppercase">
             <div class="bg-light rounded p-2">
                 <small class="text-muted d-block">
                     <i class="bi bi-geo-alt me-1"></i>Ubicación
@@ -62,7 +69,7 @@
         </div>
 
         <!-- ✅ ESTADO - ACTUALIZADO -->
-        <div class="mt-3">
+        <div class="mt-3 text-uppercase">
             <div class="border border-primary rounded p-2 bg-primary bg-opacity-10">
                 <small class="text-primary d-block">
                     <i class="bi bi-person-gear me-1"></i>Estado del Trabajador
@@ -74,7 +81,7 @@
         </div>
 
         <!-- ✅ NUEVO: Resumen de Horarios -->
-        <div class="mt-3">
+        <div class="mt-3 text-uppercase">
             <div class="card border-0 bg-light">
                 <div class="card-body p-2">
                     <h6 class="card-title mb-2 text-center">
@@ -111,3 +118,32 @@
         </div>
     </div>
 </div>
+
+<script>
+    // 👁️ Mostrar/Ocultar vista previa
+const btnToggleVista = document.getElementById('toggleVistaPrevia');
+const seccionVistaPrevia = document.getElementById('seccionVistaPrevia');
+
+if (btnToggleVista && seccionVistaPrevia) {
+    let visible = true;
+
+    seccionVistaPrevia.style.transition = 'max-height 0.4s ease, opacity 0.4s ease';
+    seccionVistaPrevia.style.overflow = 'hidden';
+    seccionVistaPrevia.style.maxHeight = '1000px';
+    seccionVistaPrevia.style.opacity = '1';
+
+    btnToggleVista.addEventListener('click', () => {
+        visible = !visible;
+        if (visible) {
+            seccionVistaPrevia.style.maxHeight = '1000px';
+            seccionVistaPrevia.style.opacity = '1';
+            btnToggleVista.innerHTML = '<i class="bi bi-eye-slash"></i> Ocultar Vista Previa';
+        } else {
+            seccionVistaPrevia.style.maxHeight = '0';
+            seccionVistaPrevia.style.opacity = '0';
+            btnToggleVista.innerHTML = '<i class="bi bi-eye"></i> Mostrar Vista Previa';
+        }
+    });
+}
+
+</script>
