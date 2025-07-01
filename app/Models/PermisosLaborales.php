@@ -23,6 +23,9 @@ class PermisosLaborales extends Model
         'motivo',
         'fecha_inicio',
         'fecha_fin',
+        'hora_inicio',
+        'hora_fin',
+        'es_por_horas',
         'observaciones',
         'estatus_permiso',
         'ruta_pdf',
@@ -31,6 +34,9 @@ class PermisosLaborales extends Model
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
+        'hora_inicio' => 'datetime:H:i',
+        'hora_fin' => 'datetime:H:i',
+        'es_por_horas' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];

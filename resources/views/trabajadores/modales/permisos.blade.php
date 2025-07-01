@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE PERMISOS LABORALES - SIMPLIFICADO --}}
+{{-- ✅ MODAL DE PERMISOS LABORALES - COMPLETO Y ADAPTADO --}}
 <div class="modal fade" id="modalPermisos" tabindex="-1" aria-labelledby="modalPermisosLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -63,6 +63,27 @@
                             <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
                         </div>
                     </div>
+                    {{-- ✅ Toggle para activar permisos por horas --}}
+                    <div class="form-check form-switch mb-3">
+                        <input type="hidden" name="es_por_horas" value="0">
+                        <input class="form-check-input" type="checkbox" id="es_por_horas" name="es_por_horas" value="1">
+                        <label class="form-check-label fw-semibold text-muted" for="es_por_horas">
+                            ¿Este permiso será por horas específicas dentro del día?
+                        </label>
+                    </div>
+
+
+                    {{-- ✅ Campos de horas --}}
+                    <div id="camposHoras" class="row d-none">
+                        <div class="col-md-6 mb-3">
+                            <label for="hora_inicio" class="form-label"><i class="bi bi-clock"></i> Hora de Inicio *</label>
+                            <input type="time" class="form-control" id="hora_inicio" name="hora_inicio">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label for="hora_fin" class="form-label"><i class="bi bi-clock-history"></i> Hora de Fin *</label>
+                            <input type="time" class="form-control" id="hora_fin" name="hora_fin">
+                        </div>
+                    </div>
 
                     <div class="mb-3">
                         <label for="observaciones" class="form-label"><i class="bi bi-chat-text"></i> Observaciones Adicionales</label>
@@ -102,6 +123,11 @@ document.addEventListener('DOMContentLoaded', function () {
     const btnConfirmarPermiso = document.getElementById('btnConfirmarPermiso');
     const duracionPermiso = document.getElementById('duracionPermiso');
 
+    const esPorHoras = document.getElementById('es_por_horas');
+    const camposHoras = document.getElementById('camposHoras');
+    const horaInicio = document.getElementById('hora_inicio');
+    const horaFin = document.getElementById('hora_fin');
+
     if (!modalPermisos || !formPermisos) return;
 
     document.querySelectorAll('.btn-permisos').forEach(btn => {
@@ -123,6 +149,20 @@ document.addEventListener('DOMContentLoaded', function () {
     });
 
     fechaFin?.addEventListener('change', calcularDuracion);
+
+    esPorHoras?.addEventListener('change', () => {
+        if (esPorHoras.checked) {
+            camposHoras.classList.remove('d-none');
+            horaInicio.required = true;
+            horaFin.required = true;
+        } else {
+            camposHoras.classList.add('d-none');
+            horaInicio.required = false;
+            horaFin.required = false;
+            horaInicio.value = '';
+            horaFin.value = '';
+        }
+    });
 
     function calcularDuracion() {
         if (!fechaInicio.value || !fechaFin.value) {
@@ -164,9 +204,11 @@ document.addEventListener('DOMContentLoaded', function () {
         duracionPermiso.innerHTML = '<span class="fw-bold text-primary">0 días</span>';
         btnConfirmarPermiso.disabled = false;
         btnConfirmarPermiso.innerHTML = '<i class="bi bi-check-circle"></i> Asignar Permiso';
+        camposHoras.classList.add('d-none');
+        horaInicio.required = false;
+        horaFin.required = false;
     }
 
     modalPermisos.addEventListener('hidden.bs.modal', resetForm);
 });
 </script>
-
