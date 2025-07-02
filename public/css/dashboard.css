@@ -1,41 +1,342 @@
-    body {
-        background-color: #F5F5DC; /* Beige claro como fondo principal */
-    }
-    
-    /* ✅ NUEVA CLASE ESPECÍFICA PARA HEADERS VERDES */
-    .header-verde {
-        background-color: #007A4D !important;
-        background: #007A4D !important;
-    }
-    
-    /* ✅ FORZAR COLOR VERDE EN TODOS LOS CARD-HEADERS */
-    .card-header.header-verde,
-    .card-header.header-verde * {
-        background-color: #007A4D !important;
-        background: #007A4D !important;
-        color: white !important;
-    }
-    
-    /* ✅ SOBRESCRIBIR CUALQUIER CLASE DE BOOTSTRAP QUE PUEDA INTERFERIR */
-    .card-header.header-verde.bg-primary,
-    .card-header.header-verde.bg-secondary,
-    .card-header.header-verde.bg-success,
-    .card-header.header-verde.bg-info,
-    .card-header.header-verde.bg-warning,
-    .card-header.header-verde.bg-danger,
-    .card-header.header-verde.bg-dark {
-        background-color: #007A4D !important;
-        background: #007A4D !important;
-        border-color: #007A4D !important;
-    }
-    
-    .card-hover {
-        transition: transform 0.3s, box-shadow 0.3s;
-    }
-    .card-hover:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 10px 20px rgba(43, 46, 30, 0.1);
-    }
-    .btn:hover {
-        opacity: 0.9;
-    }
+/* dashboard.css - Versión mejorada */
+
+:root {
+  /* Paleta de colores original */
+  --color-primary: #556B2F;
+  --color-secondary: #6C8C4F;
+  --color-warning: #A0522D;
+  --color-info: #4682B4;
+  --color-neutral: #D2B48C;
+  --color-text: #5D3A1A;
+  --color-text-light: #8B7355;
+  --color-background: #FAF9F6;
+  --color-surface: #FFFFFF;
+  --color-surface-alt: #F0F0E0;
+  
+  /* Sombras */
+  --shadow-sm: 0 2px 8px rgba(0, 0, 0, 0.06);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.08);
+  --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.12);
+  --shadow-xl: 0 12px 32px rgba(0, 0, 0, 0.16);
+  
+  /* Espaciado */
+  --spacing-xs: 0.5rem;
+  --spacing-sm: 1rem;
+  --spacing-md: 1.5rem;
+  --spacing-lg: 2rem;
+  --spacing-xl: 3rem;
+  
+  /* Bordes */
+  --radius-sm: 8px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  
+  /* Transiciones */
+  --transition-fast: 0.15s ease;
+  --transition-normal: 0.3s ease;
+  --transition-slow: 0.5s ease;
+}
+
+body {
+  background-color: var(--color-background);
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  color: var(--color-text);
+  line-height: 1.6;
+}
+
+.dashboard-container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: var(--spacing-lg);
+  min-height: 100vh;
+}
+
+/* Sección de bienvenida */
+.welcome-section {
+  margin-bottom: var(--spacing-xl);
+}
+
+.welcome-card {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  position: relative;
+}
+
+.welcome-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
+  pointer-events: none;
+}
+
+.welcome-header {
+  padding: var(--spacing-xl);
+  text-align: center;
+  position: relative;
+  z-index: 1;
+}
+
+.welcome-icon {
+  font-size: 3rem;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: var(--spacing-md);
+}
+
+.welcome-title {
+  font-size: 2.5rem;
+  font-weight: 700;
+  color: white;
+  margin: 0 0 var(--spacing-sm) 0;
+  letter-spacing: -0.02em;
+}
+
+.welcome-subtitle {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.8);
+  margin: 0 0 var(--spacing-lg) 0;
+  font-weight: 400;
+}
+
+.badge {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--spacing-xs);
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: 50px;
+  font-size: 0.9rem;
+  font-weight: 500;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  box-shadow: var(--shadow-md);
+  transition: var(--transition-normal);
+}
+
+.badge-management {
+  background-color: rgba(255, 255, 255, 0.95);
+  color: var(--color-primary);
+}
+
+.badge-user {
+  background-color: var(--color-neutral);
+  color: var(--color-text);
+}
+
+/* Grid de funcionalidades */
+.functions-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: var(--spacing-lg);
+}
+
+.function-card {
+  background: var(--color-surface);
+  border-radius: var(--radius-lg);
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  transition: var(--transition-normal);
+  position: relative;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.function-card:hover {
+  transform: translateY(-4px);
+  box-shadow: var(--shadow-xl);
+}
+
+.card-accent {
+  height: 4px;
+  width: 100%;
+}
+
+.accent-primary { background-color: var(--color-primary); }
+.accent-secondary { background-color: var(--color-secondary); }
+.accent-warning { background-color: var(--color-warning); }
+.accent-info { background-color: var(--color-info); }
+.accent-neutral { background-color: var(--color-neutral); }
+
+.card-content {
+  padding: var(--spacing-lg);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-icon {
+  width: 60px;
+  height: 60px;
+  border-radius: var(--radius-md);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.5rem;
+  margin-bottom: var(--spacing-md);
+  transition: var(--transition-normal);
+}
+
+.icon-primary { background-color: rgba(85, 107, 47, 0.1); color: var(--color-primary); }
+.icon-secondary { background-color: rgba(108, 140, 79, 0.1); color: var(--color-secondary); }
+.icon-warning { background-color: rgba(160, 82, 45, 0.1); color: var(--color-warning); }
+.icon-info { background-color: rgba(70, 130, 180, 0.1); color: var(--color-info); }
+.icon-neutral { background-color: rgba(210, 180, 140, 0.1); color: var(--color-neutral); }
+
+.card-title {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: var(--color-text);
+  margin: 0 0 var(--spacing-sm) 0;
+  line-height: 1.3;
+}
+
+.card-description {
+  color: var(--color-text-light);
+  margin: 0 0 var(--spacing-lg) 0;
+  flex: 1;
+  font-size: 0.95rem;
+}
+
+/* Botones */
+[class^="btn-"] {
+  display: inline-flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--spacing-sm) var(--spacing-md);
+  border-radius: var(--radius-sm);
+  text-decoration: none;
+  font-weight: 500;
+  font-size: 0.9rem;
+  transition: var(--transition-normal);
+  border: none;
+  cursor: pointer;
+  gap: var(--spacing-xs);
+  min-height: 44px;
+}
+
+.btn-primary {
+  background-color: var(--color-primary);
+  color: white;
+}
+
+.btn-primary:hover {
+  background-color: #4A5F2A;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-secondary {
+  background-color: var(--color-secondary);
+  color: white;
+}
+
+.btn-secondary:hover {
+  background-color: #5D7A45;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background-color: var(--color-warning);
+  color: white;
+}
+
+.btn-warning:hover {
+  background-color: #8B4513;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-info {
+  background-color: var(--color-info);
+  color: white;
+}
+
+.btn-info:hover {
+  background-color: #3E75A3;
+  color: white;
+  transform: translateY(-1px);
+}
+
+.btn-neutral {
+  background-color: transparent;
+  color: var(--color-text);
+  border: 2px solid var(--color-neutral);
+}
+
+.btn-neutral:hover {
+  background-color: var(--color-neutral);
+  color: var(--color-text);
+  transform: translateY(-1px);
+}
+
+/* Animaciones en hover para los iconos */
+.function-card:hover .card-icon {
+  transform: scale(1.05);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .dashboard-container {
+    padding: var(--spacing-md);
+  }
+  
+  .welcome-header {
+    padding: var(--spacing-lg);
+  }
+  
+  .welcome-title {
+    font-size: 2rem;
+  }
+  
+  .functions-grid {
+    grid-template-columns: 1fr;
+    gap: var(--spacing-md);
+  }
+  
+  .card-content {
+    padding: var(--spacing-md);
+  }
+}
+
+@media (max-width: 480px) {
+  .welcome-title {
+    font-size: 1.75rem;
+  }
+  
+  .welcome-subtitle {
+    font-size: 1rem;
+  }
+  
+  .card-icon {
+    width: 50px;
+    height: 50px;
+    font-size: 1.25rem;
+  }
+}
+
+/* Accesibilidad */
+@media (prefers-reduced-motion: reduce) {
+  * {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Focus states para accesibilidad */
+.function-card:focus-within {
+  outline: 2px solid var(--color-primary);
+  outline-offset: 2px;
+}
+
+[class^="btn-"]:focus {
+  outline: 2px solid currentColor;
+  outline-offset: 2px;
+}

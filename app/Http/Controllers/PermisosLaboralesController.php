@@ -240,6 +240,9 @@ class PermisosLaboralesController extends Controller
         foreach ($tiposPersonalizados as $tipoPersonalizado) {
             $tiposCompletos[$tipoPersonalizado] = $tipoPersonalizado;
         }
+   
+        $tiposPermisos = $tiposCompletos;
+
         
         // ✅ COLORES DINÁMICOS PARA LOS BADGES
         $coloresPermiso = [
@@ -280,13 +283,13 @@ class PermisosLaboralesController extends Controller
         ];
 
         // ✅ PASAR VARIABLES ACTUALIZADAS A LA VISTA
-        return view('trabajadores.estatus.permisos_lista', compact(
-            'permisos', 
-            'stats', 
-            'tiposCompletos as tiposPermisos', // ✅ Usar tipos completos
-            'coloresPermiso', 
-            'iconosPermiso'
-        ));
+    return view('trabajadores.estatus.permisos_lista', compact(
+        'permisos', 
+        'stats', 
+        'tiposPermisos', // ✅ Ahora usa el nombre correcto
+        'coloresPermiso', 
+        'iconosPermiso'
+    ));
     }
 
     /** 
