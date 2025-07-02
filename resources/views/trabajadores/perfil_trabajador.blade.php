@@ -136,6 +136,9 @@
                         <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
+                        <button class="nav-link" id="nav-permisos-tab" data-bs-toggle="tab" data-bs-target="#nav-permisos" type="button" role="tab">
+                            <i class="bi bi-calendar-check"></i> Permisos
+                        </button>
                     </div>
                 </nav>
                 <div>
@@ -177,6 +180,18 @@
                         </div>
                     </div>
                 </div>
+
+                {{-- En el contenido de pestañas --}}
+                <div class="tab-pane fade" id="nav-permisos" role="tabpanel" aria-labelledby="nav-permisos-tab">
+                    <div id="permisos-content">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando permisos...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Cargando historial de permisos...</p>
+                        </div>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
@@ -196,6 +211,21 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-<script src="{{asset('js/perfil_trabajador/perfil_scripts.js')}}"></script>
+{{-- Al final del archivo perfil_trabajador.blade.php, antes de @endsection --}}
+
+{{-- Scripts del perfil trabajador en orden de dependencias --}}
+<script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/contratos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/dias_laborables.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/validaciones_campos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/navegacion.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/notificaciones.js') }}"></script>
+
+{{-- Script adicional si existe (mantener compatibilidad) --}}
+@if(file_exists(public_path('js/perfil_trabajador/historiales_perfil.js')))
+<script src="{{ asset('js/perfil_trabajador/historiales_perfil.js') }}"></script>
+@endif
 
 @endsection

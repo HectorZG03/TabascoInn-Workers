@@ -5,6 +5,7 @@ use App\Http\Controllers\TrabajadorController;
 use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
 use App\Http\Controllers\PermisosLaboralesController;
+use App\Http\Controllers\HistorialesPerfilController;
 use App\Http\Controllers\HorasExtraController;
 use App\Http\Controllers\FormatoPermisosController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
@@ -113,6 +114,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('historial', 'obtenerHistorial')->name('historial');
             Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');
         });
+
+        //ruta para historiales en el perfil
+
+        // Dentro del grupo de trabajadores
+        Route::get('{trabajador}/permisos/historial', [HistorialesPerfilController::class, 'permisos'])
+            ->name('trabajadores.perfil.permisos.historial');
     });
 
     // ✅ RUTAS PARA DESPIDOS
