@@ -324,16 +324,7 @@ class Despidos extends Model
     }
 
       // ✅ RELACIÓN CON USUARIO QUE CREÓ LA BAJA
-    public function creadoPor()
-    {
-        return $this->belongsTo(User::class, 'creado_por');
-    }
 
-    // ✅ RELACIÓN CON USUARIO QUE ACTUALIZÓ
-    public function actualizadoPor()
-    {
-        return $this->belongsTo(User::class, 'actualizado_por');
-    }
 
     // ✅ ACCESOR PARA TIPO DE BAJA FORMATEADO
     public function getTipoBajaTextoAttribute()
@@ -344,5 +335,19 @@ class Despidos extends Model
     public function esTemporal()
     {
         return $this->tipo_baja === 'temporal';
+    }
+
+// ✅ CORREGIR LAS RELACIONES EN EL MODELO DESPIDOS (líneas 203-210)
+
+    // ✅ RELACIÓN CON USUARIO QUE CREÓ LA BAJA
+    public function creadoPor()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'creado_por');
+    }
+
+    // ✅ RELACIÓN CON USUARIO QUE ACTUALIZÓ
+    public function actualizadoPor()
+    {
+        return $this->belongsTo(\App\Models\User::class, 'actualizado_por');
     }
 }

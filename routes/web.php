@@ -56,7 +56,7 @@ Route::middleware(['auth'])->group(function () {
         Route::post('/procesar', [ImportController::class, 'importarTrabajadores'])->name('procesar');
     });
 
-    // ✅ RUTAS DE TRABAJADORES - Gestión General
+   // ✅ RUTAS DE TRABAJADORES - Gestión General
     Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
         // CRUD básico de trabajadores
         Route::get('/', [TrabajadorController::class, 'index'])->name('index');
@@ -82,6 +82,17 @@ Route::middleware(['auth'])->group(function () {
             Route::delete('/documentos', [ActPerfilTrabajadorController::class, 'deleteDocument'])->name('delete-document');
             Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
             Route::put('/estatus', [ActPerfilTrabajadorController::class, 'updateEstatus'])->name('update-estatus');
+        });
+
+        // ✅ RUTAS DE HISTORIAL EN EL PERFIL (DENTRO DEL GRUPO DE TRABAJADORES)
+        Route::prefix('{trabajador}')->name('perfil.')->group(function () {
+            // Historial de permisos
+            Route::get('/permisos/historial', [HistorialesPerfilController::class, 'permisos'])
+                ->name('permisos.historial');
+            
+            // ✅ CORREGIDO: Historial de bajas (DENTRO del grupo, SIN prefijo duplicado)
+            Route::get('/bajas/historial', [HistorialesPerfilController::class, 'bajas'])
+                ->name('bajas.historial');
         });
 
         // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - OPTIMIZADAS Y CENTRALIZADAS
@@ -114,12 +125,6 @@ Route::middleware(['auth'])->group(function () {
             Route::get('historial', 'obtenerHistorial')->name('historial');
             Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');
         });
-
-        //ruta para historiales en el perfil
-
-        // Dentro del grupo de trabajadores
-        Route::get('{trabajador}/permisos/historial', [HistorialesPerfilController::class, 'permisos'])
-            ->name('trabajadores.perfil.permisos.historial');
     });
 
     // ✅ RUTAS PARA DESPIDOS
@@ -128,6 +133,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{despido}', 'show')->name('show');
         Route::delete('/{despido}/cancelar', 'cancelar')->name('cancelar');
         Route::get('/api/estadisticas', 'estadisticas')->name('estadisticas');
+        Route::get('/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
+        ->name('detalle');
     });
 
     // ✅ RUTAS PARA PERMISOS LABORALES
@@ -136,6 +143,8 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
         Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
         Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar');
+         Route::get('/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
+        ->name('detalle');
         
         // ✅ RUTAS DE PDFs DE PERMISOS
         Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {

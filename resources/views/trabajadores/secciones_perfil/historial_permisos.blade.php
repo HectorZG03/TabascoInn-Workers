@@ -53,13 +53,19 @@
                                 <th>Fin</th>
                                 <th>Días</th>
                                 <th>Estado</th>
+                                <th>Acciones</th>
                             </tr>
                         </thead>
                         <tbody>
                             @foreach($permisos as $permiso)
                             <tr>
                                 <td>{{ $permiso->tipo_permiso_texto }}</td>
-                                <td>{{ $permiso->motivo }}</td>
+                                <td>
+                                    <div class="text-truncate" style="max-width: 200px;" 
+                                         title="{{ $permiso->motivo }}">
+                                        {{ $permiso->motivo }}
+                                    </div>
+                                </td>
                                 <td>{{ $permiso->fecha_inicio->format('d/m/Y') }}</td>
                                 <td>{{ $permiso->fecha_fin->format('d/m/Y') }}</td>
                                 <td>{{ $permiso->dias_de_permiso }}</td>
@@ -71,6 +77,16 @@
                                         @endif">
                                         {{ $permiso->estatus_permiso_texto }}
                                     </span>
+                                </td>
+                                <td>
+                                    <button type="button" 
+                                            class="btn btn-sm btn-outline-info" 
+                                            data-bs-toggle="modal" 
+                                            data-bs-target="#modalDetallePermiso"
+                                            onclick="verDetallePermiso({{ $permiso->id_permiso }})"
+                                            title="Ver detalles">
+                                        <i class="bi bi-eye"></i>
+                                    </button>
                                 </td>
                             </tr>
                             @endforeach
@@ -84,6 +100,89 @@
                     <i class="bi bi-info-circle me-2"></i> No se encontraron registros de permisos
                 </div>
             @endif
+        </div>
+    </div>
+</div>
+
+{{-- ✅ MODAL COMPLETO EN LA VISTA --}}
+<div class="modal fade" id="modalDetallePermiso" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title">
+                    <i class="bi bi-info-circle me-2"></i>Detalle del Permiso
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                {{-- Loading spinner (se muestra inicialmente) --}}
+                <div id="permiso-loading" class="text-center py-4">
+                    <div class="spinner-border text-primary"></div>
+                    <p class="mt-2">Cargando detalles...</p>
+                </div>
+
+                {{-- Contenido del modal (se muestra cuando se cargan los datos) --}}
+                <div id="permiso-content" style="display: none;">
+                    <div class="row">
+                        <div class="col-12">
+                            <table class="table table-borderless">
+                                <tr>
+                                    <td class="fw-bold">ID del Permiso:</td>
+                                    <td><span id="permiso-id"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Trabajador:</td>
+                                    <td><span id="permiso-trabajador"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Tipo de Permiso:</td>
+                                    <td><span id="permiso-tipo" class="badge bg-info"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Estado:</td>
+                                    <td><span id="permiso-estado" class="badge"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Fecha de Inicio:</td>
+                                    <td><span id="permiso-fecha-inicio"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Fecha de Fin:</td>
+                                    <td><span id="permiso-fecha-fin"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Días de Permiso:</td>
+                                    <td><span id="permiso-dias" class="badge bg-secondary"></span></td>
+                                </tr>
+                                <tr>
+                                    <td class="fw-bold">Fecha de Solicitud:</td>
+                                    <td><span id="permiso-fecha-solicitud"></span></td>
+                                </tr>
+                            </table>
+                        </div>
+                    </div>
+                    
+                    <div class="row mt-3">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Motivo del Permiso:</h6>
+                            <div id="permiso-motivo" class="bg-light p-3 rounded"></div>
+                        </div>
+                    </div>
+                    
+                    <div id="permiso-observaciones-container" class="row mt-3" style="display: none;">
+                        <div class="col-12">
+                            <h6 class="fw-bold">Observaciones:</h6>
+                            <div id="permiso-observaciones" class="bg-light p-3 rounded"></div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- Error state --}}
+                <div id="permiso-error" class="alert alert-danger" style="display: none;">
+                    <i class="bi bi-exclamation-triangle me-2"></i>
+                    Error al cargar los detalles del permiso
+                </div>
+            </div>
         </div>
     </div>
 </div>

@@ -139,6 +139,13 @@
                         <button class="nav-link" id="nav-permisos-tab" data-bs-toggle="tab" data-bs-target="#nav-permisos" type="button" role="tab">
                             <i class="bi bi-calendar-check"></i> Permisos
                         </button>
+                        <button class="nav-link" id="nav-bajas-tab" data-bs-toggle="tab" data-bs-target="#nav-bajas" type="button" role="tab">
+                            <i class="bi bi-person-x"></i> Historial de Bajas
+                            @if($trabajador->despidosActivos() > 0)
+                                <span class="badge bg-danger ms-1">{{ $trabajador->despidosActivos() }}</span>
+                            @endif
+                        </button>
+
                     </div>
                 </nav>
                 <div>
@@ -180,7 +187,6 @@
                         </div>
                     </div>
                 </div>
-
                 {{-- En el contenido de pestañas --}}
                 <div class="tab-pane fade" id="nav-permisos" role="tabpanel" aria-labelledby="nav-permisos-tab">
                     <div id="permisos-content">
@@ -189,6 +195,16 @@
                                 <span class="visually-hidden">Cargando permisos...</span>
                             </div>
                             <p class="mt-3 text-muted">Cargando historial de permisos...</p>
+                        </div>
+                    </div>
+                </div>
+                <div class="tab-pane fade" id="nav-bajas" role="tabpanel" aria-labelledby="nav-bajas-tab">
+                    <div id="bajas-content">
+                        <div class="text-center py-5">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Cargando historial de bajas...</span>
+                            </div>
+                            <p class="mt-3 text-muted">Cargando historial de bajas...</p>
                         </div>
                     </div>
                 </div>
