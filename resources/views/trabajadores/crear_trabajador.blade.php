@@ -16,7 +16,7 @@
                     <h2 class="mb-0">
                         <i class="bi bi-person-plus-fill text-primary"></i> Nuevo Trabajador
                     </h2>
-                    <p class="text-muted mb-0">Registrar un nuevo empleado en el sistema</p>
+                    <p class="text-muted mb-0">Complete todos los datos para crear el trabajador y su contrato</p>
                 </div>
                 <a href="{{ route('trabajadores.index') }}" class="btn btn-outline-secondary">
                     <i class="bi bi-arrow-left"></i> Ver Lista de Trabajadores
@@ -25,10 +25,10 @@
         </div>
     </div>
 
-    <!-- SECCION DE ALERTAS UNIDAS -->
+    <!-- ALERTAS -->
     @include('components.alertas')
 
-    <!-- ✅ FORMULARIO PRINCIPAL -->
+    <!-- ✅ FORMULARIO PRINCIPAL UNIFICADO -->
     <form action="{{ route('trabajadores.store') }}" method="POST" enctype="multipart/form-data" id="formTrabajador">
         @csrf
         
@@ -41,14 +41,17 @@
                 <!-- SECCIÓN 2: Datos Laborales -->
                 @include('trabajadores.secciones_crear.datos_laborales', ['areas' => $areas])
                 
-                <!-- SECCIÓN 3: Contacto de Emergencia -->
+                <!-- ✅ SECCIÓN 3: Estado y Contrato (NUEVA) -->
+                @include('trabajadores.secciones_crear.estado_y_contrato')
+                
+                <!-- SECCIÓN 4: Contacto de Emergencia -->
                 @include('trabajadores.secciones_crear.contacto_emergencia')
 
-                <!-- SECCIÓN 4: Botones de Acción -->
+                <!-- SECCIÓN 5: Botones de Acción -->
                 @include('trabajadores.secciones_crear.botones_accion')
             </div>
 
-            <!-- ✅ COLUMNA LATERAL: Vista Previa y Ayuda -->
+            <!-- ✅ COLUMNA LATERAL: Vista Previa -->
             <div class="col-lg-4">
                 @include('trabajadores.secciones_crear.vista_previa')
                 @include('trabajadores.secciones_crear.panel_ayuda')
@@ -57,9 +60,7 @@
     </form>
 </div>
 
-<!-- ✅ MODAL DE CONTRATO -->
-@include('trabajadores.modales.contrato')
-
-<script src="{{asset('js/crear_trabajador.js')}}"></script>
+<!-- ✅ SCRIPT SIMPLIFICADO -->
+<script src="{{ asset('js/crear_trabajador.js') }}"></script>
 
 @endsection
