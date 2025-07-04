@@ -160,8 +160,8 @@ document.addEventListener('DOMContentLoaded', function() {
         // Edad
         const fechaNacimiento = document.getElementById('fecha_nacimiento')?.value;
         if (fechaNacimiento) {
-            const edad = calcularEdad(fechaNacimiento);
-            document.getElementById('preview-edad').textContent = `${edad} años`;
+            const edad = calcularEdadDesdeFecha(fechaNacimiento);
+            document.getElementById('preview-edad').textContent = edad !== null ? `${edad} años` : '-- años';
         } else {
             document.getElementById('preview-edad').textContent = '-- años';
         }
@@ -222,10 +222,8 @@ document.addEventListener('DOMContentLoaded', function() {
         const fechaFin = document.getElementById('fecha_fin_contrato')?.value;
         const duracion = document.getElementById('duracionTexto')?.textContent;
 
-        document.getElementById('preview-contrato-inicio').textContent = fechaInicio ? 
-            new Date(fechaInicio).toLocaleDateString('es-MX') : 'Sin configurar';
-        document.getElementById('preview-contrato-fin').textContent = fechaFin ? 
-            new Date(fechaFin).toLocaleDateString('es-MX') : 'Sin configurar';
+        document.getElementById('preview-contrato-inicio').textContent = fechaInicio || 'Sin configurar';
+        document.getElementById('preview-contrato-fin').textContent = fechaFin || 'Sin configurar';
         document.getElementById('preview-contrato-duracion').textContent = 
             duracion && duracion !== 'Seleccione las fechas' ? duracion : 'Sin configurar';
     }
@@ -234,7 +232,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const horaEntrada = document.getElementById('hora_entrada')?.value;
         const horaSalida = document.getElementById('hora_salida')?.value;
 
-        if (horaEntrada && horaSalida) {
+        if (horaEntrada && horaSalida && validarFormatoHora(horaEntrada) && validarFormatoHora(horaSalida)) {
             const horas = calcularHoras(horaEntrada, horaSalida);
             const turno = calcularTurno(horaEntrada, horaSalida);
             document.getElementById('preview-horas-dia').textContent = `${horas}h`;
@@ -291,32 +289,62 @@ document.addEventListener('DOMContentLoaded', function() {
         }
     }
 
-    function calcularEdad(fecha) {
+    function calcularEdadDesdeFecha(fechaStr) {
+        if (!fechaStr) return null;
+        
+        // Validar formato DD/MM/YYYY
+        const formatoFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        if (!formatoFecha.test(fechaStr)) return null;
+        
+        const [dia, mes, año] = fechaStr.split('/').map(Number);
+        const fechaNacimiento = new Date(año, mes - 1, dia);
+        
+        if (isNaN(fechaNacimiento.getTime())) return null;
+        
         const hoy = new Date();
-        const fechaNacimiento = new Date(fecha);
         let edad = hoy.getFullYear() - fechaNacimiento.getFullYear();
-        const mes = hoy.getMonth() - fechaNacimiento.getMonth();
-        if (mes < 0 || (mes === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
+        const mesActual = hoy.getMonth() - fechaNacimiento.getMonth();
+        
+        if (mesActual < 0 || (mesActual === 0 && hoy.getDate() < fechaNacimiento.getDate())) {
             edad--;
         }
-        return edad;
+        
+        return edad >= 0 ? edad : null;
+    }
+
+    function validarFormatoHora(hora) {
+        const formatoHora = /^([01]\d|2[0-3]):([0-5]\d)$/;
+        return formatoHora.test(hora);
     }
 
     function calcularHoras(entrada, salida) {
+        if (!validarFormatoHora(entrada) || !validarFormatoHora(salida)) return 0;
+        
         const base = '2024-01-01';
-        let e = new Date(`${base}T${entrada}`);
-        let s = new Date(`${base}T${salida}`);
+        let e = new Date(`${base}T${entrada}:00`);
+        let s = new Date(`${base}T${salida}:00`);
         if (s <= e) s.setDate(s.getDate() + 1);
         return Math.round((s - e) / 3600000 * 100) / 100;
     }
 
     function calcularTurno(entrada, salida) {
-        const toMin = h => h.split(':').map(Number).reduce((h, m) => h * 60 + m);
-        const e = toMin(entrada);
-        const s = toMin(salida);
-        if (s <= e) return 'NOCTURNO';
-        if (e >= 360 && s <= 1080) return 'DIURNO';
-        if (e >= 1080 || s <= 360) return 'NOCTURNO';
+        if (!validarFormatoHora(entrada) || !validarFormatoHora(salida)) return 'INVÁLIDO';
+        
+        const [horaEnt, minEnt] = entrada.split(':').map(Number);
+        const [horaSal, minSal] = salida.split(':').map(Number);
+        
+        const totalMinEnt = horaEnt * 60 + minEnt;
+        const totalMinSal = horaSal * 60 + minSal;
+        
+        // Si cruza medianoche
+        if (totalMinSal <= totalMinEnt) return 'NOCTURNO';
+        
+        // Diurno: 06:00 - 18:00
+        if (totalMinEnt >= 360 && totalMinSal <= 1080) return 'DIURNO';
+        
+        // Nocturno: 18:00 - 06:00
+        if (totalMinEnt >= 1080 || totalMinSal <= 360) return 'NOCTURNO';
+        
         return 'MIXTO';
     }
 

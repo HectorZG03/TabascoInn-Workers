@@ -69,13 +69,15 @@
                 <label for="fecha_nacimiento" class="form-label">
                     <i class="bi bi-calendar"></i> Fecha de Nacimiento *
                 </label>
-                <input type="date" 
-                       class="form-control @error('fecha_nacimiento') is-invalid @enderror" 
+                <input type="text" 
+                       class="form-control formato-fecha @error('fecha_nacimiento') is-invalid @enderror" 
                        id="fecha_nacimiento" 
                        name="fecha_nacimiento" 
                        value="{{ old('fecha_nacimiento') }}" 
-                       max="{{ date('Y-m-d', strtotime('-18 years')) }}"
+                       placeholder="DD/MM/YYYY"
+                       maxlength="10"
                        required>
+                <div class="form-text">Formato: DD/MM/YYYY (debe ser mayor de 18 años)</div>
                 @error('fecha_nacimiento')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -223,14 +225,15 @@
                 <label for="fecha_ingreso" class="form-label">
                     <i class="bi bi-calendar-check"></i> Fecha de Ingreso *
                 </label>
-                <input type="date" 
-                    class="form-control @error('fecha_ingreso') is-invalid @enderror" 
+                <input type="text" 
+                    class="form-control formato-fecha @error('fecha_ingreso') is-invalid @enderror" 
                     id="fecha_ingreso" 
                     name="fecha_ingreso" 
-                    value="{{ old('fecha_ingreso', date('Y-m-d')) }}" 
-                    max="{{ date('Y-m-d') }}"
+                    value="{{ old('fecha_ingreso') }}" 
+                    placeholder="DD/MM/YYYY"
+                    maxlength="10"
                     required>
-                <div class="form-text">Fecha en que ingresó a la empresa</div>
+                <div class="form-text">Formato: DD/MM/YYYY (no puede ser futura)</div>
                 @error('fecha_ingreso')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

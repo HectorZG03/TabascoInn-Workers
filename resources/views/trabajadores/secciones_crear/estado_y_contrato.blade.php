@@ -47,14 +47,15 @@
                 <label for="fecha_inicio_contrato" class="form-label">
                     <i class="bi bi-calendar-plus"></i> Fecha de Inicio del Contrato *
                 </label>
-                <input type="date" 
-                       class="form-control @error('fecha_inicio_contrato') is-invalid @enderror" 
+                <input type="text" 
+                       class="form-control formato-fecha @error('fecha_inicio_contrato') is-invalid @enderror" 
                        id="fecha_inicio_contrato" 
                        name="fecha_inicio_contrato" 
-                       value="{{ old('fecha_inicio_contrato', date('Y-m-d')) }}" 
-                       min="{{ date('Y-m-d') }}"
+                       value="{{ old('fecha_inicio_contrato') }}" 
+                       placeholder="DD/MM/YYYY"
+                       maxlength="10"
                        required>
-                <div class="form-text">El contrato iniciará en esta fecha</div>
+                <div class="form-text">Formato: DD/MM/YYYY (no puede ser anterior a hoy)</div>
                 @error('fecha_inicio_contrato')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -67,13 +68,15 @@
                 <label for="fecha_fin_contrato" class="form-label">
                     <i class="bi bi-calendar-x"></i> Fecha de Fin del Contrato *
                 </label>
-                <input type="date" 
-                       class="form-control @error('fecha_fin_contrato') is-invalid @enderror" 
+                <input type="text" 
+                       class="form-control formato-fecha @error('fecha_fin_contrato') is-invalid @enderror" 
                        id="fecha_fin_contrato" 
                        name="fecha_fin_contrato" 
                        value="{{ old('fecha_fin_contrato') }}" 
+                       placeholder="DD/MM/YYYY"
+                       maxlength="10"
                        required>
-                <div class="form-text">El contrato terminará en esta fecha</div>
+                <div class="form-text">Formato: DD/MM/YYYY (debe ser posterior al inicio)</div>
                 @error('fecha_fin_contrato')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -136,6 +139,7 @@
                         <li>El contrato se generará automáticamente al crear el trabajador</li>
                         <li>La duración se calcula automáticamente (días si es menor a 30 días, meses si es mayor)</li>
                         <li>El estado inicial puede cambiarse después desde el perfil del trabajador</li>
+                        <li>Use formato DD/MM/YYYY para las fechas</li>
                     </ul>
                 </div>
             </div>
@@ -158,13 +162,12 @@ document.addEventListener('DOMContentLoaded', function() {
     });
 
     // Manejar cambios de fechas
-    fechaInicioInput.addEventListener('change', function() {
-        actualizarFechaMinima();
+    fechaInicioInput.addEventListener('input', function() {
         calcularDuracion();
         actualizarResumen();
     });
 
-    fechaFinInput.addEventListener('change', function() {
+    fechaFinInput.addEventListener('input', function() {
         calcularDuracion();
         actualizarResumen();
     });
@@ -209,15 +212,6 @@ document.addEventListener('DOMContentLoaded', function() {
         estadoPreview.style.display = 'block';
     }
 
-    function actualizarFechaMinima() {
-        const fechaInicio = fechaInicioInput.value;
-        if (fechaInicio) {
-            const minDate = new Date(fechaInicio);
-            minDate.setDate(minDate.getDate() + 1);
-            fechaFinInput.min = minDate.toISOString().split('T')[0];
-        }
-    }
-
     function calcularDuracion() {
         const fechaInicio = fechaInicioInput.value;
         const fechaFin = fechaFinInput.value;
@@ -225,12 +219,33 @@ document.addEventListener('DOMContentLoaded', function() {
         
         if (!fechaInicio || !fechaFin) {
             duracionTexto.textContent = 'Seleccione las fechas';
+            duracionTexto.className = 'text-muted';
             tipoDuracionInput.value = '';
             return;
         }
 
-        const inicio = new Date(fechaInicio);
-        const fin = new Date(fechaFin);
+        // Validar formato
+        const formatoFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/;
+        if (!formatoFecha.test(fechaInicio) || !formatoFecha.test(fechaFin)) {
+            duracionTexto.textContent = 'Formato inválido (DD/MM/YYYY)';
+            duracionTexto.className = 'text-danger';
+            tipoDuracionInput.value = '';
+            return;
+        }
+
+        // Convertir fechas DD/MM/YYYY a objeto Date
+        const [diaIni, mesIni, añoIni] = fechaInicio.split('/');
+        const [diaFin, mesFin, añoFin] = fechaFin.split('/');
+        
+        const inicio = new Date(añoIni, mesIni - 1, diaIni);
+        const fin = new Date(añoFin, mesFin - 1, diaFin);
+        
+        if (isNaN(inicio.getTime()) || isNaN(fin.getTime())) {
+            duracionTexto.textContent = 'Fechas inválidas';
+            duracionTexto.className = 'text-danger';
+            tipoDuracionInput.value = '';
+            return;
+        }
         
         if (fin <= inicio) {
             duracionTexto.textContent = 'Fecha fin debe ser posterior al inicio';
@@ -279,18 +294,13 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // Actualizar resumen
-        document.getElementById('resumenInicio').textContent = fechaInicio ? 
-            new Date(fechaInicio).toLocaleDateString('es-MX') : '-';
-        document.getElementById('resumenFin').textContent = fechaFin ? 
-            new Date(fechaFin).toLocaleDateString('es-MX') : '-';
+        document.getElementById('resumenInicio').textContent = fechaInicio || '-';
+        document.getElementById('resumenFin').textContent = fechaFin || '-';
         document.getElementById('resumenDuracion').textContent = duracion;
         document.getElementById('resumenEstado').textContent = estado === 'activo' ? 
             'Activo' : 'Período de Prueba';
         
         resumenContrato.style.display = 'block';
     }
-
-    // Configurar fecha mínima inicial
-    actualizarFechaMinima();
 });
 </script>

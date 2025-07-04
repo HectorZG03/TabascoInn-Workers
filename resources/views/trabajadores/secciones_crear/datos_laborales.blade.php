@@ -76,14 +76,15 @@
                 <label for="hora_entrada" class="form-label">
                     <i class="bi bi-clock"></i> Hora de Entrada *
                 </label>
-                <input type="time" 
-                       class="form-control @error('hora_entrada') is-invalid @enderror" 
+                <input type="text" 
+                       class="form-control formato-hora @error('hora_entrada') is-invalid @enderror" 
                        id="hora_entrada" 
                        name="hora_entrada" 
-                        pattern="[0-2][0-9]:[0-5][0-9]"
                        value="{{ old('hora_entrada') }}" 
+                       placeholder="HH:MM"
+                       maxlength="5"
                        required>
-                <div class="form-text">Hora de inicio de la jornada laboral</div>
+                <div class="form-text">Formato: HH:MM (24 horas) - Ejemplo: 08:00</div>
                 @error('hora_entrada')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -94,14 +95,15 @@
                 <label for="hora_salida" class="form-label">
                     <i class="bi bi-clock-fill"></i> Hora de Salida *
                 </label>
-                <input type="time" 
-                       class="form-control @error('hora_salida') is-invalid @enderror" 
+                <input type="text" 
+                       class="form-control formato-hora @error('hora_salida') is-invalid @enderror" 
                        id="hora_salida" 
                        name="hora_salida" 
-                        pattern="[0-2][0-9]:[0-5][0-9]"
                        value="{{ old('hora_salida') }}" 
+                       placeholder="HH:MM"
+                       maxlength="5"
                        required>
-                <div class="form-text">Hora de fin de la jornada laboral</div>
+                <div class="form-text">Formato: HH:MM (24 horas) - Ejemplo: 17:00</div>
                 @error('hora_salida')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
@@ -366,8 +368,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
     
     // Event listeners para recalcular
-    document.getElementById('hora_entrada').addEventListener('change', calcularResumen);
-    document.getElementById('hora_salida').addEventListener('change', calcularResumen);
+    document.getElementById('hora_entrada').addEventListener('input', calcularResumen);
+    document.getElementById('hora_salida').addEventListener('input', calcularResumen);
     diasCheckboxes.forEach(checkbox => {
         checkbox.addEventListener('change', calcularResumen);
     });
