@@ -180,7 +180,7 @@ class DespidosController extends Controller
     }
 
     /**
-     * Listar todos los despidos
+     * ✅ LISTAR TODOS LOS DESPIDOS - ÍNDICE LIMPIO
      */
     public function index(Request $request)
     {
@@ -223,14 +223,9 @@ class DespidosController extends Controller
 
         $despidos = $query->orderBy('fecha_baja', 'desc')->paginate(20);
 
-        // ✅ ESTADÍSTICAS ACTUALIZADAS
-        $stats = [
-            'total_activos' => Despidos::activos()->count(),
-            'total_cancelados' => Despidos::cancelados()->count(),
-            'este_mes' => Despidos::delMesActual()->count(),
-            'este_año' => Despidos::delAnoActual()->count(),
-            'voluntarias' => Despidos::activos()->where('condicion_salida', 'Voluntaria')->count(),
-        ];
+        // ✅ OBTENER ESTADÍSTICAS DEL CONTROLADOR DEDICADO
+        $estadisticasController = new EstadisticasController();
+        $stats = $estadisticasController->obtenerEstadisticasDespidos();
 
         // ✅ CONDICIONES DINÁMICAS (incluye las personalizadas ya guardadas)
         $condicionesBasicas = [
@@ -357,19 +352,16 @@ class DespidosController extends Controller
     }
 
     /**
-     * Obtener estadísticas para dashboard
+     * ✅ ESTADÍSTICAS DELEGADAS AL CONTROLADOR ESPECIALIZADO
      */
     public function estadisticas()
     {
         $añoActual = Carbon::now()->year;
         
-        $estadisticas = [
-            'totales' => [
-                'total_activos' => Despidos::activos()->count(),
-                'total_cancelados' => Despidos::cancelados()->count(),
-                'este_mes' => Despidos::delMesActual()->count(),
-                'este_año' => Despidos::delAnoActual()->count(),
-            ],
+        $estadisticasController = new EstadisticasController();
+        $estadisticasBasicas = $estadisticasController->obtenerEstadisticasDespidos();
+        
+        $estadisticas = array_merge($estadisticasBasicas, [
             'por_mes' => Despidos::estadisticasPorMes($añoActual),
             'por_motivo' => Despidos::estadisticasPorMotivo($añoActual),
             'por_condicion' => Despidos::activos()
@@ -380,7 +372,7 @@ class DespidosController extends Controller
                                      ->get(),
             'por_estado' => Despidos::contarPorEstado(),
             'multiples_bajas' => Despidos::trabajadoresConMultiplesBajas()->take(10),
-        ];
+        ]);
 
         return response()->json($estadisticas);
     }

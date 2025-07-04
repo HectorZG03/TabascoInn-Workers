@@ -35,45 +35,11 @@
         </div>
     </div>
 
-    <!-- ✅ ESTADÍSTICAS ACTUALIZADAS -->
-    <div class="row mb-4">
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm" style="border-left: 4px solid #be0b0b !important;">
-                <div class="card-body text-center">
-                    <i class="bi bi-people-fill fs-2 text-danger"></i>
-                    <h4 class="mt-2 mb-1 text-danger">{{ $stats['total_activos'] }}</h4>
-                    <small class="text-muted">Bajas Activas</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm" style="border-left: 4px solid #f44336 !important;">
-                <div class="card-body text-center">
-                    <i class="bi bi-calendar-month fs-2" style="color: #f44336;"></i>
-                    <h4 class="mt-2 mb-1" style="color: #f44336;">{{ $stats['este_mes'] }}</h4>
-                    <small class="text-muted">Este Mes</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm" style="border-left: 4px solid #e91e63 !important;">
-                <div class="card-body text-center">
-                    <i class="bi bi-calendar-year fs-2" style="color: #e91e63;"></i>
-                    <h4 class="mt-2 mb-1" style="color: #e91e63;">{{ $stats['este_año'] }}</h4>
-                    <small class="text-muted">Este Año</small>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3 mb-3">
-            <div class="card border-0 shadow-sm" style="border-left: 4px solid #9c27b0 !important;">
-                <div class="card-body text-center">
-                    <i class="bi bi-arrow-clockwise fs-2" style="color: #9c27b0;"></i>
-                    <h4 class="mt-2 mb-1" style="color: #9c27b0;">{{ $stats['total_cancelados'] }}</h4>
-                    <small class="text-muted">Bajas Canceladas</small>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- ✅ USAR EL NUEVO COMPONENTE DE ESTADÍSTICAS --}}
+    @include('components.estadisticas', [
+        'tipo' => 'despidos',
+        'stats' => $stats
+    ])
 
     <!-- ✅ FILTROS ACTUALIZADOS -->
     <div class="row mb-4">

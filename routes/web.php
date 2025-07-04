@@ -13,6 +13,7 @@ use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
+use App\Http\Controllers\EstadisticasController; // ✅ NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -174,5 +175,8 @@ Route::middleware(['auth'])->group(function () {
             'todos' => \App\Models\PermisosLaborales::getTodosLosMotivos()
         ]);
     })->name('api.motivos');
+    
+    // ✅ NUEVA RUTA API PARA ESTADÍSTICAS
+    Route::get('/api/estadisticas', [EstadisticasController::class, 'obtenerEstadisticas'])->name('api.estadisticas');
     
 });

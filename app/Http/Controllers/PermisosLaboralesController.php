@@ -242,8 +242,9 @@ class PermisosLaboralesController extends Controller
             return back()->withErrors(['error' => 'Error al asignar el permiso: ' . $e->getMessage()]);
         }
     }
+    
     /**
-     * ✅ LISTAR PERMISOS - VERSIÓN MEJORADA CON TIPOS DINÁMICOS
+     * ✅ LISTAR PERMISOS - ÍNDICE LIMPIO CON ESTADÍSTICAS DELEGADAS
      */
     public function index(Request $request)
     {
@@ -292,19 +293,9 @@ class PermisosLaboralesController extends Controller
 
         $permisos = $query->orderBy('created_at', 'desc')->paginate(20);
 
-        // ✅ ESTADÍSTICAS
-        $stats = [
-            'total' => PermisosLaborales::count(),
-            'activos' => PermisosLaborales::where('estatus_permiso', 'activo')->count(),
-            'este_mes' => PermisosLaborales::whereMonth('fecha_inicio', now()->month)
-                                        ->whereYear('fecha_inicio', now()->year)
-                                        ->count(),
-            'finalizados' => PermisosLaborales::where('estatus_permiso', 'finalizado')->count(),
-            'cancelados' => PermisosLaborales::where('estatus_permiso', 'cancelado')->count(),
-            'vencidos' => PermisosLaborales::where('fecha_fin', '<', now())
-                                        ->where('estatus_permiso', 'activo')
-                                        ->count(),
-        ];
+        // ✅ OBTENER ESTADÍSTICAS DEL CONTROLADOR DEDICADO
+        $estadisticasController = new EstadisticasController();
+        $stats = $estadisticasController->obtenerEstadisticasPermisos();
 
         // ✅ TIPOS DINÁMICOS (básicos + personalizados existentes)
         $tiposBasicos = PermisosLaborales::getTiposDisponibles();
@@ -494,22 +485,16 @@ class PermisosLaboralesController extends Controller
     }
 
     /**
-     * ✅ ESTADÍSTICAS
+     * ✅ ESTADÍSTICAS DELEGADAS AL CONTROLADOR ESPECIALIZADO
      */
     public function estadisticas()
     {
         $añoActual = Carbon::now()->year;
         
-        $estadisticas = [
-            'totales' => [
-                'total' => PermisosLaborales::count(),
-                'activos' => PermisosLaborales::where('estatus_permiso', 'activo')->count(),
-                'finalizados' => PermisosLaborales::where('estatus_permiso', 'finalizado')->count(),
-                'cancelados' => PermisosLaborales::where('estatus_permiso', 'cancelado')->count(),
-                'este_mes' => PermisosLaborales::whereMonth('fecha_inicio', now()->month)
-                                             ->whereYear('fecha_inicio', now()->year)
-                                             ->count(),
-            ],
+        $estadisticasController = new EstadisticasController();
+        $estadisticasBasicas = $estadisticasController->obtenerEstadisticasPermisos();
+        
+        $estadisticas = array_merge($estadisticasBasicas, [
             'por_tipo' => PermisosLaborales::selectRaw('tipo_permiso, COUNT(*) as total')
                                           ->whereYear('fecha_inicio', $añoActual)
                                           ->groupBy('tipo_permiso')
@@ -526,7 +511,7 @@ class PermisosLaboralesController extends Controller
                                          ->groupBy('mes')
                                          ->orderBy('mes')
                                          ->get(),
-        ];
+        ]);
 
         return response()->json($estadisticas);
     }

@@ -16,7 +16,7 @@ use Carbon\Carbon;
 class TrabajadorController extends Controller
 {
     /**
-     * ✅ SOLUCIÓN AL ERROR: Calcular antiguedad en el controlador
+     * ✅ ÍNDICE LIMPIO - Estadísticas movidas al EstadisticasController
      */
     public function index(Request $request)
     {
@@ -70,17 +70,9 @@ class TrabajadorController extends Controller
             $trabajador->antiguedad_texto = $this->calcularAntiguedadTexto($trabajador->antiguedad_calculada);
         }
 
-        // ✅ ESTADÍSTICAS OPTIMIZADAS
-        $stats = [
-            'activos' => Trabajador::where('estatus', 'activo')->count(),
-            'total' => Trabajador::where('estatus', '!=', 'inactivo')->count(),
-            'con_permiso' => Trabajador::where('estatus', 'permiso')->count(),
-            'suspendidos' => Trabajador::where('estatus', 'suspendido')->count(),    
-            'en_prueba' => Trabajador::where('estatus', 'prueba')->count(),
-            'por_estado' => [
-                'inactivo' => Trabajador::where('estatus', 'inactivo')->count(),
-            ]
-        ];
+        // ✅ OBTENER ESTADÍSTICAS DEL CONTROLADOR DEDICADO
+        $estadisticasController = new EstadisticasController();
+        $stats = $estadisticasController->obtenerEstadisticasTrabajadores();
 
         $areas = Area::orderBy('nombre_area')->get();
         $categorias = collect();

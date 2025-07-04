@@ -30,110 +30,11 @@
 
     @include('components.alertas')
 
-    <!-- ✅ ESTADÍSTICAS ACTUALIZADAS PARA 5 ESTADOS -->
-    <div class="row mb-4">
-        <!-- Trabajadores Activos -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-person-check fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['activos'] ?? 0 }}</div>
-                            <div class="small text-white-75">Activos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Con Permiso -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-info text-white">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-calendar-event fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['con_permiso'] ?? 0 }}</div>
-                            <div class="small text-white-75">Con Permiso</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Suspendidos -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-danger text-white">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-exclamation-triangle fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['suspendidos'] ?? 0 }}</div>
-                            <div class="small text-white-75">Suspendidos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- En Prueba -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-warning text-dark">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-clock-history fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['en_prueba'] ?? 0 }}</div>
-                            <div class="small">En Prueba</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Total -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-people fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['total'] ?? 0 }}</div>
-                            <div class="small text-white-75">Total</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        
-        <!-- Inactivos -->
-        <div class="col-md-2">
-            <div class="card border-0 shadow-sm bg-secondary text-white">
-                <div class="card-body p-3">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-person-x fs-3"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-2">
-                            <div class="fs-5 fw-bold">{{ $stats['por_estado']['inactivo'] ?? 0 }}</div>
-                            <div class="small text-white-75">Inactivos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- ✅ USAR EL NUEVO COMPONENTE DE ESTADÍSTICAS --}}
+    @include('components.estadisticas', [
+        'tipo' => 'trabajadores',
+        'stats' => $stats
+    ])
 
     <!-- Filtros y Búsqueda -->
     <div class="card shadow mb-4">
@@ -609,8 +510,6 @@
         ])
     @endforeach
 @endif
-
-{{-- ✅ SCRIPTS DE LA VISTA PRINCIPAL --}}
 
 {{-- ✅ CARGAR FORMATO GLOBAL ANTES DE LOS MODALES --}}
 <script src="{{ asset('js/formato-global.js') }}"></script>

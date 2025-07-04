@@ -21,69 +21,11 @@
         </div>
     </div>
 
-    <!-- Estadísticas -->
-    <div class="row mb-4">
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-info text-white">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-calendar-check fs-1"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="fs-4 fw-bold">{{ $stats['activos'] ?? 0 }}</div>
-                            <div class="text-white-50">Permisos Activos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-primary text-white">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-calendar-range fs-1"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="fs-4 fw-bold">{{ $stats['total'] ?? 0 }}</div>
-                            <div class="text-white-50">Total Permisos</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-success text-white">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-calendar-month fs-1"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="fs-4 fw-bold">{{ $stats['este_mes'] ?? 0 }}</div>
-                            <div class="text-white-50">Este Mes</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-        <div class="col-md-3">
-            <div class="card border-0 shadow-sm bg-warning text-dark">
-                <div class="card-body">
-                    <div class="d-flex align-items-center">
-                        <div class="flex-shrink-0">
-                            <i class="bi bi-calendar-x fs-1"></i>
-                        </div>
-                        <div class="flex-grow-1 ms-3">
-                            <div class="fs-4 fw-bold">{{ $stats['finalizados'] ?? 0 }}</div>
-                            <div class="text-dark">Finalizados</div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
+    {{-- ✅ USAR EL NUEVO COMPONENTE DE ESTADÍSTICAS --}}
+    @include('components.estadisticas', [
+        'tipo' => 'permisos',
+        'stats' => $stats
+    ])
 
     <!-- Filtros -->
     <div class="card shadow mb-4">
