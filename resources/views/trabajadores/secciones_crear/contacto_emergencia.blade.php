@@ -19,6 +19,7 @@
                     class="form-control @error('contacto_nombre_completo') is-invalid @enderror" 
                     id="contacto_nombre_completo" 
                     name="contacto_nombre_completo" 
+                    style="text-transform: uppercase"
                     value="{{ old('contacto_nombre_completo') }}" 
                     placeholder="Nombre completo del contacto"
                     maxlength="150">
@@ -101,7 +102,8 @@
                 </label>
                 <textarea class="form-control @error('contacto_direccion') is-invalid @enderror" 
                         id="contacto_direccion" 
-                        name="contacto_direccion" 
+                        name="contacto_direccion"
+                        style="text-transform : uppercase" 
                         rows="2" 
                         placeholder="Dirección completa del contacto de emergencia">{{ old('contacto_direccion') }}</textarea>
                 <div class="form-text">Opcional - Dirección donde se puede localizar al contacto</div>

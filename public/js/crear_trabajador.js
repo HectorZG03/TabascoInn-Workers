@@ -1,10 +1,11 @@
 /**
- * ✅ CREAR TRABAJADOR CON FORMATO CONTROLADO
- * Sistema unificado con formato estricto para fechas (DD/MM/YYYY) y horas (HH:MM)
+ * ✅ CREAR TRABAJADOR SIMPLIFICADO
+ * Script optimizado que usa funciones globales para formato
+ * Sin duplicación de código, enfoque directo y simple
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Iniciando sistema de creación de trabajadores con formato controlado');
+    console.log('🚀 Iniciando sistema de creación de trabajadores');
 
     // Elementos principales
     const form = document.getElementById('formTrabajador');
@@ -20,278 +21,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // 🎯 INICIALIZACIÓN
     // =================================
     
-    // Configurar formateo de campos
-    configurarFormateoCampos();
+    // Configurar fechas por defecto
+    configurarFechasPorDefecto();
     
     // Configurar campos con mayúsculas
     configurarCamposMayusculas();
     
     // Configurar alertas de éxito
     configurarAlertasExito();
-
-    // =================================
-    // 📅 SISTEMA DE FORMATEO DE FECHAS Y HORAS
-    // =================================
-
-    function configurarFormateoCampos() {
-        // Configurar campos de fecha
-        const camposFecha = document.querySelectorAll('.formato-fecha');
-        camposFecha.forEach(campo => {
-            configurarCampoFecha(campo);
-        });
-
-        // Configurar campos de hora
-        const camposHora = document.querySelectorAll('.formato-hora');
-        camposHora.forEach(campo => {
-            configurarCampoHora(campo);
-        });
-
-        // Configurar fechas por defecto
-        configurarFechasPorDefecto();
-    }
-
-    function configurarCampoFecha(campo) {
-        // Formatear mientras se escribe
-        campo.addEventListener('input', function(e) {
-            const valor = e.target.value.replace(/\D/g, ''); // Solo números
-            let fechaFormateada = '';
-            
-            if (valor.length >= 1) {
-                fechaFormateada = valor.substring(0, 2);
-            }
-            if (valor.length >= 3) {
-                fechaFormateada += '/' + valor.substring(2, 4);
-            }
-            if (valor.length >= 5) {
-                fechaFormateada += '/' + valor.substring(4, 8);
-            }
-            
-            e.target.value = fechaFormateada;
-        });
-
-        // Validar al perder foco
-        campo.addEventListener('blur', function(e) {
-            validarCampoFecha(e.target);
-        });
-
-        // Permitir solo números y barras
-        campo.addEventListener('keypress', function(e) {
-            const char = String.fromCharCode(e.which);
-            if (!/[\d/]/.test(char)) {
-                e.preventDefault();
-            }
-        });
-    }
-
-    function configurarCampoHora(campo) {
-        // Formatear mientras se escribe
-        campo.addEventListener('input', function(e) {
-            const valor = e.target.value.replace(/\D/g, ''); // Solo números
-            let horaFormateada = '';
-            
-            if (valor.length >= 1) {
-                horaFormateada = valor.substring(0, 2);
-            }
-            if (valor.length >= 3) {
-                horaFormateada += ':' + valor.substring(2, 4);
-            }
-            
-            e.target.value = horaFormateada;
-        });
-
-        // Validar al perder foco
-        campo.addEventListener('blur', function(e) {
-            validarCampoHora(e.target);
-        });
-
-        // Permitir solo números y dos puntos
-        campo.addEventListener('keypress', function(e) {
-            const char = String.fromCharCode(e.which);
-            if (!/[\d:]/.test(char)) {
-                e.preventDefault();
-            }
-        });
-    }
-
-    function validarCampoFecha(campo) {
-        const valor = campo.value.trim();
-        
-        if (!valor) {
-            limpiarValidacion(campo);
-            return true;
-        }
-
-        // Validar formato DD/MM/YYYY
-        const formatoFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-        if (!formatoFecha.test(valor)) {
-            mostrarErrorValidacion(campo, 'Formato inválido. Use DD/MM/YYYY');
-            return false;
-        }
-
-        const [dia, mes, año] = valor.split('/').map(Number);
-        
-        // Validar rangos básicos
-        if (dia < 1 || dia > 31) {
-            mostrarErrorValidacion(campo, 'Día inválido (1-31)');
-            return false;
-        }
-        
-        if (mes < 1 || mes > 12) {
-            mostrarErrorValidacion(campo, 'Mes inválido (1-12)');
-            return false;
-        }
-        
-        if (año < 1900 || año > 2100) {
-            mostrarErrorValidacion(campo, 'Año inválido (1900-2100)');
-            return false;
-        }
-
-        // Crear fecha para validación
-        const fecha = new Date(año, mes - 1, dia);
-        if (fecha.getDate() !== dia || fecha.getMonth() !== mes - 1 || fecha.getFullYear() !== año) {
-            mostrarErrorValidacion(campo, 'Fecha inválida');
-            return false;
-        }
-
-        // Validaciones específicas por campo
-        const hoy = new Date();
-        const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-        
-        if (campo.id === 'fecha_nacimiento') {
-            const hace18años = new Date();
-            hace18años.setFullYear(hace18años.getFullYear() - 18);
-            
-            if (fecha > hace18años) {
-                mostrarErrorValidacion(campo, 'Debe ser mayor de 18 años');
-                return false;
-            }
-        }
-        
-        if (campo.id === 'fecha_ingreso') {
-            if (fecha > fechaHoy) {
-                mostrarErrorValidacion(campo, 'No puede ser fecha futura');
-                return false;
-            }
-        }
-        
-        if (campo.id === 'fecha_inicio_contrato') {
-            if (fecha < fechaHoy) {
-                mostrarErrorValidacion(campo, 'No puede ser fecha pasada');
-                return false;
-            }
-        }
-        
-        if (campo.id === 'fecha_fin_contrato') {
-            const fechaInicio = get('fecha_inicio_contrato')?.value;
-            if (fechaInicio && validarFormatoFecha(fechaInicio)) {
-                const [diaIni, mesIni, añoIni] = fechaInicio.split('/').map(Number);
-                const fechaInicioObj = new Date(añoIni, mesIni - 1, diaIni);
-                
-                if (fecha <= fechaInicioObj) {
-                    mostrarErrorValidacion(campo, 'Debe ser posterior a la fecha de inicio');
-                    return false;
-                }
-            }
-        }
-
-        mostrarValidacionCorrecta(campo);
-        return true;
-    }
-
-    function validarCampoHora(campo) {
-        const valor = campo.value.trim();
-        
-        if (!valor) {
-            limpiarValidacion(campo);
-            return true;
-        }
-
-        // Validar formato HH:MM
-        const formatoHora = /^([01]\d|2[0-3]):([0-5]\d)$/;
-        if (!formatoHora.test(valor)) {
-            mostrarErrorValidacion(campo, 'Formato inválido. Use HH:MM (24h)');
-            return false;
-        }
-
-        const [horas, minutos] = valor.split(':').map(Number);
-        
-        if (horas < 0 || horas > 23) {
-            mostrarErrorValidacion(campo, 'Hora inválida (0-23)');
-            return false;
-        }
-        
-        if (minutos < 0 || minutos > 59) {
-            mostrarErrorValidacion(campo, 'Minutos inválidos (0-59)');
-            return false;
-        }
-
-        mostrarValidacionCorrecta(campo);
-        
-        // Validar horarios después de ambos campos
-        if (campo.id === 'hora_entrada' || campo.id === 'hora_salida') {
-            setTimeout(() => validarHorarios(), 100);
-        }
-        
-        return true;
-    }
-
-    function validarFormatoFecha(fecha) {
-        const formatoFecha = /^(\d{2})\/(\d{2})\/(\d{4})$/;
-        return formatoFecha.test(fecha);
-    }
-
-    function mostrarErrorValidacion(campo, mensaje) {
-        campo.classList.remove('is-valid');
-        campo.classList.add('is-invalid');
-        
-        let feedback = campo.parentNode.querySelector('.invalid-feedback');
-        if (!feedback) {
-            feedback = document.createElement('div');
-            feedback.className = 'invalid-feedback';
-            campo.parentNode.appendChild(feedback);
-        }
-        feedback.textContent = mensaje;
-    }
-
-    function mostrarValidacionCorrecta(campo) {
-        campo.classList.remove('is-invalid');
-        campo.classList.add('is-valid');
-        
-        const feedback = campo.parentNode.querySelector('.invalid-feedback');
-        if (feedback) {
-            feedback.remove();
-        }
-    }
-
-    function limpiarValidacion(campo) {
-        campo.classList.remove('is-valid', 'is-invalid');
-        const feedback = campo.parentNode.querySelector('.invalid-feedback');
-        if (feedback) {
-            feedback.remove();
-        }
-    }
-
-    function configurarFechasPorDefecto() {
-        const fechaIngreso = get('fecha_ingreso');
-        const fechaInicioContrato = get('fecha_inicio_contrato');
-        const hoy = new Date();
-        const fechaHoy = formatearFecha(hoy);
-        
-        if (fechaIngreso && !fechaIngreso.value) {
-            fechaIngreso.value = fechaHoy;
-        }
-        
-        if (fechaInicioContrato && !fechaInicioContrato.value) {
-            fechaInicioContrato.value = fechaHoy;
-        }
-    }
-
-    function formatearFecha(fecha) {
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const año = fecha.getFullYear();
-        return `${dia}/${mes}/${año}`;
-    }
 
     // =================================
     // 🏢 GESTIÓN DE ÁREAS Y CATEGORÍAS
@@ -343,39 +80,22 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =================================
-    // 🕒 GESTIÓN DE HORARIOS
+    // 🕒 VALIDACIÓN DE HORARIOS
     // =================================
     
+    [horaEntradaInput, horaSalidaInput].forEach(input => {
+        if (input) {
+            input.addEventListener('input', validarHorarios);
+            input.addEventListener('change', validarHorarios);
+        }
+    });
+
     function validarHorarios() {
-        const entrada = horaEntradaInput?.value;
-        const salida = horaSalidaInput?.value;
-        
-        if (!entrada || !salida) {
-            actualizarVistaPrevia();
-            return;
+        // Usar función global para validar rango de horario
+        if (window.FormatoGlobal && horaEntradaInput && horaSalidaInput) {
+            window.FormatoGlobal.validarRangoHorario(horaEntradaInput, horaSalidaInput);
         }
-
-        if (!validarFormatoHora(entrada) || !validarFormatoHora(salida)) {
-            return;
-        }
-
-        // Calcular horas
-        const horas = calcularHoras(entrada, salida);
-        
-        if (horas < 1 || horas > 16) {
-            mostrarErrorValidacion(horaSalidaInput, 
-                `Horario inválido: ${horas}h. Debe estar entre 1 y 16 horas.`);
-        } else {
-            mostrarValidacionCorrecta(horaEntradaInput);
-            mostrarValidacionCorrecta(horaSalidaInput);
-        }
-
         actualizarVistaPrevia();
-    }
-
-    function validarFormatoHora(hora) {
-        const formatoHora = /^([01]\d|2[0-3]):([0-5]\d)$/;
-        return formatoHora.test(hora);
     }
 
     // =================================
@@ -439,6 +159,28 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =================================
+    // ⚡ VALIDACIÓN EN TIEMPO REAL
+    // =================================
+    
+    // Validar relaciones entre fechas de contrato
+    const fechaInicio = get('fecha_inicio_contrato');
+    const fechaFin = get('fecha_fin_contrato');
+    
+    if (fechaInicio && fechaFin) {
+        [fechaInicio, fechaFin].forEach(campo => {
+            campo.addEventListener('input', () => {
+                setTimeout(() => {
+                    // Usar función global para validar rango de fechas
+                    if (window.FormatoGlobal) {
+                        window.FormatoGlobal.validarRangoFechas(fechaInicio, fechaFin);
+                    }
+                    actualizarVistaPrevia();
+                }, 500);
+            });
+        });
+    }
+
+    // =================================
     // 📝 VALIDACIÓN DEL FORMULARIO
     // =================================
     
@@ -483,14 +225,17 @@ document.addEventListener('DOMContentLoaded', function() {
                 elemento?.classList.add('is-invalid');
                 esValido = false;
             } else {
-                // Validar formato específico
-                if (campo === 'fecha_nacimiento' || campo === 'fecha_ingreso' || 
-                    campo === 'fecha_inicio_contrato' || campo === 'fecha_fin_contrato') {
-                    if (!validarCampoFecha(elemento)) {
+                elemento?.classList.remove('is-invalid');
+                
+                // Validar formato específico usando funciones globales
+                if (campo.includes('fecha') && window.validarFormatoFecha) {
+                    if (!window.validarFormatoFecha(elemento.value)) {
+                        elemento.classList.add('is-invalid');
                         esValido = false;
                     }
-                } else if (campo === 'hora_entrada' || campo === 'hora_salida') {
-                    if (!validarCampoHora(elemento)) {
+                } else if (campo.includes('hora') && window.validarFormatoHora) {
+                    if (!window.validarFormatoHora(elemento.value)) {
+                        elemento.classList.add('is-invalid');
                         esValido = false;
                     }
                 }
@@ -502,6 +247,20 @@ document.addEventListener('DOMContentLoaded', function() {
         if (diasSeleccionados.length === 0) {
             mostrarAlerta('Debe seleccionar al menos un día laborable', 'warning');
             esValido = false;
+        }
+
+        // Validar rango de horario usando función global
+        if (window.FormatoGlobal && horaEntradaInput && horaSalidaInput) {
+            if (!window.FormatoGlobal.validarRangoHorario(horaEntradaInput, horaSalidaInput)) {
+                esValido = false;
+            }
+        }
+
+        // Validar rango de fechas usando función global
+        if (window.FormatoGlobal && fechaInicio && fechaFin) {
+            if (!window.FormatoGlobal.validarRangoFechas(fechaInicio, fechaFin)) {
+                esValido = false;
+            }
         }
 
         if (!esValido) {
@@ -526,13 +285,19 @@ document.addEventListener('DOMContentLoaded', function() {
     // Event listeners para actualizar vista previa
     const camposConVistaPrevia = [
         'nombre_trabajador', 'ape_pat', 'ape_mat', 'fecha_nacimiento', 'sueldo_diarios',
-        'ciudad_actual', 'estado_actual', 'hora_entrada', 'hora_salida'
+        'ciudad_actual', 'estado_actual', 'hora_entrada', 'hora_salida', 'estatus',
+        'fecha_inicio_contrato', 'fecha_fin_contrato'
     ];
 
     camposConVistaPrevia.forEach(campo => {
         const elemento = get(campo);
         if (elemento) {
             elemento.addEventListener('input', () => {
+                if (typeof actualizarVistaPrevia === 'function') {
+                    actualizarVistaPrevia();
+                }
+            });
+            elemento.addEventListener('change', () => {
                 if (typeof actualizarVistaPrevia === 'function') {
                     actualizarVistaPrevia();
                 }
@@ -544,10 +309,33 @@ document.addEventListener('DOMContentLoaded', function() {
     // 🛠️ FUNCIONES AUXILIARES
     // =================================
 
+    function configurarFechasPorDefecto() {
+        const fechaIngreso = get('fecha_ingreso');
+        const fechaInicioContrato = get('fecha_inicio_contrato');
+        const hoy = new Date();
+        const fechaHoy = formatearFechaParaInput(hoy);
+        
+        if (fechaIngreso && !fechaIngreso.value) {
+            fechaIngreso.value = fechaHoy;
+        }
+        
+        if (fechaInicioContrato && !fechaInicioContrato.value) {
+            fechaInicioContrato.value = fechaHoy;
+        }
+    }
+
+    function formatearFechaParaInput(fecha) {
+        const dia = String(fecha.getDate()).padStart(2, '0');
+        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+        const año = fecha.getFullYear();
+        return `${dia}/${mes}/${año}`;
+    }
+
     function configurarCamposMayusculas() {
         const camposMayusculas = [
             'nombre_trabajador', 'ape_pat', 'ape_mat', 'ciudad_actual', 
-            'estado_actual', 'curp', 'rfc', 'lugar_nacimiento', 'direccion'
+            'estado_actual', 'curp', 'rfc', 'lugar_nacimiento', 'direccion',
+            'beneficiario_nombre', 'contacto_nombre_completo', 'contacto_direccion'
         ];
 
         camposMayusculas.forEach(campo => {
@@ -570,14 +358,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 5000);
             window.scrollTo({ top: 0, behavior: 'smooth' });
         }
-    }
-
-    function calcularHoras(entrada, salida) {
-        const base = '2024-01-01';
-        let e = new Date(`${base}T${entrada}:00`);
-        let s = new Date(`${base}T${salida}:00`);
-        if (s <= e) s.setDate(s.getDate() + 1);
-        return Math.round((s - e) / 3600000 * 100) / 100;
     }
 
     function mostrarAlerta(mensaje, tipo = 'info') {
@@ -614,5 +394,5 @@ document.addEventListener('DOMContentLoaded', function() {
         actualizarVistaPrevia();
     }
 
-    console.log('✅ Sistema de creación de trabajadores con formato controlado inicializado');
+    console.log('✅ Sistema de creación de trabajadores inicializado correctamente');
 });

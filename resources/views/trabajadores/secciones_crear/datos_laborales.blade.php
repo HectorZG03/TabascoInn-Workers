@@ -122,7 +122,7 @@
                             <div class="col-md-3 col-6 mb-2">
                                 <div class="form-check">
                                     <input class="form-check-input" 
-                                           type="checkbox" 
+                                           type="checkbox"
                                            id="dia_{{ $valor }}" 
                                            name="dias_laborables[]" 
                                            value="{{ $valor }}"
@@ -182,6 +182,7 @@
                                 <input type="text" 
                                        class="form-control @error('beneficiario_nombre') is-invalid @enderror" 
                                        id="beneficiario_nombre" 
+                                       style="text-transform: uppercase"
                                        name="beneficiario_nombre" 
                                        value="{{ old('beneficiario_nombre') }}" 
                                        placeholder="Nombre del beneficiario"

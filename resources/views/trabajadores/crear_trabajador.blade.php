@@ -60,7 +60,8 @@
     </form>
 </div>
 
-<!-- ✅ SCRIPT SIMPLIFICADO -->
+<!-- ✅ SCRIPTS: PRIMERO EL GLOBAL, LUEGO EL ESPECÍFICO -->
+<script src="{{ asset('js/formato-global.js') }}"></script>
 <script src="{{ asset('js/crear_trabajador.js') }}"></script>
 
 @endsection
