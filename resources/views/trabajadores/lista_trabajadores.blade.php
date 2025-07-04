@@ -611,6 +611,9 @@
 @endif
 
 {{-- ✅ SCRIPTS DE LA VISTA PRINCIPAL --}}
+
+{{-- ✅ CARGAR FORMATO GLOBAL ANTES DE LOS MODALES --}}
+<script src="{{ asset('js/formato-global.js') }}"></script>
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ✅ FUNCIONALIDAD DE FILTROS Y BÚSQUEDA

@@ -235,7 +235,6 @@
                                         </span>
                                     </td>
                                     <td>
-                                        {{-- ✅ USAR ESTATUS_PERMISO EN LUGAR DE FECHA --}}
                                         @if($permiso->estatus_permiso === 'activo')
                                             @if($permiso->fecha_fin >= now())
                                                 <span class="badge bg-success">Activo</span>
@@ -272,9 +271,6 @@
                                         @endif
                                     </td>
                                     <td>
-                                    {{-- ✅ REEMPLAZAR LA SECCIÓN DE ACCIONES EN LA TABLA DE permisos_lista.blade.php --}}
-
-                                    <td>
                                         <div class="btn-group btn-group-sm" role="group">
                                             <!-- Ver detalles -->
                                             <button type="button" 
@@ -285,15 +281,7 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
-                                            {{-- ✅ BOTÓN PARA GENERAR/DESCARGAR PDF --}}
-                                            <a href="{{ route('permisos.pdf', $permiso->id_permiso) }}" 
-                                            class="btn btn-outline-success"
-                                            title="Generar y Descargar PDF"
-                                            target="_blank">
-                                                <i class="bi bi-file-earmark-pdf"></i>
-                                            </a>
-                                            
-                                            {{-- ✅ SOLO MOSTRAR ACCIONES DE GESTIÓN SI EL PERMISO ESTÁ ACTIVO --}}
+                                            <!-- Solo mostrar acciones de gestión si el permiso está activo -->
                                             @if($permiso->estatus_permiso === 'activo')
                                                 <button type="button" 
                                                         class="btn btn-outline-warning"
@@ -308,45 +296,14 @@
                                                         onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
-                                            @else
-                                                {{-- ✅ SI EL PERMISO NO ESTÁ ACTIVO, MOSTRAR OPCIONES LIMITADAS --}}
-                                                @if($permiso->tiene_pdf && $permiso->pdf_necesita_regeneracion)
-                                                    <button type="button" 
-                                                            class="btn btn-outline-info"
-                                                            title="Regenerar PDF (datos actualizados)"
-                                                            onclick="regenerarPdf({{ $permiso->id_permiso }})">
-                                                        <i class="bi bi-arrow-clockwise"></i>
-                                                    </button>
-                                                @endif
                                             @endif
                                         </div>
-
-                                        {{-- ✅ BADGE INDICADOR DE PDF --}}
-                                        @if($permiso->tiene_pdf)
-                                            <div class="mt-1">
-                                                <span class="badge bg-success" title="PDF disponible">
-                                                    <i class="bi bi-file-earmark-pdf"></i> PDF
-                                                </span>
-                                                @if($permiso->pdf_necesita_regeneracion)
-                                                    <span class="badge bg-warning text-dark" title="PDF desactualizado">
-                                                        <i class="bi bi-exclamation-triangle"></i>
-                                                    </span>
-                                                @endif
-                                            </div>
-                                        @else
-                                            <div class="mt-1">
-                                                <span class="badge bg-light text-muted" title="Sin PDF generado">
-                                                    <i class="bi bi-file-earmark"></i> Sin PDF
-                                                </span>
-                                            </div>
-                                        @endif
 
                                     <!-- Modal de detalles del permiso -->
                                     <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1" aria-labelledby="modalDetallesLabel{{ $permiso->id_permiso }}" aria-hidden="true">
                                         <div class="modal-dialog modal-lg modal-dialog-scrollable">
                                             <div class="modal-content">
-
-                                                {{-- ✅ Header del modal --}}
+                                                <!-- Header del modal -->
                                                 <div class="modal-header">
                                                     <h5 class="modal-title" id="modalDetallesLabel{{ $permiso->id_permiso }}">
                                                         Detalles del Permiso #{{ $permiso->id_permiso }}
@@ -354,7 +311,7 @@
                                                     <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
                                                 </div>
 
-                                                {{-- ✅ Body del modal --}}
+                                                <!-- Body del modal -->
                                                 <div class="modal-body">
                                                     <ul class="list-group list-group-flush">
                                                         <li class="list-group-item"><strong>Trabajador:</strong> {{ $permiso->trabajador->nombre_completo ?? 'N/A' }}</li>
@@ -363,29 +320,20 @@
                                                         <li class="list-group-item"><strong>Fechas:</strong> {{ $permiso->fecha_inicio->format('d/m/Y') }} al {{ $permiso->fecha_fin->format('d/m/Y') }}</li>
                                                         <li class="list-group-item"><strong>Observaciones:</strong> {{ $permiso->observaciones ?? 'Ninguna' }}</li>
                                                         <li class="list-group-item"><strong>Estatus:</strong> {{ $permiso->estatus_permiso_texto }}</li>
-                                                        {{-- Puedes agregar más campos aquí --}}
                                                     </ul>
                                                 </div>
 
-                                                {{-- ✅ Footer del modal --}}
+                                                <!-- Footer del modal -->
                                                 <div class="modal-footer">
                                                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                                                         <i class="bi bi-x-circle"></i> Cerrar
                                                     </button>
-
-                                                    <a href="{{ route('permisos.pdf', $permiso->id_permiso) }}" 
-                                                    class="btn btn-success" title="Generar y Descargar PDF" target="_blank">
-                                                        <i class="bi bi-file-earmark-pdf"></i> Descargar PDF
-                                                    </a>
                                                 </div>
-
                                             </div>
                                         </div>
                                     </div>
 
                                     </td>
-
-
                                 </tr>
                             @endforeach
                         </tbody>
@@ -424,21 +372,6 @@
     </div>
 </div>
 
-<!-- Estilos adicionales -->
-<style>
-.avatar-circle {
-    width: 40px;
-    height: 40px;
-    border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: white;
-    font-weight: bold;
-    font-size: 14px;
-}
-</style>
-
 <script>
 function finalizarPermiso(permisoId, nombreTrabajador) {
     if (confirm(`¿Está seguro de finalizar el permiso de ${nombreTrabajador}? El trabajador será reactivado.`)) {
@@ -464,7 +397,7 @@ function finalizarPermiso(permisoId, nombreTrabajador) {
 }
 
 function cancelarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`⚠️ ¿Está seguro de ELIMINAR DEFINITIVAMENTE el permiso de ${nombreTrabajador}?\n\nEsta acción:\n• Eliminará el permiso de la base de datos\n• Eliminará el archivo PDF asociado\n• Reactivará al trabajador\n• NO SE PUEDE DESHACER\n\n¿Continuar?`)) {
+    if (confirm(`⚠️ ¿Está seguro de ELIMINAR DEFINITIVAMENTE el permiso de ${nombreTrabajador}?\n\nEsta acción:\n• Eliminará el permiso de la base de datos\n• Reactivará al trabajador\n• NO SE PUEDE DESHACER\n\n¿Continuar?`)) {
         const form = document.createElement('form');
         form.method = 'POST';
         form.action = `/permisos/${permisoId}/cancelar`;
@@ -485,52 +418,6 @@ function cancelarPermiso(permisoId, nombreTrabajador) {
         form.submit();
     }
 }
-
-/**
- * ✅ NUEVA FUNCIÓN PARA REGENERAR PDF
- */
-function regenerarPdf(permisoId) {
-    if (confirm('¿Desea regenerar el PDF con los datos actualizados? El archivo anterior será reemplazado.')) {
-        // Crear formulario para regenerar PDF
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permisos/${permisoId}/pdf/regenerar`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        form.appendChild(csrfToken);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
-
-    /**
-     * ✅ FUNCIÓN PARA MOSTRAR LOADING EN BOTONES PDF
-     */
-    function mostrarLoadingPdf(elemento) {
-        const iconoOriginal = elemento.innerHTML;
-        elemento.innerHTML = '<i class="bi bi-hourglass-split"></i>';
-        elemento.disabled = true;
-        
-        // Restaurar después de 3 segundos
-        setTimeout(() => {
-            elemento.innerHTML = iconoOriginal;
-            elemento.disabled = false;
-        }, 3000);
-    }
-
-    // ✅ AÑADIR LOADING A BOTONES PDF
-    document.addEventListener('DOMContentLoaded', function() {
-        const botonesPdf = document.querySelectorAll('a[href*="/pdf"]');
-        botonesPdf.forEach(boton => {
-            boton.addEventListener('click', function() {
-                mostrarLoadingPdf(this);
-            });
-        });
-    });
 </script>
 
 @endsection

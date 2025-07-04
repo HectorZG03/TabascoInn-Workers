@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE PERMISOS LABORALES CON TIPO PERSONALIZADO --}}
+{{-- ✅ MODAL DE PERMISOS LABORALES CON FORMATO PERSONALIZADO --}}
 <div class="modal fade" id="modalPermisos" tabindex="-1" aria-labelledby="modalPermisosLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -67,7 +67,8 @@
                                id="tipo_personalizado" 
                                name="tipo_personalizado" 
                                placeholder="Escriba el tipo de permiso específico..."
-                               maxlength="80">
+                               maxlength="80"
+                               style="text-transform: uppercase">
                         <small class="form-text text-muted">
                             <i class="bi bi-lightbulb-fill text-warning"></i> 
                             Escriba el tipo exacto cuando ninguna de las opciones anteriores sea apropiada.
@@ -85,24 +86,40 @@
                                name="motivo" 
                                placeholder="Escriba el motivo específico del permiso..." 
                                maxlength="100"
+                               style="text-transform: uppercase"
                                required>
                         <small class="form-text text-muted">Mínimo 3 caracteres, máximo 100.</small>
                         <div class="invalid-feedback"></div>
                     </div>
 
+                    <!-- ✅ FECHAS CON FORMATO PERSONALIZADO DD/MM/YYYY -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label for="fecha_inicio" class="form-label">
                                 <i class="bi bi-calendar-plus"></i> Fecha de Inicio <span class="text-danger">*</span>
                             </label>
-                            <input type="date" class="form-control" id="fecha_inicio" name="fecha_inicio" min="{{ date('Y-m-d') }}" required>
+                            <input type="text" 
+                                   class="form-control formato-fecha" 
+                                   id="fecha_inicio" 
+                                   name="fecha_inicio" 
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   required>
+                            <div class="form-text">Formato: DD/MM/YYYY (no puede ser fecha pasada)</div>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="fecha_fin" class="form-label">
                                 <i class="bi bi-calendar-check"></i> Fecha de Fin <span class="text-danger">*</span>
                             </label>
-                            <input type="date" class="form-control" id="fecha_fin" name="fecha_fin" required>
+                            <input type="text" 
+                                   class="form-control formato-fecha" 
+                                   id="fecha_fin" 
+                                   name="fecha_fin" 
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   required>
+                            <div class="form-text">Formato: DD/MM/YYYY (debe ser igual o posterior al inicio)</div>
                             <div class="invalid-feedback"></div>
                         </div>
                     </div>
@@ -116,20 +133,32 @@
                         </label>
                     </div>
 
-                    {{-- ✅ Campos de horas --}}
+                    {{-- ✅ CAMPOS DE HORAS CON FORMATO PERSONALIZADO HH:MM --}}
                     <div id="camposHoras" class="row d-none">
                         <div class="col-md-6 mb-3">
                             <label for="hora_inicio" class="form-label">
                                 <i class="bi bi-clock"></i> Hora de Inicio <span class="text-danger">*</span>
                             </label>
-                            <input type="time" class="form-control" id="hora_inicio" name="hora_inicio">
+                            <input type="text" 
+                                   class="form-control formato-hora" 
+                                   id="hora_inicio" 
+                                   name="hora_inicio"
+                                   placeholder="HH:MM"
+                                   maxlength="5">
+                            <div class="form-text">Formato: HH:MM (24 horas) - Ejemplo: 08:00</div>
                             <div class="invalid-feedback"></div>
                         </div>
                         <div class="col-md-6 mb-3">
                             <label for="hora_fin" class="form-label">
                                 <i class="bi bi-clock-history"></i> Hora de Fin <span class="text-danger">*</span>
                             </label>
-                            <input type="time" class="form-control" id="hora_fin" name="hora_fin">
+                            <input type="text" 
+                                   class="form-control formato-hora" 
+                                   id="hora_fin" 
+                                   name="hora_fin"
+                                   placeholder="HH:MM"
+                                   maxlength="5">
+                            <div class="form-text">Formato: HH:MM (24 horas) - Ejemplo: 17:00</div>
                             <div class="invalid-feedback"></div>
                         </div>
                     </div>
@@ -143,6 +172,7 @@
                                   name="observaciones" 
                                   rows="3" 
                                   maxlength="500"
+                                  style="text-transform: uppercase"
                                   placeholder="Información adicional, contacto de emergencia, referencias médicas, etc..."></textarea>
                         <small class="form-text text-muted">Opcional. Máximo 500 caracteres.</small>
                     </div>
@@ -154,7 +184,8 @@
                                 • El trabajador pasará al estado "Con Permiso" automáticamente<br>
                                 • Se puede finalizar antes del vencimiento si regresa antes<br>
                                 • Se reactivará automáticamente al finalizar el periodo<br>
-                                • Se generará un registro detallado del permiso
+                                • Se generará un registro detallado del permiso<br>
+                                • Use formato DD/MM/YYYY para fechas y HH:MM para horas
                             </div>
                         </div>
                     </div>
@@ -172,181 +203,4 @@
         </div>
     </div>
 </div>
-
-<script>
-    function toggleTipoPersonalizado() {
-        const select = document.getElementById('tipo_permiso');
-        const container = document.getElementById('tipoPersonalizadoContainer');
-        const input = document.getElementById('tipo_personalizado');
-        
-        if (select.value === 'OTRO') {
-            container.style.display = 'block';
-            input.required = true;
-            input.focus();
-        } else {
-            container.style.display = 'none';
-            input.required = false;
-            input.value = '';
-            input.classList.remove('is-invalid');
-        }
-    }
-
-    document.addEventListener('DOMContentLoaded', function () {
-        const modalPermisos = document.getElementById('modalPermisos');
-        const formPermisos = document.getElementById('formPermisos');
-        const nombreTrabajadorPermiso = document.getElementById('nombreTrabajadorPermiso');
-        const tipoPermiso = document.getElementById('tipo_permiso');
-        const tipoPersonalizado = document.getElementById('tipo_personalizado');
-        const motivo = document.getElementById('motivo');
-        const fechaInicio = document.getElementById('fecha_inicio');
-        const fechaFin = document.getElementById('fecha_fin');
-        const btnConfirmarPermiso = document.getElementById('btnConfirmarPermiso');
-        const duracionPermiso = document.getElementById('duracionPermiso');
-
-        const esPorHoras = document.getElementById('es_por_horas');
-        const camposHoras = document.getElementById('camposHoras');
-        const horaInicio = document.getElementById('hora_inicio');
-        const horaFin = document.getElementById('hora_fin');
-
-        if (!modalPermisos || !formPermisos) return;
-
-        document.querySelectorAll('.btn-permisos').forEach(btn => {
-            btn.addEventListener('click', function () {
-                const trabajadorId = this.dataset.id;
-                const trabajadorNombre = this.dataset.nombre;
-
-                nombreTrabajadorPermiso.textContent = trabajadorNombre;
-                formPermisos.action = `/trabajadores/${trabajadorId}/permisos`;
-
-                resetForm();
-                new bootstrap.Modal(modalPermisos).show();
-            });
-        });
-
-        fechaInicio?.addEventListener('change', () => {
-            if (fechaFin) fechaFin.min = fechaInicio.value;
-            calcularDuracion();
-        });
-
-        fechaFin?.addEventListener('change', calcularDuracion);
-
-        esPorHoras?.addEventListener('change', () => {
-            if (esPorHoras.checked) {
-                camposHoras.classList.remove('d-none');
-                horaInicio.required = true;
-                horaFin.required = true;
-            } else {
-                camposHoras.classList.add('d-none');
-                horaInicio.required = false;
-                horaFin.required = false;
-                horaInicio.value = '';
-                horaFin.value = '';
-            }
-        });
-
-        function calcularDuracion() {
-            if (!fechaInicio.value || !fechaFin.value) {
-                duracionPermiso.innerHTML = '<span class="fw-bold text-primary">0 días</span>';
-                return;
-            }
-
-            const inicio = new Date(fechaInicio.value);
-            const fin = new Date(fechaFin.value);
-
-            if (fin >= inicio) {
-                const diff = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24)) + 1;
-                duracionPermiso.innerHTML = `<span class="fw-bold text-success">${diff} día${diff > 1 ? 's' : ''}</span>`;
-                fechaFin.setCustomValidity('');
-            } else {
-                duracionPermiso.innerHTML = '<span class="fw-bold text-danger">Fechas inválidas</span>';
-                fechaFin.setCustomValidity('La fecha de fin debe ser igual o posterior a la de inicio');
-            }
-        }
-
-        formPermisos.addEventListener('submit', function (e) {
-            e.preventDefault();
-
-            const formData = new FormData(formPermisos);
-            const valores = {
-                tipoPermiso: formData.get('tipo_permiso'),
-                tipoPersonalizado: formData.get('tipo_personalizado'),
-                motivo: formData.get('motivo'),
-                fechaInicio: formData.get('fecha_inicio'),
-                fechaFin: formData.get('fecha_fin'),
-                esPorHoras: formData.get('es_por_horas') === '1',
-                horaInicio: formData.get('hora_inicio'),
-                horaFin: formData.get('hora_fin'),
-            };
-
-            let isValid = true;
-
-            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-
-            if (!valores.tipoPermiso) {
-                showFieldError(tipoPermiso, 'Debe seleccionar un tipo de permiso');
-                isValid = false;
-            } else if (valores.tipoPermiso === 'OTRO') {
-                if (!valores.tipoPersonalizado || valores.tipoPersonalizado.trim().length < 3) {
-                    showFieldError(tipoPersonalizado, 'Debe especificar el tipo de permiso (mín. 3 caracteres)');
-                    isValid = false;
-                }
-            }
-
-            if (!valores.motivo || valores.motivo.trim().length < 3) {
-                showFieldError(motivo, 'El motivo es obligatorio (mín. 3 caracteres)');
-                isValid = false;
-            }
-
-            if (!valores.fechaInicio) {
-                showFieldError(fechaInicio, 'La fecha de inicio es obligatoria');
-                isValid = false;
-            }
-
-            if (!valores.fechaFin) {
-                showFieldError(fechaFin, 'La fecha de fin es obligatoria');
-                isValid = false;
-            }
-
-            if (valores.esPorHoras) {
-                if (!valores.horaInicio) {
-                    showFieldError(horaInicio, 'La hora de inicio es obligatoria');
-                    isValid = false;
-                }
-                if (!valores.horaFin) {
-                    showFieldError(horaFin, 'La hora de fin es obligatoria');
-                    isValid = false;
-                }
-                if (valores.horaInicio && valores.horaFin && valores.horaFin <= valores.horaInicio) {
-                    showFieldError(horaFin, 'La hora de fin debe ser posterior a la de inicio');
-                    isValid = false;
-                }
-            }
-
-            if (isValid) {
-                btnConfirmarPermiso.disabled = true;
-                btnConfirmarPermiso.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
-                formPermisos.submit();
-            }
-        });
-
-        function showFieldError(field, message) {
-            field.classList.add('is-invalid');
-            const feedback = field.parentNode.querySelector('.invalid-feedback');
-            if (feedback) feedback.textContent = message;
-        }
-
-        function resetForm() {
-            formPermisos.reset();
-            duracionPermiso.innerHTML = '<span class="fw-bold text-primary">0 días</span>';
-            btnConfirmarPermiso.disabled = false;
-            btnConfirmarPermiso.innerHTML = '<i class="bi bi-check-circle"></i> Asignar Permiso';
-            camposHoras.classList.add('d-none');
-            horaInicio.required = false;
-            horaFin.required = false;
-            toggleTipoPersonalizado();
-            document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-        }
-
-        modalPermisos.addEventListener('hidden.bs.modal', resetForm);
-    });
-</script>
+<script src="{{ asset('js/modales/permisos_modal.js') }}"></script>
