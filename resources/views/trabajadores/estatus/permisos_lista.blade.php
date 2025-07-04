@@ -35,7 +35,7 @@
             </h6>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('permisos.index') }}">
+            <form method="GET" action="{{ route('permisos.index') }}"  enctype="multipart/form-data">
                 <div class="row g-3">
                     <!-- Búsqueda -->
                     <div class="col-md-3">
@@ -239,6 +239,26 @@
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             @endif
+                                           @if($permiso->tiene_pdf)
+                                                <a href="{{ route('permisos.descargar', $permiso) }}" 
+                                                class="btn btn-outline-info"
+                                                title="Descargar archivo adjunto">
+                                                    <i class="bi bi-download"></i>
+                                                </a>
+                                            @else
+                                                <!-- Botón para abrir modal subir archivo -->
+                                                <button type="button" 
+                                                        class="btn btn-outline-success" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalSubirArchivo{{ $permiso->id_permiso }}"
+                                                        title="Subir archivo del permiso">
+                                                    <i class="bi bi-upload"></i>
+                                                </button>
+
+                                                <!-- Incluir el componente modal para subir archivo -->
+                                                <x-modal_subir_archivo :permiso-id="$permiso->id_permiso" />
+                                            @endif
+
                                         </div>
 
                                     <!-- Modal de detalles del permiso -->

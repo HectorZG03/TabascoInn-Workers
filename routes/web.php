@@ -155,11 +155,18 @@ Route::middleware(['auth'])->group(function () {
         });
         Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
         
+        
         // APIs
         Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
         Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
         Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
     });
+    Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
+        ->name('permisos.descargar');
+    
+    Route::post('/permisos/{permiso}/subir-archivo', [PermisosLaboralesController::class, 'subirArchivo'])
+        ->name('permisos.subirArchivo');
+
 
     // ✅ RUTAS AJAX PARA CONTRATOS - OPTIMIZADAS (Solo generación)
     Route::prefix('ajax/contratos')->name('ajax.contratos.')->controller(ContratoController::class)->group(function () {

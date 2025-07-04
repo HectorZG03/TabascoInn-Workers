@@ -9,7 +9,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="formPermisos" method="POST">
+            <form id="formPermisos" method="POST"  enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
                     <div class="alert alert-info">
@@ -177,6 +177,21 @@
                         <small class="form-text text-muted">Opcional. Máximo 500 caracteres.</small>
                     </div>
 
+                    <div class="mb-3">
+                        <label for="archivo_permiso" class="form-label">
+                            <i class="bi bi-paperclip"></i>Archivo Adjunto (opcional)
+                        </label>
+                        <input type="file"
+                               class="form-control"
+                               id="archivo_permiso"
+                               name="archivo_permiso"
+                               accept=".pdf, .jpg, .png, .jpeg">
+                        <small class="form-text text-muted">
+                            Formatos permitidos: PDF, JPG, PNG, JPEG
+                        </small>
+                        <div class="invalid-feedback"></div>
+                    </div>
+
                     <div class="card bg-light border-info">
                         <div class="card-body py-3">
                             <h6 class="card-title mb-2 text-info"><i class="bi bi-lightbulb"></i> Información importante</h6>
@@ -190,6 +205,7 @@
                         </div>
                     </div>
                 </div>
+
 
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
