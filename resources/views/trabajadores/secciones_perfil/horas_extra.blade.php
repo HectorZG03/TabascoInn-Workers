@@ -56,7 +56,7 @@
             <div class="card-body">
                 <div class="row g-3">
                     <div class="col-md-6">
-                        @if($trabajador->estaActivo())
+                        @if(!$trabajador->estaSuspendido() && !$trabajador->estaInactivo())
                             <button type="button" 
                                     class="btn btn-success w-100" 
                                     data-bs-toggle="modal" 
@@ -66,12 +66,12 @@
                         @else
                             <button type="button" class="btn btn-success w-100 disabled" disabled>
                                 <i class="bi bi-plus-circle"></i> Asignar Horas Extra
-                                <br><small>(Trabajador no activo)</small>
+                                <br><small>(Trabajador {{ $trabajador->estatus_texto }})</small>
                             </button>
                         @endif
                     </div>
                     <div class="col-md-6">
-                        @if($trabajador->estaActivo() && $trabajador->saldo_horas_extra > 0)
+                        @if(!$trabajador->estaSuspendido() && !$trabajador->estaInactivo() && $trabajador->saldo_horas_extra > 0)
                             <button type="button" 
                                     class="btn btn-warning w-100" 
                                     data-bs-toggle="modal" 
@@ -82,8 +82,8 @@
                             <button type="button" class="btn btn-warning w-100 disabled" disabled>
                                 <i class="bi bi-dash-circle"></i> Compensar Horas Extra
                                 <br><small>
-                                    @if(!$trabajador->estaActivo())
-                                        (Trabajador no activo)
+                                    @if($trabajador->estaSuspendido() || $trabajador->estaInactivo())
+                                        (Trabajador {{ $trabajador->estatus_texto }})
                                     @else
                                         (Sin horas disponibles)
                                     @endif
@@ -208,7 +208,7 @@
                         <p class="text-muted mb-4">
                             Este trabajador aún no tiene horas extra registradas.
                         </p>
-                        @if($trabajador->estaActivo())
+                        @if(!$trabajador->estaSuspendido() && !$trabajador->estaInactivo())
                             <button type="button" 
                                     class="btn btn-primary" 
                                     data-bs-toggle="modal" 
@@ -274,5 +274,7 @@ document.addEventListener('DOMContentLoaded', function() {
     if (filtroPeriodo) {
         filtroPeriodo.addEventListener('change', aplicarFiltros);
     }
+    
+    console.log('✅ Sección horas extra inicializada correctamente');
 });
 </script>

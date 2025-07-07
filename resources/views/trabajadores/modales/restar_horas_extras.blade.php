@@ -58,13 +58,13 @@
                                            class="form-control @error('horas') is-invalid @enderror" 
                                            id="horas_restar{{ $trabajador->id_trabajador }}" 
                                            name="horas" 
-                                           value="{{ old('horas') }}"
+                                           value="{{ old('horas', $saldoActual) }}"
                                            min="1" 
                                            max="{{ $saldoActual }}" 
                                            step="1" 
-                                           placeholder="1"
+                                           placeholder="{{ $saldoActual }}"
                                            required>
-                                    <span class="input-group-text">{{ old('horas') == 1 ? 'hora' : 'horas' }}</span>
+                                    <span class="input-group-text">{{ $saldoActual == 1 ? 'hora' : 'horas' }}</span>
                                     @error('horas')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
@@ -133,7 +133,7 @@
                                             </div>
                                             <div class="col-3">
                                                 <div class="h5 text-warning mb-1">
-                                                    <span id="horasACompensar{{ $trabajador->id_trabajador }}">0</span>
+                                                    <span id="horasACompensar{{ $trabajador->id_trabajador }}">{{ $saldoActual }}</span>
                                                 </div>
                                                 <small class="text-muted">A Compensar</small>
                                             </div>
@@ -142,7 +142,7 @@
                                             </div>
                                             <div class="col-3">
                                                 <div class="h5 text-primary mb-1">
-                                                    <span id="saldoResultante{{ $trabajador->id_trabajador }}">{{ $saldoActual }}</span>
+                                                    <span id="saldoResultante{{ $trabajador->id_trabajador }}">0</span>
                                                 </div>
                                                 <small class="text-muted">Saldo Final</small>
                                             </div>
@@ -222,6 +222,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 spanSaldoResultante.className = 'text-primary';
             }
         });
+        
+        // Inicializar la calculadora con el valor por defecto
+        const valorInicial = parseInt(inputHoras.value) || 0;
+        if (valorInicial > 0) {
+            const saldoResultanteInicial = Math.max(0, saldoActual - valorInicial);
+            spanHorasACompensar.textContent = valorInicial;
+            spanSaldoResultante.textContent = saldoResultanteInicial;
+        }
     }
 });
 </script>

@@ -263,16 +263,22 @@
                                         @endif
                                     </td>
                                     <td>
+                                        @php
+                                            // ✅ NUEVA LÓGICA: Permitir acciones a trabajadores activos y en prueba
+                                            // Solo excluir a los suspendidos
+                                            $puedeRealizarAcciones = !$trabajador->estaSuspendido();
+                                        @endphp
+                                        
                                         <div class="d-flex flex-wrap gap-1">
-                                            <!-- Ver Perfil Completo -->
+                                            <!-- Ver Perfil Completo - SIEMPRE DISPONIBLE -->
                                             <a href="{{ route('trabajadores.perfil.show', $trabajador) }}" 
                                             class="btn btn-outline-primary btn-sm" 
                                             title="Ver Perfil Completo">
                                                 <i class="bi bi-person-lines-fill"></i>
                                             </a>
                                             
-                                            <!-- Asignar Permisos -->
-                                            @if($trabajador->estaActivo())
+                                            @if($puedeRealizarAcciones)
+                                                <!-- Asignar Permisos -->
                                                 <button type="button" 
                                                         class="btn btn-outline-info btn-sm btn-permisos" 
                                                         title="Asignar Permisos"
@@ -280,10 +286,8 @@
                                                         data-nombre="{{ $trabajador->nombre_completo }}">
                                                     <i class="bi bi-file-earmark-plus"></i>
                                                 </button>
-                                            @endif
-                                            
-                                            <!-- Despedir -->
-                                            @if($trabajador->estaActivo())
+                                                
+                                                <!-- Despedir -->
                                                 <button type="button" 
                                                         class="btn btn-outline-danger btn-sm btn-despedir" 
                                                         title="Dar de baja al trabajador"
@@ -292,11 +296,8 @@
                                                         data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
                                                     <i class="bi bi-person-dash"></i>
                                                 </button>
-                                            @endif
 
-                                            {{-- Asignar Horas Extra --}}
-                                            @if($trabajador->estaActivo())
-                                                <!-- Asignar Horas Extra -->
+                                                {{-- Asignar Horas Extra --}}
                                                 <a href="#" 
                                                     class="btn btn-outline-success btn-sm" 
                                                     data-bs-toggle="modal" 
@@ -319,8 +320,12 @@
                                                     {{ $botonRestarDeshabilitado ? 'aria-disabled=true' : '' }}>
                                                     <i class="bi bi-clock">-</i>
                                                 </a>
+                                            @else
+                                                <!-- Mensaje para trabajadores suspendidos -->
+                                                <span class="text-muted small fst-italic">
+                                                    <i class="bi bi-exclamation-circle"></i> Sin acciones disponibles
+                                                </span>
                                             @endif
-
                                         </div>
                                     </td>
                                 </tr>
@@ -500,14 +505,16 @@
 @include('trabajadores.modales.permisos')
 @include('trabajadores.modales.importacion')
 
-{{-- ✅ MODALES DE HORAS EXTRAS - Generados solo si hay trabajadores --}}
+{{-- ✅ MODALES DE HORAS EXTRAS - Generados solo para trabajadores con acciones disponibles --}}
 @if($trabajadores->count() > 0)
     @foreach($trabajadores as $trabajador)
-        @include('trabajadores.modales.asignar_horas_extras', ['trabajador' => $trabajador])
-        @include('trabajadores.modales.restar_horas_extras', [
-            'trabajador' => $trabajador,
-            'saldoActual' => \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador)
-        ])
+        @if(!$trabajador->estaSuspendido())
+            @include('trabajadores.modales.asignar_horas_extras', ['trabajador' => $trabajador])
+            @include('trabajadores.modales.restar_horas_extras', [
+                'trabajador' => $trabajador,
+                'saldoActual' => \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador)
+            ])
+        @endif
     @endforeach
 @endif
 

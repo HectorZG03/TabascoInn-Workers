@@ -16,10 +16,10 @@ class HorasExtraController extends Controller
      */
     public function asignar(Request $request, Trabajador $trabajador)
     {
-        // Validar que el trabajador esté activo
-        if ($trabajador->estatus !== 'activo') {
+        // ✅ VALIDAR QUE EL TRABAJADOR ESTÉ ACTIVO O EN PRUEBA
+        if ($trabajador->estaSuspendido() || $trabajador->estaInactivo()) {
             return back()->withErrors([
-                'error' => 'Solo se pueden asignar horas extra a trabajadores activos. Estado actual: ' . $trabajador->estatus_texto
+                'error' => 'Solo se pueden asignar horas extra a trabajadores activos o en período de prueba. Estado actual: ' . $trabajador->estatus_texto
             ]);
         }
 
@@ -94,10 +94,10 @@ class HorasExtraController extends Controller
      */
     public function restar(Request $request, Trabajador $trabajador)
     {
-        // Validar que el trabajador esté activo
-        if ($trabajador->estatus !== 'activo') {
+        // ✅ VALIDAR QUE EL TRABAJADOR ESTÉ ACTIVO O EN PRUEBA
+        if ($trabajador->estaSuspendido() || $trabajador->estaInactivo()) {
             return back()->withErrors([
-                'error' => 'Solo se pueden compensar horas extra a trabajadores activos. Estado actual: ' . $trabajador->estatus_texto
+                'error' => 'Solo se pueden compensar horas extra a trabajadores activos o en período de prueba. Estado actual: ' . $trabajador->estatus_texto
             ]);
         }
 

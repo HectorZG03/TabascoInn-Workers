@@ -57,7 +57,7 @@
                                        min="1" 
                                        max="24" 
                                        step="1" 
-                                       placeholder="1"
+                                       placeholder="0"
                                        required>
                                 <span class="input-group-text">{{ old('horas') == 1 ? 'hora' : 'horas' }}</span>
                                 @error('horas')
@@ -139,7 +139,7 @@
                                             <div class="h5 text-primary mb-1">
                                                 <span id="saldoFinalAsignar{{ $trabajador->id_trabajador }}">{{ $saldoActualAsignar }}</span>
                                             </div>
-                                            <small class="text-muted">Saldo Final</small>
+                                            <small class="text-muted">Horas Acumuladas</small>
                                         </div>
                                     </div>
                                 </div>
