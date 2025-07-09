@@ -174,6 +174,7 @@
                     <table class="table table-hover mb-0">
                         <thead class="table-light">
                             <tr>
+                                <th>Perfil</th>
                                 <th>Trabajador</th>
                                 <th>Área / Categoría</th>
                                 <th>Estado</th>
@@ -188,16 +189,35 @@
                             @foreach($trabajadores as $trabajador)
                                 <tr>
                                     <td>
-                                        <div class="d-flex align-items-center">
-                                            <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center me-3" style="width: 40px; height: 40px; border-radius: 50%; font-size: 14px;">
-                                                {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
-                                            </div>
-                                            <div>
-                                                <div class="fw-medium">{{ $trabajador->nombre_completo }}</div>
-                                                <div class="text-muted small">{{ $trabajador->curp }}</div>
-                                            </div>
+                                        <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center" 
+                                            style="width: 40px; height: 40px; border-radius: 50%; font-size: 14px;">
+                                            {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
                                         </div>
                                     </td>
+                                    <td>
+                                        <div class="d-flex align-items-center">
+                                            <div>
+                                                @php
+                                                    $saldoHorasExtra = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
+                                                @endphp
+
+                                                <div class="fw-medium">
+                                                    {{ $trabajador->nombre_completo }}
+
+                                                    @if($saldoHorasExtra > 0)
+                                                        <span class="text-info ms-2 d-inline-flex align-items-center" title="Tiene {{ $saldoHorasExtra }}h de horas extra acumuladas">
+                                                            <i class="bi bi-clock-history me-1"></i>
+                                                            <small><strong>con horas extra</strong></small>
+                                                        </span>
+                                                    @endif
+                                                </div>
+
+                                                <div class="text-muted small">{{ $trabajador->curp }}</div>
+                                            </div>
+
+                                        </div>
+                                    </td>
+
                                     <td>
                                         <div class="text-primary fw-medium">{{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'N/A' }}</div>
                                         <div class="text-muted small">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}</div>

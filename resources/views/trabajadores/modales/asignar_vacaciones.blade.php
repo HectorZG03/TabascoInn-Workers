@@ -68,10 +68,9 @@
                                 <option value="{{ date('Y') }}" selected>{{ date('Y') }}</option>
                                 <option value="{{ date('Y') + 1 }}">{{ date('Y') + 1 }}</option>
                             </select>
-                            <div class="invalid-feedback"></div>
                         </div>
 
-                        <!-- Fecha de Inicio -->
+                        <!-- Fecha de Inicio - SIMPLIFICADA -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_inicio" class="form-label">
                                 <i class="bi bi-calendar-event"></i> Fecha de Inicio
@@ -86,7 +85,7 @@
                             <div class="invalid-feedback"></div>
                         </div>
 
-                        <!-- Fecha de Fin -->
+                        <!-- Fecha de Fin - SIMPLIFICADA -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_fin" class="form-label">
                                 <i class="bi bi-calendar-x"></i> Fecha de Fin
@@ -99,15 +98,8 @@
                                    min="{{ date('Y-m-d') }}"
                                    required>
                             <div class="invalid-feedback"></div>
-                        </div>
-
-                        <!-- Período Vacacional (generado automáticamente) -->
-                        <div class="col-12 mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-calendar-range"></i> Período Vacacional
-                            </label>
-                            <div class="form-control-plaintext bg-light rounded p-2">
-                                <span id="periodo-display">{{ date('Y') }}-{{ date('Y') + 1 }}</span>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Se calcula automáticamente según los días solicitados
                             </div>
                         </div>
 
@@ -122,7 +114,6 @@
                                       rows="3"
                                       maxlength="500"
                                       placeholder="Comentarios adicionales sobre estas vacaciones..."></textarea>
-                            <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <span id="observaciones-count">0</span>/500 caracteres
                             </div>
@@ -177,34 +168,3 @@
         </div>
     </div>
 </div>
-
-<!-- Estilos específicos del modal -->
-<style>
-#asignarVacacionesModal .text-sm {
-    font-size: 0.875rem;
-}
-
-#asignarVacacionesModal .input-group-text {
-    background-color: #f8f9fa;
-    border-color: #dee2e6;
-}
-
-#asignarVacacionesModal .form-control-plaintext {
-    font-weight: 500;
-}
-
-#asignarVacacionesModal .alert {
-    border: none;
-    border-radius: 0.5rem;
-}
-
-#resumen-vacacion {
-    border: 1px solid #dee2e6;
-    border-radius: 0.5rem;
-}
-
-.btn-loading .spinner-border-sm {
-    width: 1rem;
-    height: 1rem;
-}
-</style>

@@ -14,24 +14,22 @@ use Carbon\Carbon;
 class VacacionesController extends Controller
 {
     /**
-     * ✅ NUEVA: Vista dedicada de vacaciones del trabajador
+     * Vista principal de vacaciones del trabajador
      */
     public function show(Trabajador $trabajador): View
     {
-        // Cargar relaciones necesarias
         $trabajador->load([
             'vacaciones.creadoPor:id,nombre',
             'fichaTecnica.categoria.area'
         ]);
 
-        // Obtener estadísticas
         $estadisticas = $trabajador->getEstadisticasVacaciones();
 
         return view('trabajadores.secciones_perfil.vacaciones', compact('trabajador', 'estadisticas'));
     }
 
-    /**
-     * API: Mostrar las vacaciones del trabajador (para AJAX)
+/**
+     * API: Obtener vacaciones del trabajador - CON FECHAS FORMATEADAS
      */
     public function index(Trabajador $trabajador): JsonResponse
     {
@@ -39,7 +37,19 @@ class VacacionesController extends Controller
             $vacaciones = $trabajador->vacaciones()
                 ->with(['creadoPor:id,nombre'])
                 ->orderBy('created_at', 'desc')
-                ->get();
+                ->get()
+                ->map(function ($vacacion) {
+                    // Formatear fechas para evitar problemas de timezone en JS
+                    $vacacion->fecha_inicio_formatted = $vacacion->fecha_inicio ? 
+                        $vacacion->fecha_inicio->format('d/m/Y') : null;
+                    $vacacion->fecha_fin_formatted = $vacacion->fecha_fin ? 
+                        $vacacion->fecha_fin->format('d/m/Y') : null;
+                    $vacacion->fecha_reintegro_formatted = $vacacion->fecha_reintegro ? 
+                        $vacacion->fecha_reintegro->format('d/m/Y') : null;
+                    
+                    // Mantener las fechas originales para el JS que las necesite
+                    return $vacacion;
+                });
 
             $estadisticas = $trabajador->getEstadisticasVacaciones();
 
@@ -97,7 +107,7 @@ class VacacionesController extends Controller
             // Crear vacaciones
             $vacacion = $trabajador->asignarVacaciones($datos, Auth::id());
 
-            // Si la fecha de inicio es hoy y no hay vacaciones activas, iniciar automáticamente
+            // Si la fecha de inicio es hoy, iniciar automáticamente
             if (Carbon::parse($datos['fecha_inicio'])->isToday() && 
                 !$trabajador->tieneVacacionesActivas()) {
                 $vacacion->iniciar(Auth::id());
@@ -124,7 +134,6 @@ class VacacionesController extends Controller
     public function iniciar(Request $request, Trabajador $trabajador, VacacionesTrabajador $vacacion): JsonResponse
     {
         try {
-            // Verificar que la vacación pertenece al trabajador
             if ($vacacion->id_trabajador !== $trabajador->id_trabajador) {
                 return response()->json([
                     'success' => false,
@@ -132,7 +141,6 @@ class VacacionesController extends Controller
                 ], 403);
             }
 
-            // Intentar iniciar
             if ($vacacion->iniciar(Auth::id())) {
                 return response()->json([
                     'success' => true,
@@ -161,7 +169,6 @@ class VacacionesController extends Controller
     public function finalizar(Request $request, Trabajador $trabajador, VacacionesTrabajador $vacacion): JsonResponse
     {
         try {
-            // Verificar que la vacación pertenece al trabajador
             if ($vacacion->id_trabajador !== $trabajador->id_trabajador) {
                 return response()->json([
                     'success' => false,
@@ -171,7 +178,6 @@ class VacacionesController extends Controller
 
             $motivo = $request->input('motivo_finalizacion');
 
-            // Intentar finalizar
             if ($vacacion->finalizar($motivo, Auth::id())) {
                 return response()->json([
                     'success' => true,
@@ -200,7 +206,6 @@ class VacacionesController extends Controller
     public function cancelar(Request $request, Trabajador $trabajador, VacacionesTrabajador $vacacion): JsonResponse
     {
         try {
-            // Verificar que la vacación pertenece al trabajador
             if ($vacacion->id_trabajador !== $trabajador->id_trabajador) {
                 return response()->json([
                     'success' => false,
@@ -208,7 +213,6 @@ class VacacionesController extends Controller
                 ], 403);
             }
 
-            // Solo se pueden cancelar vacaciones pendientes
             if (!$vacacion->esPendiente()) {
                 return response()->json([
                     'success' => false,
@@ -240,27 +244,6 @@ class VacacionesController extends Controller
     }
 
     /**
-     * Obtener estadísticas de vacaciones
-     */
-    public function estadisticas(Trabajador $trabajador): JsonResponse
-    {
-        try {
-            $estadisticas = $trabajador->getEstadisticasVacaciones();
-            
-            return response()->json([
-                'success' => true,
-                'estadisticas' => $estadisticas
-            ]);
-
-        } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al obtener estadísticas: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
      * Calcular días de vacaciones para un trabajador
      */
     public function calcularDias(Trabajador $trabajador): JsonResponse
@@ -286,7 +269,7 @@ class VacacionesController extends Controller
     }
 
     /**
-     * Validador personalizado para vacaciones
+     * Validador para vacaciones - SIMPLIFICADO
      */
     private function validarVacaciones(Request $request, Trabajador $trabajador): \Illuminate\Validation\Validator
     {
@@ -321,8 +304,10 @@ class VacacionesController extends Controller
             'dias_solicitados.min' => 'Debe solicitar al menos 1 día',
             'dias_solicitados.max' => 'Excede los días disponibles',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio.date' => 'La fecha de inicio debe ser una fecha válida',
             'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser en el pasado',
             'fecha_fin.required' => 'La fecha de fin es obligatoria',
+            'fecha_fin.date' => 'La fecha de fin debe ser una fecha válida',
             'fecha_fin.after' => 'La fecha de fin debe ser posterior al inicio',
             'observaciones.max' => 'Las observaciones no pueden exceder 500 caracteres'
         ];

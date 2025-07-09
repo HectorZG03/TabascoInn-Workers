@@ -65,19 +65,22 @@ class VacacionesTrabajador extends Model
     ];
 
     // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO
+    // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO (2023+)
     public const DIAS_POR_ANTIGUEDAD = [
-        0 => 6,   // Menos de 1 año
-        1 => 6,   // 1 año
-        2 => 8,   // 2 años
-        3 => 10,  // 3 años
-        4 => 12,  // 4 años
-        5 => 14,  // 5-9 años
-        10 => 16, // 10-14 años
-        15 => 18, // 15-19 años
-        20 => 20, // 20-24 años
-        25 => 22, // 25-29 años
-        30 => 24  // 30+ años
+        0  => 6,   // Menos de 1 año (se asignan manualmente si aplica)
+        1  => 12,
+        2  => 14,
+        3  => 16,
+        4  => 18,
+        5  => 20,
+        6  => 22,
+        11 => 24,
+        16 => 26,
+        21 => 28,
+        26 => 30,
+        31 => 32,
     ];
+
 
     // ✅ RELACIONES
     public function trabajador(): BelongsTo

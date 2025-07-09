@@ -1,4 +1,4 @@
-{{-- resources/views/trabajadores/vacaciones/index.blade.php --}}
+{{-- resources/views/trabajadores/secciones_perfil/vacaciones.blade.php --}}
 
 @extends('layouts.app')
 
@@ -45,7 +45,7 @@
                                     <p class="text-muted mb-0 small">
                                         {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
                                     </p>
-                                    <span class="badge bg-{{ $trabajador->estatus_color }} trabajador-estatus-badge">
+                                    <span class="badge bg-{{ $trabajador->estatus_color }}">
                                         <i class="{{ $trabajador->estatus_icono }}"></i> {{ $trabajador->estatus_texto }}
                                     </span>
                                 </div>
@@ -101,7 +101,7 @@
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex gap-2">
                     @if(Auth::user()->esGerencia() || Auth::user()->esRecursosHumanos())
-                        <button class="btn btn-primary" id="asignar-vacaciones-btn" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
+                        <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
                             <i class="bi bi-plus-lg"></i> Asignar Vacaciones
                         </button>
                     @endif
@@ -123,14 +123,6 @@
                     </select>
                 </div>
             </div>
-        </div>
-    </div>
-
-    <!-- Estado del trabajador -->
-    <div id="trabajador-estado-vacaciones" class="alert" style="display: none;">
-        <div class="d-flex align-items-center">
-            <i class="bi bi-info-circle me-2"></i>
-            <span id="estado-mensaje"></span>
         </div>
     </div>
 
@@ -184,7 +176,6 @@
             <span class="visually-hidden">Cargando vacaciones...</span>
         </div>
         <h5 class="mt-3 text-muted">Cargando información de vacaciones...</h5>
-        <p class="text-muted">Por favor, espere un momento.</p>
     </div>
 
     <!-- Lista de Vacaciones -->
@@ -241,10 +232,6 @@
                             </div>
                         </div>
                         
-                        <div class="progress mb-2 progreso-vacacion" style="height: 8px;">
-                            <div class="progress-bar" role="progressbar"></div>
-                        </div>
-                        
                         <div class="observaciones-texto text-muted small" style="display: none;"></div>
                     </div>
 
@@ -274,12 +261,11 @@
     </div>
 </template>
 
-<!-- Incluir modal de asignar vacaciones -->
+<!-- Modal de Asignar Vacaciones -->
 @include('trabajadores.modales.asignar_vacaciones', ['trabajador' => $trabajador])
 
+<!-- Scripts -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-<!-- JavaScript específico para vacaciones -->
 <script src="{{ asset('js/vacaciones.js') }}"></script>
 
 <!-- Variable global para el usuario actual -->
@@ -291,7 +277,7 @@ window.currentUser = @json([
 ]);
 </script>
 
-<!-- Estilos específicos -->
+<!-- Estilos -->
 <style>
 .vacacion-item[data-estado="pendiente"] { 
     border-left-color: #ffc107 !important; 
@@ -301,10 +287,6 @@ window.currentUser = @json([
 }
 .vacacion-item[data-estado="finalizada"] { 
     border-left-color: #6c757d !important; 
-}
-
-.progreso-vacacion .progress-bar {
-    transition: width 0.3s ease;
 }
 
 .avatar-lg {
