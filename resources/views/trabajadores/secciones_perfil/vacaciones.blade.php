@@ -45,7 +45,7 @@
                                     <p class="text-muted mb-0 small">
                                         {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
                                     </p>
-                                    <span class="badge bg-{{ $trabajador->estatus_color }}">
+                                    <span class="badge bg-{{ $trabajador->estatus_color }} trabajador-estatus-badge">
                                         <i class="{{ $trabajador->estatus_icono }}"></i> {{ $trabajador->estatus_texto }}
                                     </span>
                                 </div>
@@ -264,9 +264,18 @@
 <!-- Modal de Asignar Vacaciones -->
 @include('trabajadores.modales.asignar_vacaciones', ['trabajador' => $trabajador])
 
-<!-- Scripts -->
+{{-- ===================================== --}}
+{{-- ✅ SCRIPTS EN ORDEN CORRECTO --}}
+{{-- ===================================== --}}
+
+<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
+
+<!-- 🏖️ 1. LISTA DE VACACIONES (Principal) -->
 <script src="{{ asset('js/vacaciones.js') }}"></script>
+
+<!-- 📝 2. MODAL DE ASIGNAR VACACIONES (Independiente) -->
+<script src="{{ asset('js/modales/asignar_vacacion.js') }}"></script>
 
 <!-- Variable global para el usuario actual -->
 <script>
@@ -275,6 +284,12 @@ window.currentUser = @json([
     'nombre' => Auth::user()->nombre,
     'tipo' => Auth::user()->tipo
 ]);
+
+// Log de inicialización
+console.log('🎯 Sistema de vacaciones con responsabilidades separadas:');
+console.log('   📋 Lista: vacaciones.js');
+console.log('   📝 Modal: modales/asignar_vacacion.js');
+console.log('   👤 Usuario:', window.currentUser);
 </script>
 
 <!-- Estilos -->
@@ -300,6 +315,21 @@ window.currentUser = @json([
 .card:hover {
     transform: translateY(-2px);
     box-shadow: 0 4px 25px rgba(0,0,0,0.1);
+}
+
+/* Indicador visual para debug */
+.container-fluid[data-trabajador-id]::before {
+    content: "🏖️ Vacaciones - Responsabilidades Separadas";
+    position: fixed;
+    bottom: 10px;
+    right: 10px;
+    background: rgba(0,123,255,0.1);
+    color: #007bff;
+    padding: 5px 10px;
+    border-radius: 5px;
+    font-size: 12px;
+    z-index: 1000;
+    border: 1px solid rgba(0,123,255,0.3);
 }
 </style>
 

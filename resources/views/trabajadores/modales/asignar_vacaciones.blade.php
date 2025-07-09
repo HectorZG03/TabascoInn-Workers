@@ -1,4 +1,5 @@
 {{-- resources/views/trabajadores/modales/asignar_vacaciones.blade.php --}}
+{{-- Modal LIMPIO - Toda la funcionalidad JS está en public/js/modales/asignar_vacacion.js --}}
 
 <div class="modal fade" id="asignarVacacionesModal" tabindex="-1" aria-labelledby="asignarVacacionesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -13,7 +14,10 @@
             <form id="form-asignar-vacaciones" novalidate>
                 @csrf
                 <div class="modal-body">
-                    <!-- Información del Trabajador -->
+                    
+                    <!-- ===================================== -->
+                    <!-- INFORMACIÓN DEL TRABAJADOR -->
+                    <!-- ===================================== -->
                     <div class="alert alert-info">
                         <div class="row">
                             <div class="col-md-8">
@@ -34,8 +38,11 @@
                         </div>
                     </div>
 
-                    <!-- Formulario -->
+                    <!-- ===================================== -->
+                    <!-- FORMULARIO PRINCIPAL -->
+                    <!-- ===================================== -->
                     <div class="row">
+                        
                         <!-- Días Solicitados -->
                         <div class="col-md-6 mb-3">
                             <label for="dias_solicitados" class="form-label">
@@ -49,7 +56,8 @@
                                        name="dias_solicitados" 
                                        min="1" 
                                        max="30"
-                                       required>
+                                       required
+                                       autocomplete="off">
                                 <span class="input-group-text">días</span>
                             </div>
                             <div class="invalid-feedback"></div>
@@ -68,9 +76,10 @@
                                 <option value="{{ date('Y') }}" selected>{{ date('Y') }}</option>
                                 <option value="{{ date('Y') + 1 }}">{{ date('Y') + 1 }}</option>
                             </select>
+                            <div class="invalid-feedback"></div>
                         </div>
 
-                        <!-- Fecha de Inicio - SIMPLIFICADA -->
+                        <!-- Fecha de Inicio -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_inicio" class="form-label">
                                 <i class="bi bi-calendar-event"></i> Fecha de Inicio
@@ -81,11 +90,15 @@
                                    id="fecha_inicio" 
                                    name="fecha_inicio"
                                    min="{{ date('Y-m-d') }}"
-                                   required>
+                                   required
+                                   autocomplete="off">
                             <div class="invalid-feedback"></div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> No puede ser fecha pasada
+                            </div>
                         </div>
 
-                        <!-- Fecha de Fin - SIMPLIFICADA -->
+                        <!-- Fecha de Fin -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_fin" class="form-label">
                                 <i class="bi bi-calendar-x"></i> Fecha de Fin
@@ -96,7 +109,9 @@
                                    id="fecha_fin" 
                                    name="fecha_fin"
                                    min="{{ date('Y-m-d') }}"
-                                   required>
+                                   required
+                                   readonly
+                                   autocomplete="off">
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Se calcula automáticamente según los días solicitados
@@ -113,14 +128,18 @@
                                       name="observaciones" 
                                       rows="3"
                                       maxlength="500"
-                                      placeholder="Comentarios adicionales sobre estas vacaciones..."></textarea>
+                                      placeholder="Comentarios adicionales sobre estas vacaciones..."
+                                      autocomplete="off"></textarea>
+                            <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <span id="observaciones-count">0</span>/500 caracteres
                             </div>
                         </div>
                     </div>
 
-                    <!-- Resumen -->
+                    <!-- ===================================== -->
+                    <!-- RESUMEN DE VACACIONES -->
+                    <!-- ===================================== -->
                     <div class="card bg-light mt-3" id="resumen-vacacion" style="display: none;">
                         <div class="card-body">
                             <h6 class="card-title">
@@ -143,13 +162,19 @@
                         </div>
                     </div>
 
-                    <!-- Alertas -->
+                    <!-- ===================================== -->
+                    <!-- ALERTAS DEL MODAL -->
+                    <!-- ===================================== -->
                     <div id="alert-vacaciones" class="alert" style="display: none;" role="alert">
                         <i class="bi bi-exclamation-triangle"></i>
                         <span id="alert-mensaje"></span>
                     </div>
+
                 </div>
 
+                <!-- ===================================== -->
+                <!-- FOOTER CON BOTONES -->
+                <!-- ===================================== -->
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x-lg"></i> Cancelar
@@ -168,3 +193,18 @@
         </div>
     </div>
 </div>
+
+{{-- 
+====================================================================
+🎯 NOTAS IMPORTANTES:
+====================================================================
+
+1. ✅ TODO EL JAVASCRIPT ESTÁ EN: public/js/modales/asignar_vacacion.js
+2. ✅ Este archivo blade es SOLO HTML - Sin lógica JS
+3. ✅ La comunicación con la lista se hace via eventos custom
+4. ✅ El campo fecha_fin es readonly - se calcula automáticamente
+5. ✅ Todos los IDs están correctamente definidos para el JS
+6. ✅ Los inputs tienen autocomplete="off" para mejor UX
+
+====================================================================
+--}}

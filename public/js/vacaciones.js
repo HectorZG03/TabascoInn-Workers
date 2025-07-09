@@ -1,6 +1,7 @@
 /**
- * vacaciones.js - Sistema de Gestión de Vacaciones SIMPLIFICADO
- * Versión unificada que maneja tanto la lista como el modal
+ * vacaciones.js - Gestión de Lista de Vacaciones ÚNICAMENTE
+ * Maneja exclusivamente la lista de vacaciones y sus acciones
+ * El modal está separado en asignar_vacacion.js
  */
 class VacacionesManager {
     constructor(trabajadorId) {
@@ -20,7 +21,7 @@ class VacacionesManager {
     }
 
     bindEvents() {
-        // Eventos principales
+        // Eventos principales de la lista
         $('#refresh-vacaciones').on('click', () => this.loadVacaciones());
         $('#retry-vacaciones').on('click', () => this.loadVacaciones());
         
@@ -28,16 +29,28 @@ class VacacionesManager {
         $('#filtro-estado').on('change', () => this.filterVacaciones());
         $('#filtro-periodo').on('change', () => this.filterVacaciones());
         
-        // Modal de asignar vacaciones
-        $('#asignarVacacionesModal').on('show.bs.modal', () => this.initModal());
-        $('#form-asignar-vacaciones').on('submit', (e) => this.handleSubmit(e));
+        // Escuchar evento del modal cuando se asigna una nueva vacación
+        document.addEventListener('vacacionAsignada', (e) => this.handleVacacionAsignada(e.detail));
         
-        // Cálculo automático de fechas - SIMPLIFICADO
-        $('#dias_solicitados').on('input', () => this.calcularFechaFin());
-        $('#fecha_inicio').on('change', () => this.calcularFechaFin());
-        $('#observaciones').on('input', () => this.updateObservacionesCount());
+        console.log('🔗 Eventos de la lista vinculados correctamente');
+    }
+
+    // =================================
+    // COMUNICACIÓN CON EL MODAL
+    // =================================
+
+    async handleVacacionAsignada(detail) {
+        console.log('📥 Vacación asignada desde modal, recargando lista...', detail);
         
-        console.log('🔗 Eventos vinculados correctamente');
+        // Recargar la lista de vacaciones
+        await this.loadVacaciones();
+        
+        // Actualizar estado del trabajador si viene en la respuesta
+        if (detail.trabajador_estatus) {
+            this.updateTrabajadorStatus(detail.trabajador_estatus);
+        }
+        
+        console.log('✅ Lista actualizada después de asignar vacación');
     }
 
     // =================================
@@ -151,7 +164,7 @@ class VacacionesManager {
         $template.find('.periodo-texto').text(vacacion.periodo_vacacional);
         $template.find('.creado-por').text(`Creado por ${vacacion.creado_por?.nombre || 'Sistema'}`);
         
-        // Fechas - USAR FECHAS YA FORMATEADAS DESDE EL BACKEND
+        // Fechas - USAR FECHAS YA FORMATEADAS DESDE EL BACKEND O FORMATEAR LOCALMENTE
         const fechaInicio = vacacion.fecha_inicio_formatted || this.formatearFecha(vacacion.fecha_inicio);
         const fechaFin = vacacion.fecha_fin_formatted || this.formatearFecha(vacacion.fecha_fin);
         $template.find('.fechas-texto').text(`${fechaInicio} - ${fechaFin}`);
@@ -272,168 +285,7 @@ class VacacionesManager {
     }
 
     // =================================
-    // MODAL DE ASIGNAR VACACIONES - SIMPLIFICADO
-    // =================================
-
-    async initModal() {
-        try {
-            // Cargar días disponibles
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/calcular-dias`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            if (response.ok) {
-                const data = await response.json();
-                if (data.success) {
-                    $('#dias-disponibles').text(data.dias_restantes);
-                    $('#max-dias-texto').text(data.dias_restantes);
-                    $('#dias_solicitados').attr('max', data.dias_restantes);
-                }
-            }
-        } catch (error) {
-            console.error('Error loading vacation data:', error);
-        }
-        
-        this.resetForm();
-    }
-
-    resetForm() {
-        $('#form-asignar-vacaciones')[0].reset();
-        $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
-        $('#resumen-vacacion').hide();
-        $('#alert-vacaciones').hide();
-        this.updateObservacionesCount();
-    }
-
-    // CÁLCULO AUTOMÁTICO SIMPLIFICADO
-    calcularFechaFin() {
-        const diasSolicitados = parseInt($('#dias_solicitados').val()) || 0;
-        const fechaInicio = $('#fecha_inicio').val();
-        
-        if (!fechaInicio || diasSolicitados <= 0) {
-            $('#fecha_fin').val('');
-            $('#resumen-vacacion').hide();
-            return;
-        }
-        
-        try {
-            const inicio = new Date(fechaInicio);
-            const fin = new Date(inicio);
-            fin.setDate(fin.getDate() + diasSolicitados - 1);
-            
-            $('#fecha_fin').val(fin.toISOString().split('T')[0]);
-            this.updateResumen();
-        } catch (error) {
-            console.error('Error calculating end date:', error);
-            $('#fecha_fin').val('');
-            $('#resumen-vacacion').hide();
-        }
-    }
-
-    updateObservacionesCount() {
-        const texto = $('#observaciones').val();
-        $('#observaciones-count').text(texto.length);
-    }
-
-    updateResumen() {
-        const diasSolicitados = $('#dias_solicitados').val();
-        const fechaInicio = $('#fecha_inicio').val();
-        const fechaFin = $('#fecha_fin').val();
-        
-        if (diasSolicitados && fechaInicio && fechaFin) {
-            $('#resumen-duracion').text(`${diasSolicitados} días`);
-            $('#resumen-fechas').text(`${this.formatearFecha(fechaInicio)} - ${this.formatearFecha(fechaFin)}`);
-            
-            // Verificar si inicia hoy
-            const hoy = new Date().toISOString().split('T')[0];
-            const iniciaHoy = fechaInicio === hoy;
-            $('#resumen-inicio-auto').text(iniciaHoy ? 'Sí (se iniciará automáticamente)' : 'No');
-            
-            $('#resumen-vacacion').show();
-        } else {
-            $('#resumen-vacacion').hide();
-        }
-    }
-
-    async handleSubmit(e) {
-        e.preventDefault();
-        
-        try {
-            this.setLoadingState(true);
-            
-            const formData = new FormData($('#form-asignar-vacaciones')[0]);
-            const data = Object.fromEntries(formData.entries());
-            
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/asignar`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify(data)
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                $('#asignarVacacionesModal').modal('hide');
-                await this.loadVacaciones();
-                this.showNotification('success', 'Vacaciones asignadas correctamente');
-            } else {
-                this.handleFormErrors(result.errors);
-                this.showAlert(result.message, 'danger');
-            }
-        } catch (error) {
-            console.error('Error assigning vacation:', error);
-            this.showAlert('Error al asignar vacaciones', 'danger');
-        } finally {
-            this.setLoadingState(false);
-        }
-    }
-
-    setLoadingState(loading) {
-        const $btn = $('#btn-asignar-vacaciones');
-        
-        if (loading) {
-            $btn.find('.btn-text').hide();
-            $btn.find('.btn-loading').show();
-            $btn.prop('disabled', true);
-        } else {
-            $btn.find('.btn-loading').hide();
-            $btn.find('.btn-text').show();
-            $btn.prop('disabled', false);
-        }
-    }
-
-    handleFormErrors(errors) {
-        $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
-        
-        if (errors) {
-            Object.keys(errors).forEach(field => {
-                const $field = $(`#${field}`);
-                const $feedback = $field.siblings('.invalid-feedback');
-                
-                $field.addClass('is-invalid');
-                $feedback.text(Array.isArray(errors[field]) ? errors[field][0] : errors[field]);
-            });
-        }
-    }
-
-    showAlert(message, type) {
-        const $alert = $('#alert-vacaciones');
-        $alert.removeClass('alert-info alert-success alert-warning alert-danger')
-              .addClass(`alert-${type}`)
-              .find('#alert-mensaje').text(message);
-        $alert.show();
-    }
-
-    // =================================
-    // ACCIONES SOBRE VACACIONES
+    // ACCIONES SOBRE VACACIONES EXISTENTES
     // =================================
 
     async iniciarVacacion(vacacionId) {
@@ -454,6 +306,10 @@ class VacacionesManager {
             if (result.success) {
                 await this.loadVacaciones();
                 this.showNotification('success', 'Vacaciones iniciadas correctamente');
+                
+                if (result.trabajador_estatus) {
+                    this.updateTrabajadorStatus(result.trabajador_estatus);
+                }
             } else {
                 this.showNotification('error', result.message);
             }
@@ -484,6 +340,10 @@ class VacacionesManager {
             if (result.success) {
                 await this.loadVacaciones();
                 this.showNotification('success', 'Vacaciones finalizadas correctamente');
+                
+                if (result.trabajador_estatus) {
+                    this.updateTrabajadorStatus(result.trabajador_estatus);
+                }
             } else {
                 this.showNotification('error', result.message);
             }
@@ -534,8 +394,51 @@ class VacacionesManager {
     }
 
     // =================================
-    // UTILIDADES
+    // UTILIDADES Y HELPERS
     // =================================
+
+    updateTrabajadorStatus(nuevoEstatus) {
+        const $estatusBadge = $('.trabajador-estatus-badge');
+        if ($estatusBadge.length) {
+            $estatusBadge.removeClass().addClass(`badge bg-${this.getEstatusColor(nuevoEstatus)}`);
+            $estatusBadge.html(`<i class="${this.getEstatusIcono(nuevoEstatus)}"></i> ${this.getEstatusTexto(nuevoEstatus)}`);
+        }
+        
+        console.log(`👤 Estado del trabajador actualizado: ${nuevoEstatus}`);
+    }
+
+    getEstatusColor(estatus) {
+        const colores = {
+            'activo': 'success',
+            'vacaciones': 'primary',
+            'permiso': 'info',
+            'suspendido': 'danger',
+            'inactivo': 'secondary'
+        };
+        return colores[estatus] || 'secondary';
+    }
+
+    getEstatusTexto(estatus) {
+        const textos = {
+            'activo': 'Activo',
+            'vacaciones': 'En Vacaciones',
+            'permiso': 'Con Permiso',
+            'suspendido': 'Suspendido',
+            'inactivo': 'Inactivo'
+        };
+        return textos[estatus] || estatus;
+    }
+
+    getEstatusIcono(estatus) {
+        const iconos = {
+            'activo': 'bi-person-check',
+            'vacaciones': 'bi-calendar-heart',
+            'permiso': 'bi-calendar-event',
+            'suspendido': 'bi-exclamation-triangle',
+            'inactivo': 'bi-person-x'
+        };
+        return iconos[estatus] || 'bi-person';
+    }
 
     showNotification(type, message) {
         // Toast simple
@@ -560,17 +463,52 @@ class VacacionesManager {
         
         toast.on('hidden.bs.toast', () => toast.remove());
     }
+
+    // =================================
+    // MÉTODOS PÚBLICOS PARA INTEGRACIÓN
+    // =================================
+
+    /**
+     * Recargar la lista externamente
+     */
+    async reload() {
+        await this.loadVacaciones();
+    }
+
+    /**
+     * Obtener datos de vacaciones
+     */
+    getVacaciones() {
+        return this.vacaciones;
+    }
+
+    /**
+     * Obtener estadísticas
+     */
+    getEstadisticas() {
+        return this.estadisticas;
+    }
+
+    /**
+     * Obtener datos del trabajador
+     */
+    getTrabajadorData() {
+        return this.trabajadorData;
+    }
 }
 
+// =================================
 // INICIALIZACIÓN AUTOMÁTICA
+// =================================
+
 $(document).ready(function() {
-    console.log('🚀 Iniciando aplicación de vacaciones simplificada...');
+    console.log('🚀 Iniciando aplicación de lista de vacaciones...');
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
     
     if (trabajadorId) {
         window.vacacionesApp = new VacacionesManager(trabajadorId);
-        console.log(`✅ Aplicación iniciada para trabajador: ${trabajadorId}`);
+        console.log(`✅ Lista de vacaciones iniciada para trabajador: ${trabajadorId}`);
     } else {
         console.error('❌ No se pudo obtener el ID del trabajador');
     }
