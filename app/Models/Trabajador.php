@@ -4,16 +4,24 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use App\Models\Traits\Trabajador\{TieneRelaciones, TieneAccessors, TieneMutators, TieneLogicaEstados, TieneHelpersTemporales };
+use App\Models\Traits\Trabajador\{
+    TieneRelaciones, 
+    TieneAccessors, 
+    TieneMutators, 
+    TieneLogicaEstados, 
+    TieneHelpersTemporales,
+    TieneVacaciones
+};
 
 class Trabajador extends Model
 {
     use HasFactory,
-        TieneRelaciones,
+        TieneRelaciones,        // ✅ Debe ir PRIMERO (contiene las relaciones base)
         TieneAccessors,
         TieneMutators,
         TieneLogicaEstados,
-        TieneHelpersTemporales;
+        TieneHelpersTemporales,
+        TieneVacaciones;        // ✅ Debe ir ÚLTIMO (usa métodos de TieneRelaciones)
 
     protected $table = 'trabajadores';
     protected $primaryKey = 'id_trabajador';
@@ -27,7 +35,6 @@ class Trabajador extends Model
         'ape_pat',
         'ape_mat',
         'fecha_nacimiento',
-        // ✅ NUEVOS: Campos de ubicación
         'lugar_nacimiento',
         'estado_actual',
         'ciudad_actual',
@@ -50,15 +57,16 @@ class Trabajador extends Model
         'updated_at' => 'datetime',
     ];
 
+    // ✅ CONSTANTES ACTUALIZADAS
     public const TODOS_ESTADOS = [
         'activo' => 'Activo',
         'permiso' => 'Con Permiso Temporal',
+        'vacaciones' => 'En Vacaciones',
         'suspendido' => 'Suspendido',
         'prueba' => 'Período de Prueba',
         'inactivo' => 'Inactivo'
     ];
 
-    // ✅ NUEVAS: Constantes para estados de México
     public const ESTADOS_MEXICO = [
         'Aguascalientes' => 'Aguascalientes',
         'Baja California' => 'Baja California',
@@ -93,5 +101,4 @@ class Trabajador extends Model
         'Yucatán' => 'Yucatán',
         'Zacatecas' => 'Zacatecas',
     ];
-
 }

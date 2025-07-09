@@ -14,6 +14,7 @@ use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
 use App\Http\Controllers\EstadisticasController; // ✅ NUEVO CONTROLADOR
+use App\Http\Controllers\VacacionesController; // ✅ NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -126,6 +127,23 @@ Route::middleware(['auth'])->group(function () {
             Route::get('historial', 'obtenerHistorial')->name('historial');
             Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');
         });
+ Route::prefix('{trabajador}/vacaciones')->name('vacaciones.')->group(function () {
+            // Vista dedicada principal
+            Route::get('/', [VacacionesController::class, 'show'])->name('show');
+            
+            // API para AJAX (con prefijo 'api' para evitar conflictos)
+            Route::get('/api', [VacacionesController::class, 'index'])->name('api.index');
+            Route::get('/estadisticas', [VacacionesController::class, 'estadisticas'])->name('estadisticas');
+            Route::get('/calcular-dias', [VacacionesController::class, 'calcularDias'])->name('calcular-dias');
+            
+            // Gestión de vacaciones
+            Route::post('/asignar', [VacacionesController::class, 'store'])->name('asignar');
+            Route::patch('/{vacacion}/iniciar', [VacacionesController::class, 'iniciar'])->name('iniciar');
+            Route::patch('/{vacacion}/finalizar', [VacacionesController::class, 'finalizar'])->name('finalizar');
+            Route::delete('/{vacacion}/cancelar', [VacacionesController::class, 'cancelar'])->name('cancelar');
+        });
+
+
     });
 
     // ✅ RUTAS PARA DESPIDOS

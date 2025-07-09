@@ -29,79 +29,80 @@
     }
 </style>
 
-
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->
     <div class="row mb-4">
-            <div class="col-12">
-                <div class="card shadow border-0">
-                    <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
-                        <h5 class="mb-0">
-                            <i class="bi bi-person-badge"></i> Información del Trabajador
-                        </h5>
-                        {{-- Selector de estatus mejorado --}}
-                        <form action="{{ route('trabajadores.perfil.update-estatus', $trabajador) }}" method="POST" class="d-flex gap-2 align-items-center" style="max-width: 300px;">
-                            @csrf
-                            @method('PUT')
-                            <select class="form-select form-select-sm" name="estatus" id="estatus-select">
-                                @foreach(App\Models\Trabajador::TODOS_ESTADOS as $key => $estado)
-                                    <option value="{{ $key }}" {{ $trabajador->estatus == $key ? 'selected' : '' }}>
-                                        {{ $estado }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            <button type="submit" class="btn btn-sm btn-primary">
-                                <i class="bi bi-check-lg"></i>
-                            </button>
-                        </form>
-                    </div>
+        <div class="col-12">
+            <div class="card shadow border-0">
+                <div class="card-header d-flex justify-content-between align-items-center bg-light border-bottom">
+                    <h5 class="mb-0">
+                        <i class="bi bi-person-badge"></i> Información del Trabajador
+                    </h5>
+                    {{-- Selector de estatus mejorado --}}
+                    <form action="{{ route('trabajadores.perfil.update-estatus', $trabajador) }}" method="POST" class="d-flex gap-2 align-items-center" style="max-width: 300px;">
+                        @csrf
+                        @method('PUT')
+                        <select class="form-select form-select-sm" name="estatus" id="estatus-select">
+                            @foreach(App\Models\Trabajador::TODOS_ESTADOS as $key => $estado)
+                                <option value="{{ $key }}" {{ $trabajador->estatus == $key ? 'selected' : '' }}>
+                                    {{ $estado }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <button type="submit" class="btn btn-sm btn-primary">
+                            <i class="bi bi-check-lg"></i>
+                        </button>
+                    </form>
+                </div>
 
-                    <div class="card-body">
-                        <div class="row align-items-center">
-                            <div class="col-md-2 text-center">
-                                <div class="avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mx-auto"
-                                    style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem;">
-                                    {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
-                                </div>
+                <div class="card-body">
+                    <div class="row align-items-center">
+                        <div class="col-md-2 text-center">
+                            <div class="avatar-lg bg-primary text-white d-flex align-items-center justify-content-center mx-auto"
+                                style="width: 80px; height: 80px; border-radius: 50%; font-size: 2rem;">
+                                {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
                             </div>
+                        </div>
 
-                            <div class="col-md-6">
-                                <h2 class="mb-1">{{ $trabajador->nombre_completo }}</h2>
-                                <p class="text-muted mb-1">
-                                    <i class="bi bi-briefcase"></i>
-                                    {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
-                                </p>
-                                <p class="text-muted mb-1">
-                                    <i class="bi bi-building"></i>
-                                    {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
-                                </p>
-                                <div class="d-flex gap-2 mt-2">
-                                    @if($trabajador->es_nuevo)
-                                        <span class="badge bg-info">
-                                            <i class="bi bi-star"></i> Nuevo
-                                        </span>
-                                    @endif
-                                </div>
+                        <div class="col-md-6">
+                            <h2 class="mb-1">{{ $trabajador->nombre_completo }}</h2>
+                            <p class="text-muted mb-1">
+                                <i class="bi bi-briefcase"></i>
+                                {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
+                            </p>
+                            <p class="text-muted mb-1">
+                                <i class="bi bi-building"></i>
+                                {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
+                            </p>
+                            <div class="d-flex gap-2 mt-2">
+                                <span class="badge bg-{{ $trabajador->estatus_color }} trabajador-estatus-badge">
+                                    <i class="{{ $trabajador->estatus_icono }}"></i> {{ $trabajador->estatus_texto }}
+                                </span>
+                                @if($trabajador->es_nuevo)
+                                    <span class="badge bg-info">
+                                        <i class="bi bi-star"></i> Nuevo
+                                    </span>
+                                @endif
                             </div>
+                        </div>
 
-                            <div class="col-md-4">
-                                <div class="row text-center">
-                                    <div class="col-3">
-                                        <div class="h4 text-primary mb-0">{{ $trabajador->antiguedad_texto ?? 'N/A' }}</div>
-                                        <small class="text-muted">Antigüedad</small>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="h4 text-success mb-0">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
-                                        <small class="text-muted">Sueldo Diario</small>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
-                                        <small class="text-muted">Documentos</small>
-                                    </div>
-                                    <div class="col-3">
-                                        <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
-                                        <small class="text-muted">Horas Extra</small>
-                                    </div>
+                        <div class="col-md-4">
+                            <div class="row text-center">
+                                <div class="col-3">
+                                    <div class="h4 text-primary mb-0">{{ $trabajador->antiguedad_texto ?? 'N/A' }}</div>
+                                    <small class="text-muted">Antigüedad</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-success mb-0">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
+                                    <small class="text-muted">Sueldo Diario</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-info mb-0">{{ $stats['porcentaje_documentos'] ?? 0 }}%</div>
+                                    <small class="text-muted">Documentos</small>
+                                </div>
+                                <div class="col-3">
+                                    <div class="h4 text-warning mb-0">{{ $trabajador->saldo_horas_extra }}</div>
+                                    <small class="text-muted">Horas Extra</small>
                                 </div>
                             </div>
                         </div>
@@ -109,10 +110,48 @@
                 </div>
             </div>
         </div>
-
     </div>
 
-    <!-- Navegación -->
+    {{-- ✅ NUEVA SECCIÓN: Accesos Rápidos --}}
+    <div class="row mb-4">
+        <div class="col-12">
+            <div class="card border-0 shadow-sm">
+                <div class="card-header bg-light">
+                    <h6 class="mb-0">
+                        <i class="bi bi-lightning"></i> Acceso Vacaciones
+                    </h6>
+                </div>
+                <div class="card-body py-3">
+                    <div class="d-flex gap-3 flex-wrap">
+                        {{-- Botón de Vacaciones --}}
+                        <a href="{{ route('trabajadores.vacaciones.show', $trabajador) }}" 
+                           class="btn btn-outline-primary d-flex align-items-center gap-2">
+                            <i class="bi bi-calendar-heart"></i>
+                            <div class="text-start">
+                                <div class="fw-bold">Vacaciones</div>
+                                <small class="text-muted">
+                                    @if($trabajador->tieneVacacionesActivas())
+                                        {{ $trabajador->vacacionesActivas()->count() }} activa(s)
+                                    @elseif($trabajador->tieneVacacionesPendientes())
+                                        {{ $trabajador->vacacionesPendientes()->count() }} pendiente(s)
+                                    @else
+                                        Gestionar vacaciones
+                                    @endif
+                                </small>
+                            </div>
+                            @if($trabajador->tieneVacacionesActivas())
+                                <span class="badge bg-success">{{ $trabajador->vacacionesActivas()->count() }}</span>
+                            @elseif($trabajador->tieneVacacionesPendientes())
+                                <span class="badge bg-warning">{{ $trabajador->vacacionesPendientes()->count() }}</span>
+                            @endif
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Navegación (SIN pestaña de vacaciones) -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -145,7 +184,6 @@
                                 <span class="badge bg-danger ms-1">{{ $trabajador->despidosActivos() }}</span>
                             @endif
                         </button>
-
                     </div>
                 </nav>
                 <div>
@@ -157,7 +195,7 @@
         </div>
     </div>
 
-    <!-- CONTENIDO DE LAS PESTAÑAS -->
+    <!-- CONTENIDO DE LAS PESTAÑAS (SIN vacaciones) -->
     <div class="row">
         <div class="col-12">
             <div class="tab-content" id="nav-tabContent">
@@ -187,7 +225,7 @@
                         </div>
                     </div>
                 </div>
-                {{-- En el contenido de pestañas --}}
+
                 <div class="tab-pane fade" id="nav-permisos" role="tabpanel" aria-labelledby="nav-permisos-tab">
                     <div id="permisos-content">
                         <div class="text-center py-5">
@@ -198,6 +236,7 @@
                         </div>
                     </div>
                 </div>
+
                 <div class="tab-pane fade" id="nav-bajas" role="tabpanel" aria-labelledby="nav-bajas-tab">
                     <div id="bajas-content">
                         <div class="text-center py-5">
@@ -227,9 +266,8 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-{{-- Al final del archivo perfil_trabajador.blade.php, antes de @endsection --}}
-
-{{-- Scripts del perfil trabajador en orden de dependencias --}}
+{{-- Scripts del perfil trabajador en orden de dependencias (SIN vacaciones.js) --}}
+<script src="{{ asset('js/formato-global.js')}}"></script>
 <script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
@@ -243,5 +281,14 @@
 @if(file_exists(public_path('js/perfil_trabajador/historiales_perfil.js')))
 <script src="{{ asset('js/perfil_trabajador/historiales_perfil.js') }}"></script>
 @endif
+
+{{-- ✅ VARIABLE GLOBAL PARA EL USUARIO ACTUAL --}}
+<script>
+window.currentUser = @json([
+    'id' => Auth::id(),
+    'nombre' => Auth::user()->nombre,
+    'tipo' => Auth::user()->tipo
+]);
+</script>
 
 @endsection

@@ -19,6 +19,12 @@ trait TieneLogicaEstados
         return $this->estatus === 'permiso'; 
     }
 
+    // ✅ NUEVO: Método para vacaciones
+    public function estaDeVacaciones(): bool 
+    { 
+        return $this->estatus === 'vacaciones'; 
+    }
+
     public function estaSuspendido(): bool 
     { 
         return $this->estatus === 'suspendido'; 
@@ -41,7 +47,7 @@ trait TieneLogicaEstados
 
     public function puedeRegresar(): bool
     {
-        return in_array($this->estatus, ['permiso', 'suspendido']);
+        return in_array($this->estatus, ['permiso', 'suspendido', 'vacaciones']); // ✅ ACTUALIZADO
     }
 
     public function requiereAtencion(): bool
@@ -52,5 +58,26 @@ trait TieneLogicaEstados
     public function tieneMultiplesBajas(): bool
     {
         return $this->despidos()->count() > 1;
+    }
+
+    // ✅ NUEVOS: Métodos específicos para gestión de estados
+    public function puedeTomarPermisos(): bool
+    {
+        return $this->estaActivo();
+    }
+
+    public function puedeIrDeVacaciones(): bool
+    {
+        return $this->estaActivo() && !$this->tieneVacacionesActivas();
+    }
+
+    public function estaDisponible(): bool
+    {
+        return $this->estaActivo();
+    }
+
+    public function estaEnDescanso(): bool
+    {
+        return in_array($this->estatus, ['permiso', 'vacaciones']);
     }
 }

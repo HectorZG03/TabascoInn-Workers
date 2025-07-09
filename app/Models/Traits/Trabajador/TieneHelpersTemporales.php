@@ -45,16 +45,12 @@ trait TieneHelpersTemporales
         return $this->despidos()->count();
     }
 
-    public function despidosActivos()
-    {
-        return $this->despidos()->where('estado', 'activo')->count();
-    }
-
     public function despidosCancelados()
     {
         return $this->despidos()->where('estado', 'cancelado')->count();
     }
 
+    // ✅ NOTA: despidosActivos() está definido en TieneRelaciones.php para evitar duplicación
     
     // ✅ NUEVA: Helper para obtener ubicación completa actual
     public function getUbicacionActualAttribute(): string
