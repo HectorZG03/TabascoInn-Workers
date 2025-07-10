@@ -157,7 +157,7 @@ class VacacionesTrabajador extends Model
     public function puedeIniciar(): bool
     {
         return $this->esPendiente() && 
-               Carbon::today()->gte($this->fecha_inicio) &&
+               //arbon::today()->gte($this->fecha_inicio) &&
                !$this->trabajador->tieneVacacionesActivas();
     }
 

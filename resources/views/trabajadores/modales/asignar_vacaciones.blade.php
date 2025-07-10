@@ -1,5 +1,5 @@
 {{-- resources/views/trabajadores/modales/asignar_vacaciones.blade.php --}}
-{{-- Modal LIMPIO - Toda la funcionalidad JS está en public/js/modales/asignar_vacacion.js --}}
+{{-- Modal con FORMATO GLOBAL - Fechas DD/MM/YYYY automáticas --}}
 
 <div class="modal fade" id="asignarVacacionesModal" tabindex="-1" aria-labelledby="asignarVacacionesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -79,36 +79,38 @@
                             <div class="invalid-feedback"></div>
                         </div>
 
-                        <!-- Fecha de Inicio -->
+                        <!-- ✅ FECHA DE INICIO - CON FORMATO GLOBAL DD/MM/YYYY -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_inicio" class="form-label">
                                 <i class="bi bi-calendar-event"></i> Fecha de Inicio
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="date" 
-                                   class="form-control" 
+                            <input type="text" 
+                                   class="form-control formato-fecha" 
                                    id="fecha_inicio" 
                                    name="fecha_inicio"
-                                   min="{{ date('Y-m-d') }}"
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
                                    required
                                    autocomplete="off">
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
-                                <i class="bi bi-info-circle"></i> No puede ser fecha pasada
+                                <i class="bi bi-info-circle"></i> Formato: DD/MM/YYYY - No puede ser fecha pasada
                             </div>
                         </div>
 
-                        <!-- Fecha de Fin -->
+                        <!-- ✅ FECHA DE FIN - CON FORMATO GLOBAL DD/MM/YYYY -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_fin" class="form-label">
                                 <i class="bi bi-calendar-x"></i> Fecha de Fin
                                 <span class="text-danger">*</span>
                             </label>
-                            <input type="date" 
-                                   class="form-control" 
+                            <input type="text" 
+                                   class="form-control formato-fecha" 
                                    id="fecha_fin" 
                                    name="fecha_fin"
-                                   min="{{ date('Y-m-d') }}"
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
                                    required
                                    readonly
                                    autocomplete="off">
@@ -155,7 +157,6 @@
                                 <div class="col-md-6">
                                     <ul class="list-unstyled mb-0">
                                         <li><strong>Estado inicial:</strong> <span class="badge bg-warning">Pendiente</span></li>
-                                        <li><strong>Inicio automático:</strong> <span id="resumen-inicio-auto">No</span></li>
                                     </ul>
                                 </div>
                             </div>
@@ -196,15 +197,15 @@
 
 {{-- 
 ====================================================================
-🎯 NOTAS IMPORTANTES:
+🎯 CAMBIOS IMPLEMENTADOS:
 ====================================================================
 
-1. ✅ TODO EL JAVASCRIPT ESTÁ EN: public/js/modales/asignar_vacacion.js
-2. ✅ Este archivo blade es SOLO HTML - Sin lógica JS
-3. ✅ La comunicación con la lista se hace via eventos custom
-4. ✅ El campo fecha_fin es readonly - se calcula automáticamente
-5. ✅ Todos los IDs están correctamente definidos para el JS
-6. ✅ Los inputs tienen autocomplete="off" para mejor UX
+1. ✅ Inputs type="text" con clase "formato-fecha"
+2. ✅ Placeholder DD/MM/YYYY para guía visual
+3. ✅ maxlength="10" para limitar caracteres
+4. ✅ El formato global se aplica automáticamente
+5. ✅ readonly en fecha_fin (se calcula automáticamente)
+6. ✅ Textos de ayuda actualizados
 
 ====================================================================
 --}}

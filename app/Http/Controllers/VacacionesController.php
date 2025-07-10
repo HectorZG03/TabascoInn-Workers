@@ -107,12 +107,6 @@ class VacacionesController extends Controller
             // Crear vacaciones
             $vacacion = $trabajador->asignarVacaciones($datos, Auth::id());
 
-            // Si la fecha de inicio es hoy, iniciar automáticamente
-            if (Carbon::parse($datos['fecha_inicio'])->isToday() && 
-                !$trabajador->tieneVacacionesActivas()) {
-                $vacacion->iniciar(Auth::id());
-            }
-
             return response()->json([
                 'success' => true,
                 'message' => 'Vacaciones asignadas correctamente',

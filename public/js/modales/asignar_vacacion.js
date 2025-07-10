@@ -1,6 +1,6 @@
 /**
- * asignar_vacacion.js - Modal de Asignación de Vacaciones INDEPENDIENTE
- * Maneja exclusivamente la funcionalidad del modal de asignar vacaciones
+ * asignar_vacacion.js - Modal con FORMATO GLOBAL integrado
+ * Maneja fechas DD/MM/YYYY en frontend, envía YYYY-MM-DD al backend
  */
 class AsignarVacacionModal {
     constructor(trabajadorId) {
@@ -15,8 +15,9 @@ class AsignarVacacionModal {
         if (this.initialized) return;
         
         this.bindEvents();
+        this.setupFormatoGlobalValidations();
         this.initialized = true;
-        console.log('✅ Modal de asignar vacaciones inicializado');
+        console.log('✅ Modal de asignar vacaciones inicializado con formato global');
     }
 
     bindEvents() {
@@ -26,10 +27,56 @@ class AsignarVacacionModal {
         
         // Form interactions
         $('#dias_solicitados').on('input', () => this.calcularFechaFin());
-        $('#fecha_inicio').on('change', () => this.calcularFechaFin());
+        $('#fecha_inicio').on('input blur', () => this.calcularFechaFin());
         $('#observaciones').on('input', () => this.updateObservacionesCount());
         
         console.log('🔗 Eventos del modal vinculados correctamente');
+    }
+
+    // =================================
+    // CONFIGURAR VALIDACIONES ESPECÍFICAS DE VACACIONES
+    // =================================
+
+    setupFormatoGlobalValidations() {
+        // Extender las validaciones del formato global para fechas de vacaciones
+        if (window.FormatoGlobal) {
+            // Backup de la función original
+            const originalValidarRestricciones = window.FormatoGlobal.validarRestriccionesFecha;
+            
+            // Extender con validaciones de vacaciones
+            window.FormatoGlobal.validarRestriccionesFecha = (campo, fecha) => {
+                // Aplicar validaciones originales primero
+                const errorOriginal = originalValidarRestricciones.call(window.FormatoGlobal, campo, fecha);
+                if (errorOriginal) return errorOriginal;
+                
+                // Validaciones específicas para vacaciones
+                if (campo.id === 'fecha_inicio' && campo.closest('#asignarVacacionesModal')) {
+                    const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
+                    const hoy = new Date();
+                    hoy.setHours(0, 0, 0, 0);
+                    
+                    if (fechaObj < hoy) {
+                        return 'Las vacaciones no pueden iniciarse en el pasado';
+                    }
+                }
+                
+                if (campo.id === 'fecha_fin' && campo.closest('#asignarVacacionesModal')) {
+                    const fechaInicio = $('#fecha_inicio').val();
+                    if (fechaInicio && window.FormatoGlobal.validarFormatoFecha(fechaInicio)) {
+                        const fechaInicioObj = window.FormatoGlobal.convertirFechaADate(fechaInicio);
+                        const fechaFinObj = window.FormatoGlobal.convertirFechaADate(fecha);
+                        
+                        if (fechaFinObj <= fechaInicioObj) {
+                            return 'La fecha de fin debe ser posterior al inicio';
+                        }
+                    }
+                }
+                
+                return null;
+            };
+            
+            console.log('✅ Validaciones de vacaciones integradas con formato global');
+        }
     }
 
     // =================================
@@ -75,6 +122,7 @@ class AsignarVacacionModal {
     resetForm() {
         $('#form-asignar-vacaciones')[0].reset();
         $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
+        $('#form-asignar-vacaciones .is-valid').removeClass('is-valid');
         $('#resumen-vacacion').hide();
         $('#alert-vacaciones').hide();
         this.updateObservacionesCount();
@@ -83,32 +131,93 @@ class AsignarVacacionModal {
     }
 
     // =================================
-    // CÁLCULOS Y VALIDACIONES
+    // FUNCIONES DE CONVERSIÓN DE FECHAS
+    // =================================
+
+    /**
+     * Convertir fecha DD/MM/YYYY a YYYY-MM-DD (para backend)
+     */
+    convertirDDMMYYYYaISO(fechaDDMMYYYY) {
+        if (!fechaDDMMYYYY || !window.FormatoGlobal.validarFormatoFecha(fechaDDMMYYYY)) {
+            return null;
+        }
+        
+        const [dia, mes, año] = fechaDDMMYYYY.split('/').map(Number);
+        
+        // Validar que la fecha sea válida
+        const fecha = new Date(año, mes - 1, dia);
+        if (fecha.getFullYear() !== año || fecha.getMonth() !== mes - 1 || fecha.getDate() !== dia) {
+            return null;
+        }
+        
+        // Formatear a YYYY-MM-DD
+        const mesStr = String(mes).padStart(2, '0');
+        const diaStr = String(dia).padStart(2, '0');
+        
+        return `${año}-${mesStr}-${diaStr}`;
+    }
+
+    /**
+     * Convertir fecha YYYY-MM-DD a DD/MM/YYYY (para mostrar)
+     */
+    convertirISOaDDMMYYYY(fechaISO) {
+        if (!fechaISO) return '';
+        
+        try {
+            const [year, month, day] = fechaISO.split('-');
+            return `${day}/${month}/${year}`;
+        } catch (error) {
+            console.error('Error converting ISO to DD/MM/YYYY:', error);
+            return fechaISO;
+        }
+    }
+
+    // =================================
+    // CÁLCULOS CON FORMATO DD/MM/YYYY
     // =================================
 
     calcularFechaFin() {
         const diasSolicitados = parseInt($('#dias_solicitados').val()) || 0;
-        const fechaInicio = $('#fecha_inicio').val();
+        const fechaInicioDDMM = $('#fecha_inicio').val();
         
-        console.log('🔢 Calculando fecha fin:', { diasSolicitados, fechaInicio });
+        console.log('🔢 Calculando fecha fin:', { diasSolicitados, fechaInicioDDMM });
         
         // Limpiar fecha fin si no hay datos suficientes
-        if (!fechaInicio || diasSolicitados <= 0) {
+        if (!fechaInicioDDMM || diasSolicitados <= 0) {
+            $('#fecha_fin').val('');
+            $('#resumen-vacacion').hide();
+            return;
+        }
+        
+        // Validar formato de fecha inicio
+        if (!window.FormatoGlobal.validarFormatoFecha(fechaInicioDDMM)) {
             $('#fecha_fin').val('');
             $('#resumen-vacacion').hide();
             return;
         }
         
         try {
-            const inicio = new Date(fechaInicio);
-            const fin = new Date(inicio);
-            fin.setDate(fin.getDate() + diasSolicitados - 1);
+            // Convertir DD/MM/YYYY a Date object
+            const fechaInicioDate = window.FormatoGlobal.convertirFechaADate(fechaInicioDDMM);
+            if (!fechaInicioDate) {
+                $('#fecha_fin').val('');
+                $('#resumen-vacacion').hide();
+                return;
+            }
             
-            // Formatear fecha para el input type="date" (YYYY-MM-DD)
-            const fechaFinFormatted = fin.toISOString().split('T')[0];
-            $('#fecha_fin').val(fechaFinFormatted);
+            // Calcular fecha fin
+            const fechaFinDate = new Date(fechaInicioDate);
+            fechaFinDate.setDate(fechaFinDate.getDate() + diasSolicitados - 1);
             
-            console.log('✅ Fecha fin calculada:', fechaFinFormatted);
+            // Convertir de vuelta a DD/MM/YYYY
+            const dia = String(fechaFinDate.getDate()).padStart(2, '0');
+            const mes = String(fechaFinDate.getMonth() + 1).padStart(2, '0');
+            const año = fechaFinDate.getFullYear();
+            const fechaFinDDMM = `${dia}/${mes}/${año}`;
+            
+            $('#fecha_fin').val(fechaFinDDMM);
+            
+            console.log('✅ Fecha fin calculada:', fechaFinDDMM);
             
             this.updateResumen();
         } catch (error) {
@@ -128,19 +237,12 @@ class AsignarVacacionModal {
         const fechaInicio = $('#fecha_inicio').val();
         const fechaFin = $('#fecha_fin').val();
         
-        if (diasSolicitados && fechaInicio && fechaFin) {
-            // Formatear fechas para mostrar (DD/MM/YYYY)
-            const fechaInicioMostrar = this.formatearFechaParaMostrar(fechaInicio);
-            const fechaFinMostrar = this.formatearFechaParaMostrar(fechaFin);
+        if (diasSolicitados && fechaInicio && fechaFin && 
+            window.FormatoGlobal.validarFormatoFecha(fechaInicio) && 
+            window.FormatoGlobal.validarFormatoFecha(fechaFin)) {
             
             $('#resumen-duracion').text(`${diasSolicitados} días`);
-            $('#resumen-fechas').text(`${fechaInicioMostrar} - ${fechaFinMostrar}`);
-            
-            // Verificar si inicia hoy
-            const hoy = new Date().toISOString().split('T')[0];
-            const iniciaHoy = fechaInicio === hoy;
-            $('#resumen-inicio-auto').text(iniciaHoy ? 'Sí (se iniciará automáticamente)' : 'No');
-            
+            $('#resumen-fechas').text(`${fechaInicio} - ${fechaFin}`);        
             $('#resumen-vacacion').show();
             console.log('📋 Resumen actualizado');
         } else {
@@ -148,21 +250,8 @@ class AsignarVacacionModal {
         }
     }
 
-    formatearFechaParaMostrar(fechaISO) {
-        if (!fechaISO) return '';
-        
-        try {
-            // Convertir YYYY-MM-DD a DD/MM/YYYY
-            const [year, month, day] = fechaISO.split('-');
-            return `${day}/${month}/${year}`;
-        } catch (error) {
-            console.error('Error formatting date for display:', error);
-            return fechaISO;
-        }
-    }
-
     // =================================
-    // ENVÍO DEL FORMULARIO
+    // ENVÍO DEL FORMULARIO CON CONVERSIÓN
     // =================================
 
     async handleSubmit(e) {
@@ -177,13 +266,32 @@ class AsignarVacacionModal {
             const formData = new FormData($('#form-asignar-vacaciones')[0]);
             const data = Object.fromEntries(formData.entries());
             
-            console.log('📋 Datos a enviar:', data);
+            console.log('📋 Datos originales (DD/MM/YYYY):', data);
             
             // Validación básica en el frontend
             if (!this.validarFormulario(data)) {
                 this.setLoadingState(false);
                 return;
             }
+            
+            // ✅ CONVERTIR FECHAS DD/MM/YYYY A YYYY-MM-DD PARA EL BACKEND
+            const fechaInicioISO = this.convertirDDMMYYYYaISO(data.fecha_inicio);
+            const fechaFinISO = this.convertirDDMMYYYYaISO(data.fecha_fin);
+            
+            if (!fechaInicioISO || !fechaFinISO) {
+                this.showAlert('Error en el formato de fechas', 'danger');
+                this.setLoadingState(false);
+                return;
+            }
+            
+            // Preparar datos para el backend con fechas en formato ISO
+            const dataParaBackend = {
+                ...data,
+                fecha_inicio: fechaInicioISO,
+                fecha_fin: fechaFinISO
+            };
+            
+            console.log('📤 Datos para backend (YYYY-MM-DD):', dataParaBackend);
             
             // Enviar al servidor
             const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/asignar`, {
@@ -194,7 +302,7 @@ class AsignarVacacionModal {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify(data)
+                body: JSON.stringify(dataParaBackend)
             });
             
             const result = await response.json();
@@ -234,15 +342,32 @@ class AsignarVacacionModal {
             isValid = false;
         }
         
-        // Validar fechas
-        if (!data.fecha_inicio) {
-            this.showFieldError('fecha_inicio', 'La fecha de inicio es requerida');
+        // Validar fechas con formato global
+        if (!data.fecha_inicio || !window.FormatoGlobal.validarFormatoFecha(data.fecha_inicio)) {
+            this.showFieldError('fecha_inicio', 'La fecha de inicio es requerida y debe tener formato DD/MM/YYYY');
             isValid = false;
         }
         
-        if (!data.fecha_fin) {
-            this.showFieldError('fecha_fin', 'La fecha de fin es requerida');
+        if (!data.fecha_fin || !window.FormatoGlobal.validarFormatoFecha(data.fecha_fin)) {
+            this.showFieldError('fecha_fin', 'La fecha de fin es requerida y debe tener formato DD/MM/YYYY');
             isValid = false;
+        }
+        
+        // Validar que las fechas sean válidas como objetos Date
+        if (data.fecha_inicio && window.FormatoGlobal.validarFormatoFecha(data.fecha_inicio)) {
+            const fechaInicio = window.FormatoGlobal.convertirFechaADate(data.fecha_inicio);
+            if (!fechaInicio) {
+                this.showFieldError('fecha_inicio', 'Fecha de inicio inválida');
+                isValid = false;
+            }
+        }
+        
+        if (data.fecha_fin && window.FormatoGlobal.validarFormatoFecha(data.fecha_fin)) {
+            const fechaFin = window.FormatoGlobal.convertirFechaADate(data.fecha_fin);
+            if (!fechaFin) {
+                this.showFieldError('fecha_fin', 'Fecha de fin inválida');
+                isValid = false;
+            }
         }
         
         return isValid;
@@ -386,11 +511,23 @@ class AsignarVacacionModal {
     }
 
     /**
-     * Obtener datos del formulario actual
+     * Obtener datos del formulario actual (en formato DD/MM/YYYY)
      */
     getFormData() {
         const formData = new FormData($('#form-asignar-vacaciones')[0]);
         return Object.fromEntries(formData.entries());
+    }
+
+    /**
+     * Obtener datos del formulario para backend (en formato YYYY-MM-DD)
+     */
+    getFormDataForBackend() {
+        const data = this.getFormData();
+        return {
+            ...data,
+            fecha_inicio: this.convertirDDMMYYYYaISO(data.fecha_inicio),
+            fecha_fin: this.convertirDDMMYYYYaISO(data.fecha_fin)
+        };
     }
 
     /**
@@ -407,13 +544,18 @@ class AsignarVacacionModal {
 
 // Inicializar automáticamente cuando el DOM esté listo
 $(document).ready(function() {
-    console.log('🚀 Iniciando modal de asignar vacaciones...');
+    console.log('🚀 Iniciando modal de asignar vacaciones con formato global...');
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
     
     if (trabajadorId) {
-        window.asignarVacacionModal = new AsignarVacacionModal(trabajadorId);
-        console.log(`✅ Modal de asignar vacaciones iniciado para trabajador: ${trabajadorId}`);
+        // Verificar que el formato global esté disponible
+        if (window.FormatoGlobal) {
+            window.asignarVacacionModal = new AsignarVacacionModal(trabajadorId);
+            console.log(`✅ Modal con formato global iniciado para trabajador: ${trabajadorId}`);
+        } else {
+            console.error('❌ FormatoGlobal no está disponible. Asegúrate de incluir formato-global.js');
+        }
     } else {
         console.error('❌ No se pudo obtener el ID del trabajador para el modal');
     }

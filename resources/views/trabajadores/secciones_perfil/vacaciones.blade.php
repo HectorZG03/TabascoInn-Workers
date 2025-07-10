@@ -271,10 +271,13 @@
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<!-- 🏖️ 1. LISTA DE VACACIONES (Principal) -->
+<!-- 🎯 1. FORMATO GLOBAL (Debe ir PRIMERO) -->
+<script src="{{ asset('js/formato-global.js') }}"></script>
+
+<!-- 🏖️ 2. LISTA DE VACACIONES (Principal) -->
 <script src="{{ asset('js/vacaciones.js') }}"></script>
 
-<!-- 📝 2. MODAL DE ASIGNAR VACACIONES (Independiente) -->
+<!-- 📝 3. MODAL DE ASIGNAR VACACIONES (Con formato global integrado) -->
 <script src="{{ asset('js/modales/asignar_vacacion.js') }}"></script>
 
 <!-- Variable global para el usuario actual -->
@@ -286,10 +289,12 @@ window.currentUser = @json([
 ]);
 
 // Log de inicialización
-console.log('🎯 Sistema de vacaciones con responsabilidades separadas:');
+console.log('🎯 Sistema de vacaciones con formato global:');
+console.log('   📅 Formato Global: formato-global.js');
 console.log('   📋 Lista: vacaciones.js');
 console.log('   📝 Modal: modales/asignar_vacacion.js');
 console.log('   👤 Usuario:', window.currentUser);
+console.log('   🔧 Formato de fechas: DD/MM/YYYY → YYYY-MM-DD (backend)');
 </script>
 
 <!-- Estilos -->
@@ -317,20 +322,6 @@ console.log('   👤 Usuario:', window.currentUser);
     box-shadow: 0 4px 25px rgba(0,0,0,0.1);
 }
 
-/* Indicador visual para debug */
-.container-fluid[data-trabajador-id]::before {
-    content: "🏖️ Vacaciones - Responsabilidades Separadas";
-    position: fixed;
-    bottom: 10px;
-    right: 10px;
-    background: rgba(0,123,255,0.1);
-    color: #007bff;
-    padding: 5px 10px;
-    border-radius: 5px;
-    font-size: 12px;
-    z-index: 1000;
-    border: 1px solid rgba(0,123,255,0.3);
-}
 </style>
 
 @endsection

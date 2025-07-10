@@ -44,6 +44,7 @@ return new class extends Migration
                 'activo',      // Trabajador activo
                 'inactivo',    // Trabajador dado de baja
                 'permiso',     // Con permiso temporal
+                'vacaciones',  // Trabajador en vacaciones  
                 'suspendido',  // Suspendido (requiere acción manual)
                 'prueba',      // En período de prueba
             ])->default('activo')->comment('Estado laboral del trabajador');
