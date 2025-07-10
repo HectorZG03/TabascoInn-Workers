@@ -1,4 +1,6 @@
-// ✅ NUEVA FUNCIÓN: Mostrar u ocultar campo de condición personalizada
+// ✅ MODAL DE DESPIDOS SIMPLIFICADO CON FORMATO GLOBAL
+
+// Funciones globales para el modal
 function toggleCondicionPersonalizada() {
   const select = document.getElementById('condicion_salida');
   const container = document.getElementById('condicionPersonalizadaContainer');
@@ -7,153 +9,276 @@ function toggleCondicionPersonalizada() {
   if (select.value === 'OTRO') {
     container.style.display = 'block';
     input.required = true;
-    input.focus(); // Enfocar automáticamente el campo
-  } else {
-    container.style.display = 'none';
-    input.required = false;
-    input.value = ''; // Limpiar el valor
-    input.classList.remove('is-invalid');
-  }
-}
-
-// Mostrar u ocultar campo Fecha Reintegro según tipo de baja
-function toggleReintegroField(show) {
-  const container = document.getElementById('fechaReintegroContainer');
-  const input = document.getElementById('fecha_reintegro');
-  if (show) {
-    container.style.display = 'block';
-    input.required = true;
+    input.focus();
   } else {
     container.style.display = 'none';
     input.required = false;
     input.value = '';
+    input.classList.remove('is-invalid');
+  }
+}
+
+function toggleReintegroField(show) {
+  const container = document.getElementById('fechaReintegroContainer');
+  const duracionContainer = document.getElementById('duracionBajaContainer');
+  const input = document.getElementById('fecha_reintegro');
+  
+  container.style.display = show ? 'block' : 'none';
+  duracionContainer.style.display = show ? 'block' : 'none';
+  input.required = show;
+  
+  if (!show) {
+    input.value = '';
+    document.getElementById('duracionBaja').textContent = '0 días';
+    input.classList.remove('is-invalid', 'is-valid');
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  const modalDespido = document.getElementById('modalDespido');
-  const formDespido = document.getElementById('formDespido');
-  const nombreTrabajador = document.getElementById('nombreTrabajador');
+  // Verificar dependencias
+  if (!window.FormatoGlobal) {
+    console.error('❌ FormatoGlobal no disponible');
+    return;
+  }
+
+  // Elementos del DOM
+  const modal = document.getElementById('modalDespido');
+  const form = document.getElementById('formDespido');
   const fechaBaja = document.getElementById('fecha_baja');
+  const fechaReintegro = document.getElementById('fecha_reintegro');
   const motivo = document.getElementById('motivo');
   const observaciones = document.getElementById('observaciones');
-  const btnConfirmarDespido = document.getElementById('btnConfirmarDespido');
-  const contadorMotivo = document.getElementById('contadorMotivo');
-  const contadorObservaciones = document.getElementById('contadorObservaciones');
+  const btnSubmit = document.getElementById('btnConfirmarDespido');
+  
+  if (!modal || !form) return;
 
-  if (!modalDespido || !formDespido) return;
+  let fechaIngresoTrabajador = null;
 
-  // Abrir modal y setear datos
-  document.querySelectorAll('.btn-despedir').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const trabajadorId = btn.dataset.id;
-      const trabajadorNombre = btn.dataset.nombre;
-      const fechaIngreso = btn.dataset.fechaIngreso;
+  // ✅ APLICAR FORMATO A CAMPOS DE FECHA
+  FormatoGlobal.aplicarFormato(fechaBaja);
+  FormatoGlobal.aplicarFormato(fechaReintegro);
 
-      formDespido.reset();
-      nombreTrabajador.textContent = trabajadorNombre;
-      formDespido.action = `/trabajadores/${trabajadorId}/despedir`;
-      fechaBaja.min = fechaIngreso;
-      fechaBaja.value = new Date().toISOString().split('T')[0];
+  // ✅ SI HAY FECHA POR DEFECTO, CONVERTIRLA A FORMATO DD/MM/YYYY
+  if (fechaBaja.value && fechaBaja.value.includes('-')) {
+    const fecha = new Date(fechaBaja.value);
+    if (!isNaN(fecha.getTime())) {
+      const dia = String(fecha.getDate()).padStart(2, '0');
+      const mes = String(fecha.getMonth() + 1).padStart(2, '0');
+      const año = fecha.getFullYear();
+      fechaBaja.value = `${dia}/${mes}/${año}`;
+    }
+  }
 
-      // Por defecto baja definitiva
-      document.getElementById('tipo_definitiva').checked = true;
-      toggleReintegroField(false);
-      toggleCondicionPersonalizada(); // ✅ Resetear condición personalizada
+  // ✅ CALCULAR DURACIÓN DE BAJA TEMPORAL
+  function calcularDuracion() {
+    const duracionBadge = document.getElementById('duracionBaja');
+    
+    if (!fechaBaja.value || !fechaReintegro.value) {
+      duracionBadge.textContent = '0 días';
+      duracionBadge.className = 'badge bg-info';
+      return;
+    }
 
-      // Limpiar errores y contadores
-      document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-      if (contadorMotivo) contadorMotivo.textContent = '0/500';
-      if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
+    const fechaInicio = FormatoGlobal.convertirFechaADate(fechaBaja.value);
+    const fechaFin = FormatoGlobal.convertirFechaADate(fechaReintegro.value);
+    
+    if (fechaInicio && fechaFin && fechaFin > fechaInicio) {
+      const dias = Math.ceil((fechaFin - fechaInicio) / (1000 * 60 * 60 * 24));
+      duracionBadge.textContent = `${dias} día${dias > 1 ? 's' : ''}`;
+      duracionBadge.className = dias <= 7 ? 'badge bg-success' : 
+                                dias <= 30 ? 'badge bg-warning' : 'badge bg-danger';
+    } else {
+      duracionBadge.textContent = 'Fechas inválidas';
+      duracionBadge.className = 'badge bg-danger';
+    }
+  }
 
-      new bootstrap.Modal(modalDespido).show();
-    });
+  // ✅ EVENTOS PARA CALCULAR DURACIÓN
+  [fechaBaja, fechaReintegro].forEach(campo => {
+    campo?.addEventListener('blur', () => setTimeout(calcularDuracion, 100));
   });
 
-  // Contadores de caracteres
+  // ✅ CONTADORES DE CARACTERES
   motivo?.addEventListener('input', () => {
     const len = motivo.value.length;
-    contadorMotivo.textContent = `${len}/500`;
-    contadorMotivo.className = len > 450 ? 'text-warning' : 'text-muted';
+    document.getElementById('contadorMotivo').textContent = `${len}/500`;
   });
 
   observaciones?.addEventListener('input', () => {
     const len = observaciones.value.length;
-    contadorObservaciones.textContent = `${len}/1000`;
-    contadorObservaciones.className = len > 900 ? 'text-warning' : 'text-muted';
+    document.getElementById('contadorObservaciones').textContent = `${len}/1000`;
   });
 
-  // ✅ VALIDACIÓN FRONTEND ACTUALIZADA
-  formDespido.addEventListener('submit', e => {
-    e.preventDefault();
-    let isValid = true;
+  // ✅ ABRIR MODAL
+  document.querySelectorAll('.btn-despedir').forEach(btn => {
+    btn.addEventListener('click', () => {
+      // Resetear formulario
+      form.reset();
+      limpiarErrores();
 
-    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
+      // ✅ LIMPIAR FECHA DE BAJA (evitar que aparezca precargada)
+      fechaBaja.value = '';
+      fechaReintegro.value = '';
+      document.getElementById('duracionBaja').textContent = '0 días';
 
-    // Validar fecha de baja
-    if (!fechaBaja.value) {
-      showFieldError(fechaBaja, 'La fecha de baja es obligatoria');
-      isValid = false;
+      // ✅ Aplicar formato al campo vacío
+      FormatoGlobal.aplicarFormato(fechaBaja);
+      FormatoGlobal.aplicarFormato(fechaReintegro);
+
+      // Configurar datos del trabajador
+      document.getElementById('nombreTrabajador').textContent = btn.dataset.nombre;
+      form.action = `/trabajadores/${btn.dataset.id}/despedir`;
+      fechaIngresoTrabajador = btn.dataset.fechaIngreso;
+
+      // Estado inicial
+      document.getElementById('tipo_definitiva').checked = true;
+      toggleReintegroField(false);
+      toggleCondicionPersonalizada();
+
+      // Resetear contadores
+      document.getElementById('contadorMotivo').textContent = '0/500';
+      document.getElementById('contadorObservaciones').textContent = '0/1000';
+
+      new bootstrap.Modal(modal).show();
+    });
+  });
+
+
+  // ✅ VALIDACIÓN PERSONALIZADA
+  function validarFecha(campo, valor) {
+    if (!FormatoGlobal.validarFormatoFecha(valor)) {
+      return 'Formato inválido. Use DD/MM/YYYY';
     }
 
-    // ✅ VALIDAR CONDICIÓN DE SALIDA (select + campo personalizado)
-    const condicionSalida = document.getElementById('condicion_salida');
-    const condicionPersonalizada = document.getElementById('condicion_personalizada');
-    
-    if (!condicionSalida.value) {
-      showFieldError(condicionSalida, 'Debe seleccionar una condición de salida');
-      isValid = false;
-    } else if (condicionSalida.value === 'OTRO') {
-      if (!condicionPersonalizada.value.trim()) {
-        showFieldError(condicionPersonalizada, 'Debe especificar la condición de salida');
-        isValid = false;
-      } else if (condicionPersonalizada.value.trim().length < 3) {
-        showFieldError(condicionPersonalizada, 'La condición debe tener al menos 3 caracteres');
-        isValid = false;
+    const fecha = FormatoGlobal.convertirFechaADate(valor);
+    if (!fecha) return 'Fecha inválida';
+
+    if (campo.id === 'fecha_baja') {
+      // ✅ ELIMINADA la validación "no puede ser posterior a hoy"
+      // Ahora se permiten fechas futuras para la baja
+      
+      // Solo validar que no sea anterior a la fecha de ingreso
+      if (fechaIngresoTrabajador) {
+        const [año, mes, dia] = fechaIngresoTrabajador.split('-').map(Number);
+        const fechaIngreso = new Date(año, mes - 1, dia);
+        if (fecha < fechaIngreso) {
+          return `No puede ser anterior a la fecha de ingreso (${dia.toString().padStart(2, '0')}/${mes.toString().padStart(2, '0')}/${año})`;
+        }
+      }
+    } else if (campo.id === 'fecha_reintegro') {
+      // Para fecha de reintegro sí debe ser posterior a hoy
+      const hoy = new Date();
+      hoy.setHours(23, 59, 59, 999);
+      
+      if (fecha <= hoy) return 'Debe ser posterior a hoy';
+      
+      // Debe ser posterior a la fecha de baja
+      const fechaBajaObj = FormatoGlobal.convertirFechaADate(fechaBaja.value);
+      if (fechaBajaObj && fecha <= fechaBajaObj) {
+        return 'Debe ser posterior a la fecha de baja';
       }
     }
 
+    return null;
+  }
+
+  // ✅ VALIDACIÓN AL ENVIAR
+  form.addEventListener('submit', e => {
+    e.preventDefault();
+    limpiarErrores();
+    let esValido = true;
+
+    // Validar fecha de baja
+    if (!fechaBaja.value.trim()) {
+      mostrarError(fechaBaja, 'La fecha de baja es obligatoria');
+      esValido = false;
+    } else {
+      const error = validarFecha(fechaBaja, fechaBaja.value.trim());
+      if (error) {
+        mostrarError(fechaBaja, error);
+        esValido = false;
+      }
+    }
+
+    // Validar condición de salida
+    const condicion = document.getElementById('condicion_salida');
+    const condicionPersonalizada = document.getElementById('condicion_personalizada');
+    
+    if (!condicion.value) {
+      mostrarError(condicion, 'Debe seleccionar una condición');
+      esValido = false;
+    } else if (condicion.value === 'OTRO' && !condicionPersonalizada.value.trim()) {
+      mostrarError(condicionPersonalizada, 'Debe especificar la condición');
+      esValido = false;
+    }
+
     // Validar motivo
-    if (!motivo.value.trim()) {
-      showFieldError(motivo, 'El motivo es obligatorio');
-      isValid = false;
-    } else if (motivo.value.trim().length < 10) {
-      showFieldError(motivo, 'El motivo debe tener al menos 10 caracteres');
-      isValid = false;
+    if (!motivo.value.trim() || motivo.value.trim().length < 10) {
+      mostrarError(motivo, 'El motivo debe tener al menos 10 caracteres');
+      esValido = false;
     }
 
     // Validar fecha de reintegro si es temporal
     if (document.getElementById('tipo_temporal').checked) {
-      const fechaReintegro = document.getElementById('fecha_reintegro');
-      if (!fechaReintegro.value) {
-        showFieldError(fechaReintegro, 'La fecha de reintegro es obligatoria');
-        isValid = false;
+      if (!fechaReintegro.value.trim()) {
+        mostrarError(fechaReintegro, 'La fecha de reintegro es obligatoria');
+        esValido = false;
+      } else {
+        const error = validarFecha(fechaReintegro, fechaReintegro.value.trim());
+        if (error) {
+          mostrarError(fechaReintegro, error);
+          esValido = false;
+        }
       }
     }
 
-    if (isValid) {
-      btnConfirmarDespido.disabled = true;
-      btnConfirmarDespido.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
-      formDespido.submit();
+    if (esValido) {
+      btnSubmit.disabled = true;
+      btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+      form.submit();
+    } else {
+      // Enfocar primer error
+      const primerError = form.querySelector('.is-invalid');
+      primerError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      primerError?.focus();
     }
   });
 
-  // Mostrar errores de validación
-  function showFieldError(field, message) {
-    field.classList.add('is-invalid');
-    const feedback = field.parentNode.querySelector('.invalid-feedback');
-    if (feedback) feedback.textContent = message;
+  // ✅ FUNCIONES AUXILIARES
+  function mostrarError(campo, mensaje) {
+    campo.classList.add('is-invalid');
+    let feedback = campo.parentNode.querySelector('.invalid-feedback');
+    if (!feedback) {
+      feedback = document.createElement('div');
+      feedback.className = 'invalid-feedback';
+      campo.parentNode.appendChild(feedback);
+    }
+    feedback.textContent = mensaje;
   }
 
-  // ✅ RESET MODAL ACTUALIZADO
-  modalDespido.addEventListener('hidden.bs.modal', () => {
-    formDespido.reset();
-    document.querySelectorAll('.is-invalid').forEach(el => el.classList.remove('is-invalid'));
-    btnConfirmarDespido.innerHTML = '<i class="bi bi-person-x me-1"></i> Confirmar Baja';
-    btnConfirmarDespido.disabled = false;
-    if (contadorMotivo) contadorMotivo.textContent = '0/500';
-    if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
+  function limpiarErrores() {
+    document.querySelectorAll('.is-invalid, .is-valid').forEach(el => {
+      el.classList.remove('is-invalid', 'is-valid');
+    });
+    document.querySelectorAll('.invalid-feedback').forEach(el => el.remove());
+  }
+
+  // ✅ RESET AL CERRAR MODAL
+  modal.addEventListener('hidden.bs.modal', () => {
+    form.reset();
+    limpiarErrores();
+    btnSubmit.disabled = false;
+    btnSubmit.innerHTML = '<i class="bi bi-person-x me-1"></i> Confirmar Baja';
+    fechaIngresoTrabajador = null;
     toggleReintegroField(false);
-    toggleCondicionPersonalizada(); // ✅ Resetear condición personalizada
+    toggleCondicionPersonalizada();
+    
+    // ✅ RESETEAR CONTADORES
+    document.getElementById('contadorMotivo').textContent = '0/500';
+    document.getElementById('contadorObservaciones').textContent = '0/1000';
   });
+
+  console.log('✅ Modal de despidos simplificado inicializado');
+
+  
 });

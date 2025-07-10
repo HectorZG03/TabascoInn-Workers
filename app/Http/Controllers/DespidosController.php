@@ -31,7 +31,7 @@ class DespidosController extends Controller
     }
 
     /**
-     * ✅ PROCESAR DESPIDO CON CONDICIÓN PERSONALIZADA
+     * ✅ PROCESAR DESPIDO CON FORMATO DD/MM/YYYY
      */
     public function store(Request $request, Trabajador $trabajador)
     {
@@ -45,9 +45,46 @@ class DespidosController extends Controller
             return back()->withErrors(['error' => 'Este trabajador ya tiene un despido activo']);
         }
 
-        // ✅ VALIDACIÓN ACTUALIZADA PARA MANEJAR CONDICIÓN PERSONALIZADA
+        // ✅ VALIDACIÓN ACTUALIZADA PARA FORMATO DD/MM/YYYY
         $validated = $request->validate([
-            'fecha_baja' => 'required|date|before_or_equal:today|after_or_equal:' . $trabajador->fecha_ingreso->format('Y-m-d'),
+            'fecha_baja' => [
+                'required',
+                'string',
+                'regex:/^\d{2}\/\d{2}\/\d{4}$/',
+                function ($attribute, $value, $fail) use ($trabajador) {
+                    // Convertir fecha DD/MM/YYYY a Date para validaciones
+                    $fechaPartes = explode('/', $value);
+                    if (count($fechaPartes) !== 3) {
+                        $fail('El formato de fecha debe ser DD/MM/YYYY');
+                        return;
+                    }
+                    
+                    $dia = (int)$fechaPartes[0];
+                    $mes = (int)$fechaPartes[1];
+                    $año = (int)$fechaPartes[2];
+                    
+                    // Validar fecha válida
+                    if (!checkdate($mes, $dia, $año)) {
+                        $fail('La fecha ingresada no es válida');
+                        return;
+                    }
+                    
+                    try {
+                        $fechaBaja = Carbon::createFromFormat('d/m/Y', $value);
+                        $hoy = Carbon::today();
+                        $fechaIngreso = $trabajador->fecha_ingreso;
+                        
+                        // No puede ser anterior a fecha de ingreso
+                        if ($fechaBaja->lessThan($fechaIngreso)) {
+                            $fail('La fecha de baja no puede ser anterior a la fecha de ingreso (' . $fechaIngreso->format('d/m/Y') . ')');
+                            return;
+                        }
+                    } catch (\Exception $e) {
+                        $fail('Fecha inválida');
+                    }
+                }
+            ],
+            
             'motivo' => 'required|string|min:10|max:500',
             
             // ✅ CONDICIÓN DE SALIDA: Acepta opciones predefinidas + "OTRO"
@@ -59,26 +96,68 @@ class DespidosController extends Controller
             'observaciones' => 'nullable|string|max:1000',
             'tipo_baja' => 'required|in:temporal,definitiva',
             
-            // Validación de fecha de reintegro
+            // ✅ VALIDACIÓN DE FECHA DE REINTEGRO CON FORMATO DD/MM/YYYY
             'fecha_reintegro' => [
                 'nullable',
-                'date',
+                'string',
+                'regex:/^\d{2}\/\d{2}\/\d{4}$/',
                 function ($attribute, $value, $fail) use ($request) {
                     if ($request->tipo_baja === 'temporal') {
                         if (!$value) {
-                            $fail('La fecha de reintegro es obligatoria para bajas temporales.');
-                        } else {
-                            if (strtotime($value) <= strtotime($request->fecha_baja)) {
-                                $fail('La fecha de reintegro debe ser posterior a la fecha de baja.');
+                            $fail('La fecha de reintegro es obligatoria para bajas temporales');
+                            return;
+                        }
+                        
+                        // Convertir fechas DD/MM/YYYY para comparar
+                        $fechaPartes = explode('/', $value);
+                        if (count($fechaPartes) !== 3) {
+                            $fail('El formato de fecha debe ser DD/MM/YYYY');
+                            return;
+                        }
+                        
+                        $dia = (int)$fechaPartes[0];
+                        $mes = (int)$fechaPartes[1];
+                        $año = (int)$fechaPartes[2];
+                        
+                        if (!checkdate($mes, $dia, $año)) {
+                            $fail('La fecha de reintegro no es válida');
+                            return;
+                        }
+                        
+                        try {
+                            $fechaReintegro = Carbon::createFromFormat('d/m/Y', $value);
+                            $fechaBaja = Carbon::createFromFormat('d/m/Y', $request->fecha_baja);
+                            $hoy = Carbon::today();
+                            
+                            // Debe ser posterior a hoy
+                            if ($fechaReintegro->lessThanOrEqualTo($hoy)) {
+                                $fail('La fecha de reintegro debe ser posterior a hoy');
+                                return;
                             }
+                            
+                            // Debe ser posterior a la fecha de baja
+                            if ($fechaReintegro->lessThanOrEqualTo($fechaBaja)) {
+                                $fail('La fecha de reintegro debe ser posterior a la fecha de baja');
+                                return;
+                            }
+                            
+                            // Validar que no sea muy lejana (máximo 2 años)
+                            $dosAñosDesdeHoy = $hoy->copy()->addYears(2);
+                            if ($fechaReintegro->greaterThan($dosAñosDesdeHoy)) {
+                                $fail('La fecha de reintegro no puede ser mayor a 2 años');
+                                return;
+                            }
+                            
+                        } catch (\Exception $e) {
+                            $fail('Fecha de reintegro inválida');
                         }
                     }
                 }
             ],
         ], [
+            // ✅ MENSAJES DE ERROR PERSONALIZADOS
             'fecha_baja.required' => 'La fecha de baja es obligatoria',
-            'fecha_baja.before_or_equal' => 'La fecha de baja no puede ser futura',
-            'fecha_baja.after_or_equal' => 'La fecha de baja no puede ser anterior a la fecha de ingreso',
+            'fecha_baja.regex' => 'La fecha de baja debe tener el formato DD/MM/YYYY',
             'motivo.required' => 'El motivo es obligatorio',
             'motivo.min' => 'El motivo debe tener al menos 10 caracteres',
             'motivo.max' => 'El motivo no puede exceder 500 caracteres',
@@ -93,7 +172,21 @@ class DespidosController extends Controller
             'observaciones.max' => 'Las observaciones no pueden exceder 1000 caracteres',
             'tipo_baja.required' => 'El tipo de baja es obligatorio',
             'tipo_baja.in' => 'El tipo de baja debe ser temporal o definitiva',
+            'fecha_reintegro.regex' => 'La fecha de reintegro debe tener el formato DD/MM/YYYY',
         ]);
+
+        // ✅ CONVERTIR FECHAS DE DD/MM/YYYY A Y-m-d PARA LA BASE DE DATOS
+        try {
+            $fechaBajaParaBD = Carbon::createFromFormat('d/m/Y', $validated['fecha_baja'])->format('Y-m-d');
+            $fechaReintegroParaBD = null;
+            
+            if ($validated['fecha_reintegro']) {
+                $fechaReintegroParaBD = Carbon::createFromFormat('d/m/Y', $validated['fecha_reintegro'])->format('Y-m-d');
+            }
+        } catch (\Exception $e) {
+            return back()->withErrors(['error' => 'Error al procesar las fechas: ' . $e->getMessage()])
+                        ->withInput();
+        }
 
         // ✅ DETERMINAR LA CONDICIÓN FINAL A GUARDAR
         $condicionFinal = $validated['condicion_salida'] === 'OTRO' 
@@ -103,20 +196,20 @@ class DespidosController extends Controller
         DB::beginTransaction();
         
         try {
-            // ✅ CREAR REGISTRO DE DESPIDO CON CONDICIÓN CORRECTA
+            // ✅ CREAR REGISTRO DE DESPIDO CON FECHAS CONVERTIDAS
             $despido = Despidos::create([
                 'id_trabajador' => $trabajador->id_trabajador,
-                'fecha_baja' => $validated['fecha_baja'],
+                'fecha_baja' => $fechaBajaParaBD, // ✅ Fecha convertida a Y-m-d
                 'motivo' => $validated['motivo'],
                 'condicion_salida' => $condicionFinal, // ✅ Usar condición final
                 'observaciones' => $validated['observaciones'],
                 'estado' => Despidos::ESTADO_ACTIVO,
                 'tipo_baja' => $request->tipo_baja,
-                'fecha_reintegro' => $request->tipo_baja === 'temporal' ? $request->fecha_reintegro : null,
+                'fecha_reintegro' => $fechaReintegroParaBD, // ✅ Fecha convertida a Y-m-d o null
                 'creado_por' => Auth::id(),
             ]);
 
-            // ✅ ACTUALIZAR ESTADO DEL TRABAJADOR (corregir duplicación)
+            // ✅ ACTUALIZAR ESTADO DEL TRABAJADOR
             $nuevoEstatus = $request->tipo_baja === 'temporal' ? 'suspendido' : 'inactivo';
             
             $trabajador->update([
@@ -126,24 +219,44 @@ class DespidosController extends Controller
 
             DB::commit();
 
-            // ✅ LOG MEJORADO CON CONDICIÓN FINAL
+            // ✅ LOG MEJORADO CON FECHAS ORIGINALES Y CONVERTIDAS
             Log::info('Trabajador despedido', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'despido_id' => $despido->id_baja,
                 'motivo' => $validated['motivo'],
-                'condicion_salida' => $condicionFinal, // ✅ Log de condición final
+                'condicion_salida' => $condicionFinal,
                 'condicion_fue_personalizada' => $validated['condicion_salida'] === 'OTRO',
-                'fecha_baja' => $validated['fecha_baja'],
+                'fecha_baja_original' => $validated['fecha_baja'], // DD/MM/YYYY
+                'fecha_baja_bd' => $fechaBajaParaBD, // Y-m-d
+                'fecha_reintegro_original' => $validated['fecha_reintegro'], // DD/MM/YYYY o null
+                'fecha_reintegro_bd' => $fechaReintegroParaBD, // Y-m-d o null
                 'tipo_baja' => $request->tipo_baja,
                 'nuevo_estatus' => $nuevoEstatus,
                 'estado' => $despido->estado,
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            // ✅ MENSAJE DE ÉXITO MEJORADO
+            // ✅ MENSAJE DE ÉXITO MEJORADO CON FECHAS LEGIBLES
             $tipoAccion = $request->tipo_baja === 'temporal' ? 'suspendido temporalmente' : 'dado de baja';
             $mensaje = "Trabajador {$trabajador->nombre_completo} ha sido {$tipoAccion} exitosamente";
+            
+            // Agregar información de fechas al mensaje
+            $mensaje .= " con fecha {$validated['fecha_baja']}";
+            
+            if ($validated['fecha_reintegro']) {
+                $mensaje .= " hasta {$validated['fecha_reintegro']}";
+                
+                // Calcular duración para mensaje
+                try {
+                    $fechaBajaObj = Carbon::createFromFormat('d/m/Y', $validated['fecha_baja']);
+                    $fechaReintegroObj = Carbon::createFromFormat('d/m/Y', $validated['fecha_reintegro']);
+                    $duracionDias = $fechaBajaObj->diffInDays($fechaReintegroObj);
+                    $mensaje .= " ({$duracionDias} días)";
+                } catch (\Exception $e) {
+                    // Si hay error calculando, continuar sin la duración
+                }
+            }
             
             if ($validated['condicion_salida'] === 'OTRO') {
                 $mensaje .= " con condición personalizada: \"{$condicionFinal}\"";
@@ -156,8 +269,11 @@ class DespidosController extends Controller
             
             Log::error('Error al procesar despido', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'condicion_solicitada' => $validated['condicion_salida'],
+                'fecha_baja_original' => $validated['fecha_baja'] ?? null,
+                'fecha_reintegro_original' => $validated['fecha_reintegro'] ?? null,
+                'condicion_solicitada' => $validated['condicion_salida'] ?? null,
                 'condicion_personalizada' => $validated['condicion_personalizada'] ?? null,
+                'tipo_baja' => $request->tipo_baja ?? null,
                 'error' => $e->getMessage(),
                 'linea' => $e->getLine(),
                 'archivo' => $e->getFile(),

@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE DESPIDO CON OPCIÓN PERSONALIZADA --}}
+{{-- ✅ MODAL DE DESPIDO CON FORMATO GLOBAL DD/MM/YYYY --}}
 <div class="modal fade" id="modalDespido" tabindex="-1" aria-labelledby="modalDespidoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-danger shadow-sm">
@@ -27,19 +27,26 @@
           </div>
           
           <div class="row g-3">
-            <!-- Fecha de Baja -->
+            <!-- ✅ FECHA DE BAJA CON FORMATO PERSONALIZADO -->
             <div class="col-md-6">
               <label for="fecha_baja" class="form-label fw-semibold">
                 <i class="bi bi-calendar-x-fill me-1"></i> Fecha de Baja <span class="text-danger">*</span>
               </label>
-              <input type="date" 
-                     class="form-control" 
-                     id="fecha_baja" 
-                     name="fecha_baja" 
-                     value="{{ date('Y-m-d') }}"
-                     max="{{ date('Y-m-d') }}"
-                     required>
-              <small class="form-text text-muted">No puede ser posterior a hoy.</small>
+              @php
+                  $fechaBaja = old('fecha_baja') 
+                      ? \Carbon\Carbon::parse(old('fecha_baja'))->format('d/m/Y') 
+                      : '';
+              @endphp
+
+              <input type="text" 
+                    class="form-control formato-fecha" 
+                    id="fecha_baja" 
+                    name="fecha_baja" 
+                    placeholder="DD/MM/YYYY"
+                    maxlength="10"
+                    value="{{ $fechaBaja }}"
+                    required>
+              <div class="form-text">Formato: DD/MM/YYYY (no puede ser posterior a hoy)</div>
               <div class="invalid-feedback"></div>
             </div>
             
@@ -60,17 +67,18 @@
               </div>
             </div>
             
-            <!-- Fecha de Reintegro -->
+            <!-- ✅ FECHA DE REINTEGRO CON FORMATO PERSONALIZADO -->
             <div class="col-md-6" id="fechaReintegroContainer" style="display: none;">
               <label for="fecha_reintegro" class="form-label fw-semibold">
                 <i class="bi bi-calendar-check-fill me-1"></i> Fecha de Reintegro <span class="text-danger">*</span>
               </label>
-              <input type="date" 
-                     class="form-control" 
+              <input type="text" 
+                     class="form-control formato-fecha" 
                      id="fecha_reintegro" 
                      name="fecha_reintegro" 
-                     min="{{ date('Y-m-d', strtotime('+1 day')) }}"
-                     value="">
+                     placeholder="DD/MM/YYYY"
+                     maxlength="10">
+              <div class="form-text">Formato: DD/MM/YYYY (debe ser posterior a la fecha de baja)</div>
               <div class="invalid-feedback"></div>
             </div>
             
@@ -107,7 +115,8 @@
                      id="condicion_personalizada" 
                      name="condicion_personalizada" 
                      placeholder="Escriba la condición de salida específica..."
-                     maxlength="100">
+                     maxlength="100"
+                     style="text-transform: uppercase">
               <small class="form-text text-muted">
                 <i class="bi bi-lightbulb-fill text-warning"></i> 
                 Escriba la condición exacta cuando ninguna de las opciones anteriores sea apropiada.
@@ -127,6 +136,7 @@
                         minlength="10" 
                         maxlength="500" 
                         placeholder="Descripción detallada del motivo de la baja..."
+                        style="text-transform: uppercase"
                         required></textarea>
               <div class="d-flex justify-content-between align-items-center">
                 <small class="form-text text-muted">Mínimo 10 caracteres, máximo 500.</small>
@@ -145,12 +155,26 @@
                         name="observaciones" 
                         rows="3" 
                         maxlength="1000" 
-                        placeholder="Observaciones adicionales, recomendaciones o notas relevantes..."></textarea>
+                        placeholder="Observaciones adicionales, recomendaciones o notas relevantes..."
+                        style="text-transform: uppercase"></textarea>
               <div class="d-flex justify-content-between align-items-center">
                 <small class="form-text text-muted">Opcional. Máximo 1000 caracteres.</small>
                 <small id="contadorObservaciones" class="text-muted">0/1000</small>
               </div>
               <div class="invalid-feedback"></div>
+            </div>
+
+            <!-- ✅ INFORMACIÓN DE DURACIÓN (solo para temporales) -->
+            <div class="col-12" id="duracionBajaContainer" style="display: none;">
+              <div class="card bg-light border-info">
+                <div class="card-body py-2">
+                  <div class="d-flex align-items-center gap-2">
+                    <i class="bi bi-calendar-week text-info"></i>
+                    <strong class="text-info">Duración de la baja temporal:</strong>
+                    <span id="duracionBaja" class="badge bg-info">0 días</span>
+                  </div>
+                </div>
+              </div>
             </div>
           </div>
           
