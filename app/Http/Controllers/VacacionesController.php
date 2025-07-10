@@ -33,6 +33,7 @@ class VacacionesController extends Controller
      */
     public function index(Trabajador $trabajador): JsonResponse
     {
+        
         try {
             $vacaciones = $trabajador->vacaciones()
                 ->with(['creadoPor:id,nombre'])

@@ -9,12 +9,10 @@ return new class extends Migration
     public function up()
     {
         Schema::create('categoria', function (Blueprint $table) {
-            // ✅ CORREGIDO: Auto-increment
             $table->id('id_categoria');
-            $table->unsignedBigInteger('id_area')->nullable();
-            $table->string('nombre_categoria', 50)->nullable();
-            
-            // Foreign key
+            $table->unsignedBigInteger('id_area'); // ❌ Ya no es nullable
+            $table->string('nombre_categoria', 50)->unique(); // ❌ Ya no es nullable
+
             $table->foreign('id_area')->references('id_area')->on('area')
                   ->onDelete('restrict')->onUpdate('restrict');
         });

@@ -9,9 +9,8 @@ return new class extends Migration
     public function up()
     {
         Schema::create('area', function (Blueprint $table) {
-            // ✅ CORREGIDO: Auto-increment
             $table->id('id_area');
-            $table->string('nombre_area', 50)->nullable();
+            $table->string('nombre_area', 50)->unique(); // ❌ Ya no es nullable
         });
     }
 

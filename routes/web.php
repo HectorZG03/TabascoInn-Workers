@@ -1,6 +1,7 @@
 <?php
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\AreaCategoriaController;
 use App\Http\Controllers\TrabajadorController;
 use App\Http\Controllers\ActPerfilTrabajadorController;
 use App\Http\Controllers\DespidosController;
@@ -38,6 +39,23 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/sistema', [UserController::class, 'systemConfig'])->name('system.config');
         });
     });
+
+Route::prefix('configuracion')->group(function () {
+    Route::get('/areas-categorias', [AreaCategoriaController::class, 'index'])->name('areas.categorias.index');
+    Route::post('/areas', [AreaCategoriaController::class, 'storeArea'])->name('areas.store');
+    Route::post('/categorias', [AreaCategoriaController::class, 'storeCategoria'])->name('categorias.store');
+    Route::put('/areas/{area}', [AreaCategoriaController::class, 'updateArea'])->name('areas.update');
+    Route::delete('/areas/{area}', [AreaCategoriaController::class, 'destroyArea'])->name('areas.destroy');
+    Route::put('/categorias/{categoria}', [AreaCategoriaController::class, 'updateCategoria'])->name('categorias.update');
+    Route::delete('/categorias/{categoria}', [AreaCategoriaController::class, 'destroyCategoria'])->name('categorias.destroy');
+    // En tu web.php, dentro del grupo de configuración:
+    Route::get('/areas-categorias/estadisticas', [AreaCategoriaController::class, 'estadisticas'])->name('areas.categorias.estadisticas');
+        Route::delete('/categorias/multiple', [AreaCategoriaController::class, 'destroyMultipleCategories'])
+        ->name('categorias.multiple.destroy');
+});
+
+
+
 
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
