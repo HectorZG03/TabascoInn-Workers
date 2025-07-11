@@ -1,6 +1,7 @@
 /**
  * ✅ FUNCIONES GLOBALES PARA FORMATO DE FECHAS Y HORAS
  * Sistema reutilizable y simple para campos con formato controlado
+ * formato-global.js
  */
 
 window.FormatoGlobal = {

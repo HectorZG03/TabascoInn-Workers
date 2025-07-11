@@ -240,6 +240,10 @@
         </div>
     </main>
 
+
+    {{-- ✅ CARGAR FORMATO GLOBAL ANTES DE LOS MODALES --}}
+    <script src="{{ asset('js/formato-global.js') }}"></script>
+
     <!-- Bootstrap JS -->
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 

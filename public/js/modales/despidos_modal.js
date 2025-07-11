@@ -1,4 +1,4 @@
-// ✅ MODAL DE DESPIDOS SIMPLIFICADO CON FORMATO GLOBAL
+// ✅ MODAL DE DESPIDOS SIMPLIFICADO CON FORMATO GLOBAL despidos_modal.js
 
 // Funciones globales para el modal
 function toggleCondicionPersonalizada() {
@@ -54,12 +54,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   let fechaIngresoTrabajador = null;
 
-  // ✅ APLICAR FORMATO A CAMPOS DE FECHA
-  FormatoGlobal.aplicarFormato(fechaBaja);
-  FormatoGlobal.aplicarFormato(fechaReintegro);
+  // ✅ APLICAR FORMATO A CAMPOS DE FECHA - FUNCIÓN CORREGIDA
+  if (fechaBaja) {
+    FormatoGlobal.configurarCampoFecha(fechaBaja);
+  }
+  if (fechaReintegro) {
+    FormatoGlobal.configurarCampoFecha(fechaReintegro);
+  }
 
   // ✅ SI HAY FECHA POR DEFECTO, CONVERTIRLA A FORMATO DD/MM/YYYY
-  if (fechaBaja.value && fechaBaja.value.includes('-')) {
+  if (fechaBaja && fechaBaja.value && fechaBaja.value.includes('-')) {
     const fecha = new Date(fechaBaja.value);
     if (!isNaN(fecha.getTime())) {
       const dia = String(fecha.getDate()).padStart(2, '0');
@@ -95,19 +99,31 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ✅ EVENTOS PARA CALCULAR DURACIÓN
   [fechaBaja, fechaReintegro].forEach(campo => {
-    campo?.addEventListener('blur', () => setTimeout(calcularDuracion, 100));
+    if (campo) {
+      campo.addEventListener('blur', () => setTimeout(calcularDuracion, 100));
+    }
   });
 
   // ✅ CONTADORES DE CARACTERES
-  motivo?.addEventListener('input', () => {
-    const len = motivo.value.length;
-    document.getElementById('contadorMotivo').textContent = `${len}/500`;
-  });
+  if (motivo) {
+    motivo.addEventListener('input', () => {
+      const len = motivo.value.length;
+      const contador = document.getElementById('contadorMotivo');
+      if (contador) {
+        contador.textContent = `${len}/500`;
+      }
+    });
+  }
 
-  observaciones?.addEventListener('input', () => {
-    const len = observaciones.value.length;
-    document.getElementById('contadorObservaciones').textContent = `${len}/1000`;
-  });
+  if (observaciones) {
+    observaciones.addEventListener('input', () => {
+      const len = observaciones.value.length;
+      const contador = document.getElementById('contadorObservaciones');
+      if (contador) {
+        contador.textContent = `${len}/1000`;
+      }
+    });
+  }
 
   // ✅ ABRIR MODAL
   document.querySelectorAll('.btn-despedir').forEach(btn => {
@@ -117,32 +133,50 @@ document.addEventListener('DOMContentLoaded', () => {
       limpiarErrores();
 
       // ✅ LIMPIAR FECHA DE BAJA (evitar que aparezca precargada)
-      fechaBaja.value = '';
-      fechaReintegro.value = '';
-      document.getElementById('duracionBaja').textContent = '0 días';
+      if (fechaBaja) fechaBaja.value = '';
+      if (fechaReintegro) fechaReintegro.value = '';
+      
+      const duracionBadge = document.getElementById('duracionBaja');
+      if (duracionBadge) {
+        duracionBadge.textContent = '0 días';
+      }
 
-      // ✅ Aplicar formato al campo vacío
-      FormatoGlobal.aplicarFormato(fechaBaja);
-      FormatoGlobal.aplicarFormato(fechaReintegro);
+      // ✅ Volver a aplicar formato a los campos limpios
+      if (fechaBaja) {
+        FormatoGlobal.configurarCampoFecha(fechaBaja);
+      }
+      if (fechaReintegro) {
+        FormatoGlobal.configurarCampoFecha(fechaReintegro);
+      }
 
       // Configurar datos del trabajador
-      document.getElementById('nombreTrabajador').textContent = btn.dataset.nombre;
+      const nombreElement = document.getElementById('nombreTrabajador');
+      if (nombreElement) {
+        nombreElement.textContent = btn.dataset.nombre;
+      }
+      
       form.action = `/trabajadores/${btn.dataset.id}/despedir`;
       fechaIngresoTrabajador = btn.dataset.fechaIngreso;
 
       // Estado inicial
-      document.getElementById('tipo_definitiva').checked = true;
+      const tipoDefinitiva = document.getElementById('tipo_definitiva');
+      if (tipoDefinitiva) {
+        tipoDefinitiva.checked = true;
+      }
+      
       toggleReintegroField(false);
       toggleCondicionPersonalizada();
 
       // Resetear contadores
-      document.getElementById('contadorMotivo').textContent = '0/500';
-      document.getElementById('contadorObservaciones').textContent = '0/1000';
+      const contadorMotivo = document.getElementById('contadorMotivo');
+      const contadorObservaciones = document.getElementById('contadorObservaciones');
+      
+      if (contadorMotivo) contadorMotivo.textContent = '0/500';
+      if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
 
       new bootstrap.Modal(modal).show();
     });
   });
-
 
   // ✅ VALIDACIÓN PERSONALIZADA
   function validarFecha(campo, valor) {
@@ -173,9 +207,11 @@ document.addEventListener('DOMContentLoaded', () => {
       if (fecha <= hoy) return 'Debe ser posterior a hoy';
       
       // Debe ser posterior a la fecha de baja
-      const fechaBajaObj = FormatoGlobal.convertirFechaADate(fechaBaja.value);
-      if (fechaBajaObj && fecha <= fechaBajaObj) {
-        return 'Debe ser posterior a la fecha de baja';
+      if (fechaBaja && fechaBaja.value) {
+        const fechaBajaObj = FormatoGlobal.convertirFechaADate(fechaBaja.value);
+        if (fechaBajaObj && fecha <= fechaBajaObj) {
+          return 'Debe ser posterior a la fecha de baja';
+        }
       }
     }
 
@@ -189,8 +225,8 @@ document.addEventListener('DOMContentLoaded', () => {
     let esValido = true;
 
     // Validar fecha de baja
-    if (!fechaBaja.value.trim()) {
-      mostrarError(fechaBaja, 'La fecha de baja es obligatoria');
+    if (!fechaBaja || !fechaBaja.value.trim()) {
+      if (fechaBaja) mostrarError(fechaBaja, 'La fecha de baja es obligatoria');
       esValido = false;
     } else {
       const error = validarFecha(fechaBaja, fechaBaja.value.trim());
@@ -204,24 +240,25 @@ document.addEventListener('DOMContentLoaded', () => {
     const condicion = document.getElementById('condicion_salida');
     const condicionPersonalizada = document.getElementById('condicion_personalizada');
     
-    if (!condicion.value) {
-      mostrarError(condicion, 'Debe seleccionar una condición');
+    if (!condicion || !condicion.value) {
+      if (condicion) mostrarError(condicion, 'Debe seleccionar una condición');
       esValido = false;
-    } else if (condicion.value === 'OTRO' && !condicionPersonalizada.value.trim()) {
-      mostrarError(condicionPersonalizada, 'Debe especificar la condición');
+    } else if (condicion.value === 'OTRO' && (!condicionPersonalizada || !condicionPersonalizada.value.trim())) {
+      if (condicionPersonalizada) mostrarError(condicionPersonalizada, 'Debe especificar la condición');
       esValido = false;
     }
 
     // Validar motivo
-    if (!motivo.value.trim() || motivo.value.trim().length < 10) {
-      mostrarError(motivo, 'El motivo debe tener al menos 10 caracteres');
+    if (!motivo || !motivo.value.trim() || motivo.value.trim().length < 10) {
+      if (motivo) mostrarError(motivo, 'El motivo debe tener al menos 10 caracteres');
       esValido = false;
     }
 
     // Validar fecha de reintegro si es temporal
-    if (document.getElementById('tipo_temporal').checked) {
-      if (!fechaReintegro.value.trim()) {
-        mostrarError(fechaReintegro, 'La fecha de reintegro es obligatoria');
+    const tipoTemporal = document.getElementById('tipo_temporal');
+    if (tipoTemporal && tipoTemporal.checked) {
+      if (!fechaReintegro || !fechaReintegro.value.trim()) {
+        if (fechaReintegro) mostrarError(fechaReintegro, 'La fecha de reintegro es obligatoria');
         esValido = false;
       } else {
         const error = validarFecha(fechaReintegro, fechaReintegro.value.trim());
@@ -233,14 +270,18 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     if (esValido) {
-      btnSubmit.disabled = true;
-      btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+      if (btnSubmit) {
+        btnSubmit.disabled = true;
+        btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
+      }
       form.submit();
     } else {
       // Enfocar primer error
       const primerError = form.querySelector('.is-invalid');
-      primerError?.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      primerError?.focus();
+      if (primerError) {
+        primerError.scrollIntoView({ behavior: 'smooth', block: 'center' });
+        primerError.focus();
+      }
     }
   });
 
@@ -267,18 +308,23 @@ document.addEventListener('DOMContentLoaded', () => {
   modal.addEventListener('hidden.bs.modal', () => {
     form.reset();
     limpiarErrores();
-    btnSubmit.disabled = false;
-    btnSubmit.innerHTML = '<i class="bi bi-person-x me-1"></i> Confirmar Baja';
+    
+    if (btnSubmit) {
+      btnSubmit.disabled = false;
+      btnSubmit.innerHTML = '<i class="bi bi-person-x me-1"></i> Confirmar Baja';
+    }
+    
     fechaIngresoTrabajador = null;
     toggleReintegroField(false);
     toggleCondicionPersonalizada();
     
     // ✅ RESETEAR CONTADORES
-    document.getElementById('contadorMotivo').textContent = '0/500';
-    document.getElementById('contadorObservaciones').textContent = '0/1000';
+    const contadorMotivo = document.getElementById('contadorMotivo');
+    const contadorObservaciones = document.getElementById('contadorObservaciones');
+    
+    if (contadorMotivo) contadorMotivo.textContent = '0/500';
+    if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
   });
 
   console.log('✅ Modal de despidos simplificado inicializado');
-
-  
 });
