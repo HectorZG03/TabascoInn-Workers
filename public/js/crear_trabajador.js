@@ -2,6 +2,7 @@
  * ✅ CREAR TRABAJADOR SIMPLIFICADO
  * Script optimizado que usa funciones globales para formato
  * Sin duplicación de código, enfoque directo y simple
+ * ACTUALIZADO: Usa rutas dinámicas con AppRoutes
  */
 
 document.addEventListener('DOMContentLoaded', function() {
@@ -48,8 +49,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 return;
             }
 
-            // Cargar categorías
-            fetch(`/api/categorias/${areaId}`)
+            // ✅ USAR RUTA DINÁMICA
+            fetch(apiUrl(`categorias/${areaId}`))
                 .then(response => {
                     if (!response.ok) throw new Error(`HTTP ${response.status}`);
                     return response.json();

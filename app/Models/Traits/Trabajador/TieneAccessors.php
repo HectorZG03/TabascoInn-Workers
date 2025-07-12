@@ -15,7 +15,6 @@ trait TieneAccessors
         return match ($this->estatus) {
             'activo' => 'Activo',
             'permiso' => 'Permiso',
-            'vacaciones' => 'Vacaciones',
             'suspendido' => 'Suspendido',
             'prueba' => 'En Prueba',
             'inactivo' => 'Inactivo',
@@ -29,7 +28,6 @@ trait TieneAccessors
         $colores = [
             'activo' => 'success',
             'permiso' => 'info', 
-            'vacaciones' => 'primary',
             'suspendido' => 'danger',
             'prueba' => 'warning',
             'inactivo' => 'secondary'
@@ -43,7 +41,6 @@ trait TieneAccessors
         $iconos = [
             'activo' => 'bi-person-check',
             'permiso' => 'bi-calendar-event',
-            'vacaciones' => 'bi-airplane',
             'suspendido' => 'bi-exclamation-triangle', 
             'prueba' => 'bi-clock-history',
             'inactivo' => 'bi-person-x'
