@@ -250,7 +250,9 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-{{-- ✅ ORDEN CORRECTO DE SCRIPTS - IMPORTANTE --}}
+{{-- Sección al final del archivo perfil_trabajador.blade.php --}}
+{{-- ✅ SCRIPTS ACTUALIZADOS CON HORAS EXTRA --}}
+
 {{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
 
@@ -274,6 +276,7 @@ if (typeof AppRoutes === 'undefined') {
 
 {{-- 3. TERCERO: Scripts del perfil trabajador en orden de dependencias --}}
 <script src="{{ asset('js/formato-global.js')}}"></script>
+<script src="{{ asset('js/horas_extra.js')}}"></script>
 <script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
@@ -291,6 +294,15 @@ document.addEventListener('DOMContentLoaded', function() {
         if (typeof AppRoutes !== 'undefined' && typeof window.PERFIL_CONFIG !== 'undefined') {
             console.log('🎉 Perfil del trabajador completamente inicializado');
             
+            // ✅ VERIFICAR QUE LOS SISTEMAS DE FORMATO ESTÉN FUNCIONANDO
+            if (typeof window.FormatoGlobal !== 'undefined') {
+                console.log('✅ Sistema global de formato activo');
+            }
+            
+            if (typeof window.HorasExtraJS !== 'undefined') {
+                console.log('✅ Sistema de horas extra activo');
+            }
+            
             // ✅ DEBUG EN DESARROLLO
             if (window.APP_DEBUG && typeof window.debugRutas === 'function') {
                 window.debugRutas();
@@ -299,7 +311,69 @@ document.addEventListener('DOMContentLoaded', function() {
             console.error('❌ Error en la inicialización del perfil');
         }
     }, 500);
+    
+    // ✅ CONFIGURAR VALIDACIÓN ANTES DEL ENVÍO DE FORMULARIOS
+    document.querySelectorAll('form[action*="horas-extra"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const isAsignar = this.action.includes('asignar');
+            const isRestar = this.action.includes('restar');
+            
+            if (typeof window.validarHorasExtra !== 'undefined') {
+                const trabajadorId = window.PerfilUtils ? window.PerfilUtils.getTrabajadorId() : null;
+                
+                if (trabajadorId) {
+                    let esValido = true;
+                    
+                    if (isAsignar) {
+                        esValido = window.validarHorasExtra.asignar(trabajadorId);
+                    } else if (isRestar) {
+                        esValido = window.validarHorasExtra.compensar(trabajadorId);
+                    }
+                    
+                    if (!esValido) {
+                        e.preventDefault();
+                        console.log('❌ Formulario no válido, envío cancelado');
+                        
+                        // Mostrar mensaje de error
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                        alertDiv.innerHTML = `
+                            <strong>Error:</strong> Por favor, corrija los errores en el formulario antes de continuar.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        
+                        const modalBody = this.closest('.modal-body');
+                        if (modalBody) {
+                            modalBody.insertBefore(alertDiv, modalBody.firstChild);
+                        }
+                        
+                        return false;
+                    }
+                }
+            }
+        });
+    });
+    
+    // ✅ CONFIGURAR EVENTOS PARA ABRIR MODALES
+    document.querySelectorAll('[data-bs-target*="modalAsignarHoras"], [data-bs-target*="modalRestarHoras"]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Limpiar validaciones previas cuando se abre el modal
+            setTimeout(() => {
+                const modal = document.querySelector(this.getAttribute('data-bs-target'));
+                if (modal) {
+                    const campos = modal.querySelectorAll('.is-valid, .is-invalid');
+                    campos.forEach(campo => {
+                        campo.classList.remove('is-valid', 'is-invalid');
+                    });
+                    
+                    const feedbacks = modal.querySelectorAll('.invalid-feedback');
+                    feedbacks.forEach(feedback => feedback.remove());
+                }
+            }, 100);
+        });
+    });
 });
 </script>
+
 
 @endsection

@@ -146,10 +146,12 @@ Route::prefix('configuracion')->group(function () {
             Route::get('/api/resumen', 'obtenerResumen')->name('api.resumen');
         });
 
-        // ✅ RUTAS DE HORAS EXTRA
         Route::prefix('{trabajador}/horas-extra')->name('horas-extra.')->controller(HorasExtraController::class)->group(function () {
+            // ✅ ACCIONES PRINCIPALES (existentes)
             Route::post('asignar', 'asignar')->name('asignar');
             Route::post('restar', 'restar')->name('restar');
+            
+            // ✅ APIs PARA AJAX (existentes y nuevas)
             Route::get('saldo', 'obtenerSaldo')->name('saldo');
             Route::get('historial', 'obtenerHistorial')->name('historial');
             Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');

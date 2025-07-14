@@ -1,4 +1,4 @@
-{{-- ✅ MODAL PARA ASIGNAR HORAS EXTRA --}}
+{{-- ✅ MODAL PARA ASIGNAR HORAS EXTRA CON FORMATO GLOBAL --}}
 <div class="modal fade" id="modalAsignarHoras{{ $trabajador->id_trabajador }}" tabindex="-1" aria-labelledby="modalAsignarHorasLabel{{ $trabajador->id_trabajador }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -70,25 +70,26 @@
                             </div>
                         </div>
 
-                        {{-- Fecha --}}
+                        {{-- ✅ FECHA CON FORMATO GLOBAL --}}
                         <div class="col-md-6">
                             <label for="fecha_asignar{{ $trabajador->id_trabajador }}" class="form-label">
                                 <i class="bi bi-calendar3"></i> Fecha del Trabajo <span class="text-danger">*</span>
                             </label>
-                            <input type="date" 
-                                   class="form-control @error('fecha') is-invalid @enderror" 
+                            <input type="text" 
+                                   class="form-control formato-fecha @error('fecha') is-invalid @enderror" 
                                    id="fecha_asignar{{ $trabajador->id_trabajador }}" 
                                    name="fecha" 
-                                   value="{{ old('fecha', now()->format('Y-m-d')) }}"
-                                   max="{{ now()->format('Y-m-d') }}"
-                                   min="{{ now()->subDays(30)->format('Y-m-d') }}"
+                                   value="{{ old('fecha', now()->format('d/m/Y')) }}"
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   autocomplete="off"
                                    required>
                             @error('fecha')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">
-                                <i class="bi bi-exclamation-triangle"></i> 
-                                Máximo 30 días atrás
+                                <i class="bi bi-info-circle"></i> 
+                                Formato: DD/MM/YYYY - Máximo 30 días atrás
                             </div>
                         </div>
 
@@ -159,6 +160,7 @@
                                 <li>Estas horas podrán ser compensadas posteriormente</li>
                                 <li>El registro quedará en el historial laboral</li>
                                 <li>Solo se pueden registrar horas de los últimos 30 días</li>
+                                <li><strong>Formato de fecha:</strong> DD/MM/YYYY (se formatea automáticamente)</li>
                             </ul>
                         </div>
                     </div>
@@ -207,6 +209,42 @@ document.addEventListener('DOMContentLoaded', function() {
             spanHorasAAsignar.textContent = horasAAsignar;
             spanSaldoFinal.textContent = saldoFinal;
         });
+    }
+    
+    // ✅ VALIDACIÓN ESPECÍFICA PARA FECHAS DE HORAS EXTRA
+    const campoFecha = document.getElementById('fecha_asignar{{ $trabajador->id_trabajador }}');
+    if (campoFecha) {
+        // Configurar validaciones específicas para asignación de horas
+        campoFecha.addEventListener('blur', function() {
+            const fecha = this.value.trim();
+            
+            if (!fecha) return;
+            
+            // Usar validación global
+            if (window.FormatoGlobal && window.FormatoGlobal.validarFormatoFecha(fecha)) {
+                const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
+                if (fechaObj) {
+                    const hoy = new Date();
+                    const hace30Dias = new Date(hoy.getTime() - (30 * 24 * 60 * 60 * 1000));
+                    
+                    // Validar que no sea futura
+                    if (fechaObj > hoy) {
+                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser futura');
+                        return;
+                    }
+                    
+                    // Validar que no sea más de 30 días atrás
+                    if (fechaObj < hace30Dias) {
+                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser anterior a 30 días');
+                        return;
+                    }
+                    
+                    window.FormatoGlobal.mostrarExito(this);
+                }
+            }
+        });
+        
+        console.log('✅ Validaciones específicas de fecha asignadas para asignar horas');
     }
 });
 </script>

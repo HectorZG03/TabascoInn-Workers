@@ -1,4 +1,4 @@
-{{-- ✅ MODAL PARA COMPENSAR HORAS EXTRA --}}
+{{-- ✅ MODAL PARA COMPENSAR HORAS EXTRA CON FORMATO GLOBAL --}}
 <div class="modal fade" id="modalRestarHoras{{ $trabajador->id_trabajador }}" tabindex="-1" aria-labelledby="modalRestarHorasLabel{{ $trabajador->id_trabajador }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -75,25 +75,26 @@
                                 </div>
                             </div>
 
-                            {{-- Fecha de compensación --}}
+                            {{-- ✅ FECHA DE COMPENSACIÓN CON FORMATO GLOBAL --}}
                             <div class="col-md-6">
                                 <label for="fecha_restar{{ $trabajador->id_trabajador }}" class="form-label">
                                     <i class="bi bi-calendar3"></i> Fecha de Compensación <span class="text-danger">*</span>
                                 </label>
-                                <input type="date" 
-                                       class="form-control @error('fecha') is-invalid @enderror" 
+                                <input type="text" 
+                                       class="form-control formato-fecha @error('fecha') is-invalid @enderror" 
                                        id="fecha_restar{{ $trabajador->id_trabajador }}" 
                                        name="fecha" 
-                                       value="{{ old('fecha', now()->format('Y-m-d')) }}"
-                                       max="{{ now()->format('Y-m-d') }}"
-                                       min="{{ now()->subDays(7)->format('Y-m-d') }}"
+                                       value="{{ old('fecha', now()->format('d/m/Y')) }}"
+                                       placeholder="DD/MM/YYYY"
+                                       maxlength="10"
+                                       autocomplete="off"
                                        required>
                                 @error('fecha')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                                 <div class="form-text">
-                                    <i class="bi bi-exclamation-triangle"></i> 
-                                    Máximo 7 días atrás
+                                    <i class="bi bi-info-circle"></i> 
+                                    Formato: DD/MM/YYYY - Máximo 7 días atrás
                                 </div>
                             </div>
 
@@ -164,6 +165,7 @@
                                     <li>Esta acción <strong>no se puede deshacer</strong></li>
                                     <li>El registro quedará en el historial laboral</li>
                                     <li>Solo se pueden compensar horas de los últimos 7 días</li>
+                                    <li><strong>Formato de fecha:</strong> DD/MM/YYYY (se formatea automáticamente)</li>
                                 </ul>
                             </div>
                         </div>
@@ -230,6 +232,42 @@ document.addEventListener('DOMContentLoaded', function() {
             spanHorasACompensar.textContent = valorInicial;
             spanSaldoResultante.textContent = saldoResultanteInicial;
         }
+    }
+    
+    // ✅ VALIDACIÓN ESPECÍFICA PARA FECHAS DE COMPENSACIÓN
+    const campoFecha = document.getElementById('fecha_restar{{ $trabajador->id_trabajador }}');
+    if (campoFecha) {
+        // Configurar validaciones específicas para compensación de horas
+        campoFecha.addEventListener('blur', function() {
+            const fecha = this.value.trim();
+            
+            if (!fecha) return;
+            
+            // Usar validación global
+            if (window.FormatoGlobal && window.FormatoGlobal.validarFormatoFecha(fecha)) {
+                const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
+                if (fechaObj) {
+                    const hoy = new Date();
+                    const hace7Dias = new Date(hoy.getTime() - (7 * 24 * 60 * 60 * 1000));
+                    
+                    // Validar que no sea futura
+                    if (fechaObj > hoy) {
+                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser futura');
+                        return;
+                    }
+                    
+                    // Validar que no sea más de 7 días atrás
+                    if (fechaObj < hace7Dias) {
+                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser anterior a 7 días');
+                        return;
+                    }
+                    
+                    window.FormatoGlobal.mostrarExito(this);
+                }
+            }
+        });
+        
+        console.log('✅ Validaciones específicas de fecha asignadas para compensar horas');
     }
 });
 </script>
