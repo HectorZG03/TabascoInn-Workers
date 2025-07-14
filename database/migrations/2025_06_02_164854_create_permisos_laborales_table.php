@@ -26,13 +26,18 @@ return new class extends Migration
         $table->date('fecha_inicio');
         $table->date('fecha_fin');
 
-        // 🔁 NUEVO: Campos para permisos por horas
+        // Campos para permisos por horas
         $table->time('hora_inicio')->nullable()->comment('Hora de inicio del permiso (si aplica)');
         $table->time('hora_fin')->nullable()->comment('Hora de fin del permiso (si aplica)');
         $table->boolean('es_por_horas')->default(false)->comment('Indica si el permiso es por horas específicas');
 
         $table->text('observaciones')->nullable();
         $table->enum('estatus_permiso', ['activo', 'finalizado', 'cancelado'])->default('activo');
+
+        // ✅ NUEVOS CAMPOS PARA CANCELACIÓN
+        $table->text('motivo_cancelacion')->nullable()->comment('Motivo por el cual se canceló el permiso');
+        $table->timestamp('fecha_cancelacion')->nullable()->comment('Fecha y hora de cancelación');
+        $table->string('cancelado_por')->nullable()->comment('Usuario que canceló el permiso');
 
         $table->string('ruta_pdf', 500)->nullable()->comment('Ruta del PDF generado del permiso');
 

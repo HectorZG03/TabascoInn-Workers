@@ -275,10 +275,52 @@ class PermisosLaboralesController extends Controller
         }
     }
 
-    public function cancelar(PermisosLaborales $permiso)
+    // ✅ NUEVO MÉTODO PARA CANCELAR PERMISO CON MOTIVO
+    public function cancelar(Request $request, PermisosLaborales $permiso)
     {
+        // Validar datos de entrada
+        $validated = $request->validate([
+            'motivo_cancelacion' => 'required|string|min:10|max:500'
+        ], [
+            'motivo_cancelacion.required' => 'El motivo de cancelación es obligatorio',
+            'motivo_cancelacion.min' => 'El motivo debe tener al menos 10 caracteres',
+            'motivo_cancelacion.max' => 'El motivo no puede exceder 500 caracteres'
+        ]);
+
         if ($permiso->estatus_permiso !== 'activo') {
             return back()->withErrors(['error' => 'Solo se pueden cancelar permisos que estén activos']);
+        }
+
+        $trabajador = $permiso->trabajador;
+
+        DB::beginTransaction();
+
+        try {
+            // Usar el método del modelo para cancelar
+            $permiso->cancelarPermiso(
+                $validated['motivo_cancelacion'], 
+                Auth::user()->email ?? 'Sistema'
+            );
+
+            // Reactivar al trabajador
+            $trabajador->update(['estatus' => 'activo']);
+
+            DB::commit();
+
+            return redirect()->route('permisos.index')->with('success', 
+                "Permiso cancelado exitosamente. {$trabajador->nombre_completo} ha sido reactivado");
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            return back()->withErrors(['error' => 'Error al cancelar: ' . $e->getMessage()]);
+        }
+    }
+
+    // ✅ NUEVO MÉTODO PARA ELIMINAR PERMISO DEFINITIVAMENTE  
+    public function eliminar(PermisosLaborales $permiso)
+    {
+        if ($permiso->estatus_permiso !== 'activo') {
+            return back()->withErrors(['error' => 'Solo se pueden eliminar permisos que estén activos']);
         }
 
         $trabajador = $permiso->trabajador;
@@ -291,7 +333,8 @@ class PermisosLaboralesController extends Controller
 
             DB::commit();
 
-            return redirect()->route('permisos.index')->with('success', "Permiso eliminado exitosamente. {$trabajador->nombre_completo} ha sido reactivado");
+            return redirect()->route('permisos.index')->with('success', 
+                "Permiso eliminado definitivamente. {$trabajador->nombre_completo} ha sido reactivado");
         } catch (\Exception $e) {
             DB::rollback();
             return back()->withErrors(['error' => 'Error al eliminar: ' . $e->getMessage()]);
@@ -360,5 +403,4 @@ class PermisosLaboralesController extends Controller
 
         return redirect()->back()->with('success', 'Archivo subido correctamente.');
     }
-
 }

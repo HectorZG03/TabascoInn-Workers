@@ -187,34 +187,41 @@ Route::prefix('configuracion')->group(function () {
         Route::get('/trabajador/{trabajador}/historial', 'historial')->name('trabajador.historial');
     });
 
-    // ✅ RUTAS PARA PERMISOS LABORALES
-    Route::prefix('permisos')->name('permisos.')->group(function () {
-        Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
-        Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
-        Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
-        Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar');
-         Route::get('/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
-        ->name('detalle');
-        
-        // ✅ RUTAS DE PDFs DE PERMISOS
-        Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
-            Route::get('/generar', 'generarPDF')->name('generar');
-            Route::get('/descargar', 'descargarPDF')->name('descargar');
-            Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
+    // ✅ RUTAS PARA PERMISOS LABORALES ACTUALIZADAS
+        Route::prefix('permisos')->name('permisos.')->group(function () {
+            Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
+            Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
+            
+            // ✅ ACCIONES DE GESTIÓN DE PERMISOS
+            Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
+            Route::patch('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar'); // ✅ CANCELAR CON MOTIVO
+            Route::delete('/{permiso}/eliminar', [PermisosLaboralesController::class, 'eliminar'])->name('eliminar'); // ✅ ELIMINAR DEFINITIVAMENTE
+            
+            // ✅ MANTENER COMPATIBILIDAD CON RUTA ANTIGUA (OPCIONAL)
+            Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'eliminar'])->name('cancelar.old');
+            
+            Route::get('/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])->name('detalle');
+            
+            // ✅ RUTAS DE PDFs DE PERMISOS
+            Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
+                Route::get('/generar', 'generarPDF')->name('generar');
+                Route::get('/descargar', 'descargarPDF')->name('descargar');
+                Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
+            });
+            Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
+            
+            // APIs
+            Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
+            Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
+            Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
         });
-        Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
         
+        // ✅ RUTAS ADICIONALES PARA ARCHIVOS DE PERMISOS
+        Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
+            ->name('permisos.descargar');
         
-        // APIs
-        Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
-        Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
-        Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
-    });
-    Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
-        ->name('permisos.descargar');
-    
-    Route::post('/permisos/{permiso}/subir-archivo', [PermisosLaboralesController::class, 'subirArchivo'])
-        ->name('permisos.subirArchivo');
+        Route::post('/permisos/{permiso}/subir-archivo', [PermisosLaboralesController::class, 'subirArchivo'])
+            ->name('permisos.subirArchivo');
 
 
     // ✅ RUTAS AJAX PARA CONTRATOS - OPTIMIZADAS (Solo generación)

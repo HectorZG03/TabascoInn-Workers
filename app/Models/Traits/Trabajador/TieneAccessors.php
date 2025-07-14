@@ -18,7 +18,6 @@ trait TieneAccessors
             'suspendido' => 'Suspendido',
             'prueba' => 'En Prueba',
             'inactivo' => 'Inactivo',
-            'vacaciones' => 'Vacaciones',
             default => 'Estado Desconocido',
         };
 
@@ -31,8 +30,7 @@ trait TieneAccessors
             'permiso' => 'info', 
             'suspendido' => 'danger',
             'prueba' => 'warning',
-            'inactivo' => 'secondary',
-            'vacaciones' => 'primary',
+            'inactivo' => 'secondary'
         ];
         
         return $colores[$this->estatus] ?? 'secondary';
@@ -45,8 +43,7 @@ trait TieneAccessors
             'permiso' => 'bi-calendar-event',
             'suspendido' => 'bi-exclamation-triangle', 
             'prueba' => 'bi-clock-history',
-            'inactivo' => 'bi-person-x',
-            'vacaciones' => 'bi-calendar-heart',
+            'inactivo' => 'bi-person-x'
         ];
         
         return $iconos[$this->estatus] ?? 'bi-person';
