@@ -539,6 +539,42 @@
 @endif
 
 
+{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE TRABAJADORES --}}
+
+{{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
+
+{{-- 2. SEGUNDO: Script de formato global para fechas y validaciones --}}
+<script src="{{ asset('js/formato-global.js') }}"></script>
+
+{{-- 3. TERCERO: Variables globales de configuración --}}
+<script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
+window.currentUser = @json([
+    'id' => Auth::id(),
+    'nombre' => Auth::user()->nombre,
+    'tipo' => Auth::user()->tipo
+]);
+
+// ✅ VERIFICAR QUE DEPENDENCIAS CRÍTICAS ESTÉN DISPONIBLES
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
+} else {
+    console.log('✅ AppRoutes disponible para lista de trabajadores');
+}
+
+if (typeof FormatoGlobal === 'undefined') {
+    console.error('❌ CRÍTICO: formato-global.js no se cargó correctamente');
+} else {
+    console.log('✅ FormatoGlobal disponible para modales');
+}
+</script>
+
+{{-- 4. CUARTO: Scripts específicos de modales y funcionalidades --}}
+<script src="{{ asset('js/modales/permisos_modal.js') }}"></script>
+
+{{-- 5. QUINTO: Script principal de la lista de trabajadores --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ✅ FUNCIONALIDAD DE FILTROS Y BÚSQUEDA
@@ -547,7 +583,13 @@ document.addEventListener('DOMContentLoaded', function() {
     const estatusSelect = document.getElementById('estatus');
     const searchInput = document.getElementById('search');
     
-    // Cargar categorías cuando cambia el área
+    // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE PARA FILTROS
+    if (typeof AppRoutes === 'undefined') {
+        console.error('❌ AppRoutes no disponible para filtros');
+        return;
+    }
+    
+    // Cargar categorías cuando cambia el área CON RUTAS DINÁMICAS
     if (areaSelect && categoriaSelect) {
         areaSelect.addEventListener('change', function() {
             const areaId = this.value;
@@ -556,11 +598,14 @@ document.addEventListener('DOMContentLoaded', function() {
             categoriaSelect.innerHTML = '<option value="">Todas las categorías</option>';
             
             if (areaId) {
-                // Cargar categorías de esta área
-                fetch(`/api/categorias/${areaId}`)
+                // ✅ USAR RUTAS DINÁMICAS EN LUGAR DE HARDCODED
+                const url = AppRoutes.api(`categorias/${areaId}`);
+                console.log('🔄 Cargando categorías desde:', url);
+                
+                fetch(url)
                     .then(response => {
                         if (!response.ok) {
-                            throw new Error('Error en la respuesta del servidor');
+                            throw new Error(`HTTP ${response.status}`);
                         }
                         return response.json();
                     })
@@ -577,9 +622,19 @@ document.addEventListener('DOMContentLoaded', function() {
                             
                             categoriaSelect.appendChild(option);
                         });
+                        console.log('✅ Categorías cargadas exitosamente');
                     })
                     .catch(error => {
-                        console.error('Error cargando categorías:', error);
+                        console.error('❌ Error cargando categorías:', error);
+                        // Mostrar error al usuario
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-warning alert-dismissible fade show';
+                        alertDiv.innerHTML = `
+                            <i class="bi bi-exclamation-triangle"></i>
+                            Error cargando categorías: ${error.message}
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        document.querySelector('.container-fluid').insertBefore(alertDiv, document.querySelector('.container-fluid').firstChild);
                     });
             }
         });
@@ -620,17 +675,36 @@ document.addEventListener('DOMContentLoaded', function() {
     
     // Auto-hide alerts después de 5 segundos
     setTimeout(() => {
-        const alerts = document.querySelectorAll('.alert');
+        const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
         alerts.forEach(alert => {
             if (typeof bootstrap !== 'undefined' && bootstrap.Alert) {
-                const bsAlert = new bootstrap.Alert(alert);
-                bsAlert.close();
+                try {
+                    const bsAlert = new bootstrap.Alert(alert);
+                    bsAlert.close();
+                } catch (e) {
+                    // Ignorar errores de Bootstrap si el alert ya fue cerrado
+                }
             }
         });
     }, 5000);
     
-    console.log('✅ Vista lista trabajadores inicializada correctamente');
+    // ✅ EJECUTAR DEBUG EN DESARROLLO
+    if (typeof window.APP_DEBUG !== 'undefined' && window.APP_DEBUG) {
+        setTimeout(() => {
+            if (typeof window.debugAppRoutes === 'function') {
+                console.group('🔍 Debug Lista Trabajadores');
+                window.debugAppRoutes();
+                console.log('Filtros disponibles:', {
+                    area: areaSelect ? 'Disponible' : 'No encontrado',
+                    categoria: categoriaSelect ? 'Disponible' : 'No encontrado',
+                    estatus: estatusSelect ? 'Disponible' : 'No encontrado'
+                });
+                console.groupEnd();
+            }
+        }, 1000);
+    }
+    
+    console.log('✅ Vista lista trabajadores con rutas dinámicas inicializada correctamente');
 });
 </script>
-
 @endsection

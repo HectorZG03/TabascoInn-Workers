@@ -1,5 +1,5 @@
 /**
- * ✅ SCRIPT GLOBAL DE RUTAS DINÁMICAS
+ * ✅ SCRIPT GLOBAL DE RUTAS DINÁMICAS - MEJORADO
  * Detecta automáticamente la base URL y proporciona funciones para construir rutas
  * app-routes.js
  */
@@ -11,16 +11,25 @@ window.AppRoutes = {
     // =================================
     
     baseUrl: '',
+    initialized: false,
     
     init() {
+        if (this.initialized) return;
+        
         this.detectBaseUrl();
+        this.initialized = true;
         console.log('🚀 AppRoutes inicializado - Base URL:', this.baseUrl);
+        
+        // ✅ VERIFICAR FUNCIONALIDAD
+        this.selfTest();
     },
 
     detectBaseUrl() {
         // Obtener la URL actual
         const currentUrl = window.location.href;
         const currentPath = window.location.pathname;
+        
+        console.log('🔍 Detectando base URL desde:', currentPath);
         
         // Si estamos en una ruta como /rh/dashboard, extraer /rh/
         // Si estamos en raíz como /dashboard, la base será vacía
@@ -46,6 +55,30 @@ window.AppRoutes = {
         if (this.baseUrl.endsWith('/')) {
             this.baseUrl = this.baseUrl.slice(0, -1);
         }
+        
+        console.log('✅ Base URL detectada:', this.baseUrl);
+    },
+
+    // ✅ NUEVO: Test de funcionalidad
+    selfTest() {
+        try {
+            const testPaths = [
+                'dashboard',
+                'trabajadores/123',
+                'api/categorias',
+                'trabajadores/123/contratos'
+            ];
+            
+            console.group('🧪 Test de AppRoutes');
+            testPaths.forEach(path => {
+                const url = this.url(path);
+                console.log(`- ${path} → ${url}`);
+            });
+            console.groupEnd();
+            
+        } catch (error) {
+            console.error('❌ Error en selfTest de AppRoutes:', error);
+        }
     },
 
     // =================================
@@ -58,9 +91,21 @@ window.AppRoutes = {
      * @returns {string} - URL completa
      */
     url(path) {
+        if (!path) return this.baseUrl || '/';
+        
         // Limpiar el path de slashes iniciales
         const cleanPath = path.replace(/^\/+/, '');
-        return `${this.baseUrl}/${cleanPath}`;
+        
+        if (!cleanPath) return this.baseUrl || '/';
+        
+        const finalUrl = `${this.baseUrl}/${cleanPath}`;
+        
+        // ✅ DEBUG en desarrollo
+        if (window.APP_DEBUG) {
+            console.log(`🔗 AppRoutes.url('${path}') → '${finalUrl}'`);
+        }
+        
+        return finalUrl;
     },
 
     /**
@@ -69,6 +114,8 @@ window.AppRoutes = {
      * @returns {string} - URL completa de API
      */
     api(endpoint) {
+        if (!endpoint) return this.url('api');
+        
         const cleanEndpoint = endpoint.replace(/^\/+/, '');
         return this.url(`api/${cleanEndpoint}`);
     },
@@ -79,8 +126,10 @@ window.AppRoutes = {
      * @returns {string} - URL completa
      */
     trabajadores(path = '') {
+        if (!path) return this.url('trabajadores');
+        
         const cleanPath = path.replace(/^\/+/, '');
-        return cleanPath ? this.url(`trabajadores/${cleanPath}`) : this.url('trabajadores');
+        return this.url(`trabajadores/${cleanPath}`);
     },
 
     /**
@@ -89,8 +138,10 @@ window.AppRoutes = {
      * @returns {string} - URL completa
      */
     configuracion(path = '') {
+        if (!path) return this.url('configuracion');
+        
         const cleanPath = path.replace(/^\/+/, '');
-        return cleanPath ? this.url(`configuracion/${cleanPath}`) : this.url('configuracion');
+        return this.url(`configuracion/${cleanPath}`);
     },
 
     /**
@@ -99,8 +150,10 @@ window.AppRoutes = {
      * @returns {string} - URL completa
      */
     permisos(path = '') {
+        if (!path) return this.url('permisos');
+        
         const cleanPath = path.replace(/^\/+/, '');
-        return cleanPath ? this.url(`permisos/${cleanPath}`) : this.url('permisos');
+        return this.url(`permisos/${cleanPath}`);
     },
 
     /**
@@ -109,8 +162,10 @@ window.AppRoutes = {
      * @returns {string} - URL completa
      */
     despidos(path = '') {
+        if (!path) return this.url('despidos');
+        
         const cleanPath = path.replace(/^\/+/, '');
-        return cleanPath ? this.url(`despidos/${cleanPath}`) : this.url('despidos');
+        return this.url(`despidos/${cleanPath}`);
     },
 
     // =================================
@@ -131,6 +186,7 @@ window.AppRoutes = {
      * @returns {boolean}
      */
     isAppUrl(url) {
+        if (!url) return false;
         return url.startsWith(this.baseUrl) || url.startsWith('/');
     },
 
@@ -139,7 +195,21 @@ window.AppRoutes = {
      * @param {string} path - Ruta a redireccionar
      */
     redirect(path) {
-        window.location.href = this.url(path);
+        const url = this.url(path);
+        console.log('🔄 Redirigiendo a:', url);
+        window.location.href = url;
+    },
+
+    /**
+     * ✅ NUEVO: Obtener información de debug
+     */
+    getDebugInfo() {
+        return {
+            baseUrl: this.baseUrl,
+            currentPath: window.location.pathname,
+            currentUrl: window.location.href,
+            initialized: this.initialized
+        };
     }
 };
 
@@ -165,3 +235,8 @@ window.trabajadoresUrl = (path) => AppRoutes.trabajadores(path);
 window.configuracionUrl = (path) => AppRoutes.configuracion(path);
 window.permisosUrl = (path) => AppRoutes.permisos(path);
 window.despidosUrl = (path) => AppRoutes.despidos(path);
+
+// ✅ NUEVO: Función global de debug
+window.debugAppRoutes = () => {
+    console.table(AppRoutes.getDebugInfo());
+};
