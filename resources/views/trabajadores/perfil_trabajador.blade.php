@@ -156,6 +156,7 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <nav>
+                    {{-- En lugar de las pestañas que cargan contenido dinámico, usar enlaces directos --}}
                     <div class="nav nav-pills" id="nav-tab" role="tablist">
                         <button class="nav-link active" id="nav-datos-tab" data-bs-toggle="tab" data-bs-target="#nav-datos" type="button" role="tab">
                             <i class="bi bi-person"></i> Datos Personales
@@ -175,15 +176,18 @@
                         <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
-                        <button class="nav-link" id="nav-permisos-tab" data-bs-toggle="tab" data-bs-target="#nav-permisos" type="button" role="tab">
+                        
+                        {{-- ✅ REEMPLAZAR ESTAS PESTAÑAS CON ENLACES DIRECTOS --}}
+                        <a href="{{ route('trabajadores.perfil.permisos.historial', $trabajador) }}" class="nav-link">
                             <i class="bi bi-calendar-check"></i> Permisos
-                        </button>
-                        <button class="nav-link" id="nav-bajas-tab" data-bs-toggle="tab" data-bs-target="#nav-bajas" type="button" role="tab">
+                        </a>
+                        
+                        <a href="{{ route('trabajadores.perfil.bajas.historial', $trabajador) }}" class="nav-link">
                             <i class="bi bi-person-x"></i> Historial de Bajas
                             @if($trabajador->despidosActivos() > 0)
                                 <span class="badge bg-danger ms-1">{{ $trabajador->despidosActivos() }}</span>
                             @endif
-                        </button>
+                        </a>
                     </div>
                 </nav>
                 <div>
@@ -198,56 +202,36 @@
     <!-- CONTENIDO DE LAS PESTAÑAS (SIN vacaciones) -->
     <div class="row">
         <div class="col-12">
-            <div class="tab-content" id="nav-tabContent">
-                <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
-                    @include('trabajadores.secciones_perfil.datos_personales')
-                </div>
+          <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
+                @include('trabajadores.secciones_perfil.datos_personales')
+            </div>
 
-                <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
-                    @include('trabajadores.secciones_perfil.datos_laborales')
-                </div>
+            <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
+                @include('trabajadores.secciones_perfil.datos_laborales')
+            </div>
 
-                <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
-                    @include('trabajadores.secciones_perfil.documentos')
-                </div>
+            <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
+                @include('trabajadores.secciones_perfil.documentos')
+            </div>
 
-                <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
-                    @include('trabajadores.secciones_perfil.horas_extra')
-                </div>
+            <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
+                @include('trabajadores.secciones_perfil.horas_extra')
+            </div>
 
-                <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
-                    <div id="contratos-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando contratos...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando información de contratos...</p>
+            <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
+                <div id="contratos-content">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando contratos...</span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="nav-permisos" role="tabpanel" aria-labelledby="nav-permisos-tab">
-                    <div id="permisos-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando permisos...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando historial de permisos...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="nav-bajas" role="tabpanel" aria-labelledby="nav-bajas-tab">
-                    <div id="bajas-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando historial de bajas...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando historial de bajas...</p>
-                        </div>
+                        <p class="mt-3 text-muted">Cargando información de contratos...</p>
                     </div>
                 </div>
             </div>
+
+            {{-- ✅ ELIMINAR LAS PESTAÑAS nav-permisos y nav-bajas --}}
+        </div>
         </div>
     </div>
 
@@ -266,7 +250,29 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-{{-- Scripts del perfil trabajador en orden de dependencias (SIN vacaciones.js) --}}
+{{-- ✅ ORDEN CORRECTO DE SCRIPTS - IMPORTANTE --}}
+{{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
+
+{{-- 2. SEGUNDO: Variables globales de configuración --}}
+<script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
+window.currentUser = @json([
+    'id' => Auth::id(),
+    'nombre' => Auth::user()->nombre,
+    'tipo' => Auth::user()->tipo
+]);
+
+// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
+} else {
+    console.log('✅ AppRoutes disponible, base URL:', AppRoutes.getBaseUrl());
+}
+</script>
+
+{{-- 3. TERCERO: Scripts del perfil trabajador en orden de dependencias --}}
 <script src="{{ asset('js/formato-global.js')}}"></script>
 <script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
@@ -277,18 +283,23 @@
 <script src="{{ asset('js/perfil_trabajador/navegacion.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/notificaciones.js') }}"></script>
 
-{{-- Script adicional si existe (mantener compatibilidad) --}}
-@if(file_exists(public_path('js/perfil_trabajador/historiales_perfil.js')))
-<script src="{{ asset('js/perfil_trabajador/historiales_perfil.js') }}"></script>
-@endif
-
-{{-- ✅ VARIABLE GLOBAL PARA EL USUARIO ACTUAL --}}
+{{-- ✅ 4. CUARTO: Script de inicialización final --}}
 <script>
-window.currentUser = @json([
-    'id' => Auth::id(),
-    'nombre' => Auth::user()->nombre,
-    'tipo' => Auth::user()->tipo
-]);
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ VERIFICACIÓN FINAL DE CARGA
+    setTimeout(() => {
+        if (typeof AppRoutes !== 'undefined' && typeof window.PERFIL_CONFIG !== 'undefined') {
+            console.log('🎉 Perfil del trabajador completamente inicializado');
+            
+            // ✅ DEBUG EN DESARROLLO
+            if (window.APP_DEBUG && typeof window.debugRutas === 'function') {
+                window.debugRutas();
+            }
+        } else {
+            console.error('❌ Error en la inicialización del perfil');
+        }
+    }, 500);
+});
 </script>
 
 @endsection

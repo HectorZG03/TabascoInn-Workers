@@ -240,9 +240,6 @@
         </div>
     </main>
 
-        {{-- ✅ CARGAR SCRIPT DE RUTAS DINÁMICAS PRIMERO --}}
-    <script src="{{ asset('js/app-routes.js') }}"></script>
-    {{-- ✅ CARGAR FORMATO GLOBAL ANTES DE LOS MODALES --}}
     <script src="{{ asset('js/formato-global.js') }}"></script>
 
     <!-- Bootstrap JS -->

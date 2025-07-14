@@ -105,16 +105,25 @@ Route::prefix('configuracion')->group(function () {
         });
 
         // ✅ RUTAS DE HISTORIAL EN EL PERFIL (DENTRO DEL GRUPO DE TRABAJADORES)
+        // ✅ RUTAS SIMPLIFICADAS PARA HISTORIALES (Reemplazar las existentes)
+
+        // Dentro del grupo de trabajadores, reemplazar las rutas de historial:
         Route::prefix('{trabajador}')->name('perfil.')->group(function () {
-            // Historial de permisos
+            // ✅ HISTORIAL DE PERMISOS - VISTA COMPLETA SIN AJAX
             Route::get('/permisos/historial', [HistorialesPerfilController::class, 'permisos'])
                 ->name('permisos.historial');
             
-            // ✅ CORREGIDO: Historial de bajas (DENTRO del grupo, SIN prefijo duplicado)
+            // ✅ HISTORIAL DE BAJAS - VISTA COMPLETA SIN AJAX  
             Route::get('/bajas/historial', [HistorialesPerfilController::class, 'bajas'])
                 ->name('bajas.historial');
         });
 
+        // ✅ RUTAS DE DETALLE - NUEVAS PÁGINAS COMPLETAS
+        Route::get('/permisos/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
+            ->name('permisos.detalle');
+
+        Route::get('/despidos/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
+            ->name('despidos.detalle');
         // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - OPTIMIZADAS Y CENTRALIZADAS
         Route::prefix('{trabajador}/contratos')->name('contratos.')->controller(AdminContratosController::class)->group(function () {
             // Vista principal de contratos del trabajador
