@@ -309,8 +309,7 @@
                                                     @if($despido->es_activo)
                                                         <button type="button" 
                                                                 class="btn btn-outline-success btn-sm" 
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#modalReactivar{{ $despido->id_baja }}"
+                                                                onclick="reactivarTrabajador({{ $despido->id_baja }}, '{{ $despido->trabajador->nombre_completo }}')"
                                                                 title="Reactivar trabajador">
                                                             <i class="bi bi-arrow-clockwise"></i>
                                                         </button>
@@ -327,9 +326,6 @@
 
                                                 <!-- Modales -->
                                                 @include('trabajadores.modales.modal_detalles_despidos', ['despido' => $despido])
-                                                @if($despido->es_activo)
-                                                    @include('trabajadores.modales.modal_reactivar', ['despido' => $despido])
-                                                @endif
                                             </td>
                                         </tr>
                                     @endforeach
@@ -424,115 +420,62 @@
 .table-warning {
     --bs-table-accent-bg: rgba(255, 243, 205, 0.5);
 }
+
+.timeline-item {
+    position: relative;
+}
+
+.timeline-marker {
+    position: relative;
+}
 </style>
 
-<!-- ✅ SCRIPTS ACTUALIZADOS -->
-<script>
-document.addEventListener('DOMContentLoaded', function() {
-    // Inicializar tooltips
-    var tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
-    var tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
-        return new bootstrap.Tooltip(tooltipTriggerEl);
-    });
-});
+{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE DESPIDOS --}}
 
-// ✅ FUNCIÓN PARA VER HISTORIAL COMPLETO
-async function verHistorialTrabajador(trabajadorId) {
-    const modal = new bootstrap.Modal(document.getElementById('modalHistorial'));
-    const content = document.getElementById('historialContent');
-    
-    // Mostrar modal con loading
-    modal.show();
-    
-    try {
-        const response = await fetch(`/trabajadores/${trabajadorId}/historial-despidos`);
-        const data = await response.json();
-        
-        let html = `
-            <div class="row mb-4">
-                <div class="col-12">
-                    <div class="alert alert-info">
-                        <h6 class="alert-heading">
-                            <i class="bi bi-person-circle"></i> ${data.trabajador}
-                        </h6>
-                        <div class="row text-center">
-                            <div class="col-md-4">
-                                <strong>${data.total_bajas}</strong><br>
-                                <small>Total de Bajas</small>
-                            </div>
-                            <div class="col-md-4">
-                                <strong class="text-danger">${data.bajas_activas}</strong><br>
-                                <small>Bajas Activas</small>
-                            </div>
-                            <div class="col-md-4">
-                                <strong class="text-success">${data.bajas_canceladas}</strong><br>
-                                <small>Bajas Canceladas</small>
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        `;
-        
-        if (data.historial.length === 0) {
-            html += `
-                <div class="text-center py-4">
-                    <i class="bi bi-inbox fs-1 text-muted"></i>
-                    <h5 class="mt-3 text-muted">Sin historial de bajas</h5>
-                </div>
-            `;
-        } else {
-            html += `
-                <div class="timeline">
-                    ${data.historial.map(baja => `
-                        <div class="timeline-item">
-                            <div class="timeline-marker ${baja.estado === 'Activo' ? 'bg-danger' : 'bg-success'}"></div>
-                            <div class="timeline-content">
-                                <div class="card ${baja.estado === 'Activo' ? 'border-danger' : 'border-success'}">
-                                    <div class="card-header ${baja.estado === 'Activo' ? 'bg-danger text-white' : 'bg-success text-white'}">
-                                        <div class="d-flex justify-content-between">
-                                            <span><strong>Baja #${baja.id}</strong></span>
-                                            <span class="badge ${baja.estado === 'Activo' ? 'bg-light text-dark' : 'bg-dark'}">${baja.estado}</span>
-                                        </div>
-                                    </div>
-                                    <div class="card-body">
-                                        <div class="row">
-                                            <div class="col-md-6">
-                                                <strong>Fecha de Baja:</strong> ${baja.fecha_baja}<br>
-                                                <strong>Condición:</strong> ${baja.condicion_salida}
-                                            </div>
-                                            <div class="col-md-6">
-                                                ${baja.fecha_cancelacion ? `
-                                                    <strong>Cancelado:</strong> ${baja.fecha_cancelacion}<br>
-                                                    <strong>Por:</strong> ${baja.cancelado_por}
-                                                ` : ''}
-                                            </div>
-                                        </div>
-                                        <hr>
-                                        <strong>Motivo:</strong><br>
-                                        <div class="bg-light p-2 rounded">${baja.motivo}</div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-        }
-        
-        content.innerHTML = html;
-        
-    } catch (error) {
-        console.error('Error al cargar historial:', error);
-        content.innerHTML = `
-            <div class="alert alert-danger">
-                <i class="bi bi-exclamation-triangle"></i>
-                Error al cargar el historial. Por favor, intente nuevamente.
-            </div>
-        `;
-    }
+{{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
+
+{{-- 2. SEGUNDO: Variables globales de configuración --}}
+<script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
+window.currentUser = @json([
+    'id' => Auth::id(),
+    'nombre' => Auth::user()->nombre,
+    'tipo' => Auth::user()->tipo
+]);
+
+// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
+} else {
+    console.log('✅ AppRoutes disponible para lista de despidos');
 }
 </script>
 
+{{-- 3. TERCERO: Script específico de lista de despidos --}}
+<script src="{{ asset('js/listas/despidos_lista.js') }}"></script>
+
+{{-- 4. CUARTO: Script de inicialización y debug --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ EJECUTAR DEBUG EN DESARROLLO
+    if (typeof window.APP_DEBUG !== 'undefined' && window.APP_DEBUG) {
+        setTimeout(() => {
+            if (typeof window.debugRutasDespidos === 'function') {
+                console.group('🔍 Debug Lista Despidos');
+                window.debugRutasDespidos();
+                console.log('Funciones disponibles:', {
+                    verHistorialTrabajador: typeof window.verHistorialTrabajador,
+                    reactivarTrabajador: typeof window.reactivarTrabajador
+                });
+                console.groupEnd();
+            }
+        }, 1000);
+    }
+    
+    console.log('✅ Lista de despidos con rutas dinámicas inicializada correctamente');
+});
+</script>
 
 @endsection

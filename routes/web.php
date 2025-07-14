@@ -173,14 +173,16 @@ Route::prefix('configuracion')->group(function () {
 
     });
 
-    // ✅ RUTAS PARA DESPIDOS
+    // En web.php, dentro del grupo de despidos:
     Route::prefix('despidos')->name('despidos.')->controller(DespidosController::class)->group(function () {
         Route::get('/', 'index')->name('index');
         Route::get('/{despido}', 'show')->name('show');
         Route::delete('/{despido}/cancelar', 'cancelar')->name('cancelar');
         Route::get('/api/estadisticas', 'estadisticas')->name('estadisticas');
-        Route::get('/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
-        ->name('detalle');
+        Route::get('/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])->name('detalle');
+        
+        // ✅ AGREGAR ESTA RUTA NUEVA:
+        Route::get('/trabajador/{trabajador}/historial', 'historial')->name('trabajador.historial');
     });
 
     // ✅ RUTAS PARA PERMISOS LABORALES

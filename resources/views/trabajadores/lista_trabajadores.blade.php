@@ -538,9 +538,6 @@
     @endforeach
 @endif
 
-
-{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE TRABAJADORES - ACTUALIZADO --}}
-
 {{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
 

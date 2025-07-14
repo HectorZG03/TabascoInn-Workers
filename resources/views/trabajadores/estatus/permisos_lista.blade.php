@@ -35,7 +35,7 @@
             </h6>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('permisos.index') }}"  enctype="multipart/form-data">
+            <form method="GET" action="{{ route('permisos.index') }}" enctype="multipart/form-data">
                 <div class="row g-3">
                     <!-- Búsqueda -->
                     <div class="col-md-3">
@@ -334,52 +334,54 @@
     </div>
 </div>
 
-<script>
-function finalizarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`¿Está seguro de finalizar el permiso de ${nombreTrabajador}? El trabajador será reactivado.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permisos/${permisoId}/finalizar`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'PATCH';
-        
-        form.appendChild(csrfToken);
-        form.appendChild(methodField);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE PERMISOS --}}
 
-function cancelarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`⚠️ ¿Está seguro de ELIMINAR DEFINITIVAMENTE el permiso de ${nombreTrabajador}?\n\nEsta acción:\n• Eliminará el permiso de la base de datos\n• Reactivará al trabajador\n• NO SE PUEDE DESHACER\n\n¿Continuar?`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permisos/${permisoId}/cancelar`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'DELETE';
-        
-        form.appendChild(csrfToken);
-        form.appendChild(methodField);
-        document.body.appendChild(form);
-        form.submit();
-    }
+{{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
+
+{{-- 2. SEGUNDO: Variables globales de configuración --}}
+<script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
+window.currentUser = @json([
+    'id' => Auth::id(),
+    'nombre' => Auth::user()->nombre,
+    'tipo' => Auth::user()->tipo
+]);
+
+// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
+} else {
+    console.log('✅ AppRoutes disponible para lista de permisos');
 }
+</script>
+
+{{-- 3. TERCERO: Script específico de lista de permisos --}}
+<script src="{{ asset('js/listas/permisos_lista.js') }}"></script>
+
+{{-- 4. CUARTO: Script de inicialización y debug --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ EJECUTAR DEBUG EN DESARROLLO
+    if (typeof window.APP_DEBUG !== 'undefined' && window.APP_DEBUG) {
+        setTimeout(() => {
+            if (typeof window.debugRutasPermisos === 'function') {
+                console.group('🔍 Debug Lista Permisos');
+                window.debugRutasPermisos();
+                console.log('Funciones disponibles:', {
+                    finalizarPermiso: typeof window.finalizarPermiso,
+                    cancelarPermiso: typeof window.cancelarPermiso,
+                    subirArchivoPermiso: typeof window.subirArchivoPermiso,
+                    descargarArchivoPermiso: typeof window.descargarArchivoPermiso
+                });
+                console.groupEnd();
+            }
+        }, 1000);
+    }
+    
+    console.log('✅ Lista de permisos con rutas dinámicas inicializada correctamente');
+});
 </script>
 
 @endsection
