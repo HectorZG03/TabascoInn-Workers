@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE DESPIDO CON FORMATO GLOBAL DD/MM/YYYY --}}
+{{-- ✅ MODAL DE DESPIDO CON FORMATO GLOBAL DD/MM/YYYY - SIN SCRIPT INTERNO --}}
 <div class="modal fade" id="modalDespido" tabindex="-1" aria-labelledby="modalDespidoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-danger shadow-sm">
@@ -46,7 +46,7 @@
                     maxlength="10"
                     value="{{ $fechaBaja }}"
                     required>
-              <div class="form-text">Formato: DD/MM/YYYY (no puede ser posterior a hoy)</div>
+              <div class="form-text">Formato: DD/MM/YYYY</div>
               <div class="invalid-feedback"></div>
             </div>
             
@@ -193,5 +193,3 @@
     </div>
   </div>
 </div>
-
-<script src="{{ asset('js/modales/despidos_modal.js') }}"></script>

@@ -539,7 +539,7 @@
 @endif
 
 
-{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE TRABAJADORES --}}
+{{-- ✅ ORDEN CORRECTO DE SCRIPTS PARA LISTA DE TRABAJADORES - ACTUALIZADO --}}
 
 {{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
@@ -573,6 +573,7 @@ if (typeof FormatoGlobal === 'undefined') {
 
 {{-- 4. CUARTO: Scripts específicos de modales y funcionalidades --}}
 <script src="{{ asset('js/modales/permisos_modal.js') }}"></script>
+<script src="{{ asset('js/modales/despidos_modal.js') }}"></script>
 
 {{-- 5. QUINTO: Script principal de la lista de trabajadores --}}
 <script>
@@ -694,6 +695,10 @@ document.addEventListener('DOMContentLoaded', function() {
             if (typeof window.debugAppRoutes === 'function') {
                 console.group('🔍 Debug Lista Trabajadores');
                 window.debugAppRoutes();
+                console.log('Modales disponibles:', {
+                    permisos: document.getElementById('modalPermisos') ? 'Disponible' : 'No encontrado',
+                    despidos: document.getElementById('modalDespido') ? 'Disponible' : 'No encontrado'
+                });
                 console.log('Filtros disponibles:', {
                     area: areaSelect ? 'Disponible' : 'No encontrado',
                     categoria: categoriaSelect ? 'Disponible' : 'No encontrado',
@@ -704,7 +709,7 @@ document.addEventListener('DOMContentLoaded', function() {
         }, 1000);
     }
     
-    console.log('✅ Vista lista trabajadores con rutas dinámicas inicializada correctamente');
+    console.log('✅ Vista lista trabajadores con rutas dinámicas y modales inicializada correctamente');
 });
 </script>
 @endsection

@@ -1,4 +1,6 @@
-// ✅ MODAL DE DESPIDOS SIMPLIFICADO CON FORMATO GLOBAL despidos_modal.js
+// ========================================
+// 🎯 MODAL DE DESPIDOS - CON RUTAS DINÁMICAS
+// ========================================
 
 // Funciones globales para el modal
 function toggleCondicionPersonalizada() {
@@ -6,15 +8,17 @@ function toggleCondicionPersonalizada() {
   const container = document.getElementById('condicionPersonalizadaContainer');
   const input = document.getElementById('condicion_personalizada');
   
-  if (select.value === 'OTRO') {
-    container.style.display = 'block';
-    input.required = true;
-    input.focus();
-  } else {
-    container.style.display = 'none';
-    input.required = false;
-    input.value = '';
-    input.classList.remove('is-invalid');
+  if (select && container && input) {
+    if (select.value === 'OTRO') {
+      container.style.display = 'block';
+      input.required = true;
+      input.focus();
+    } else {
+      container.style.display = 'none';
+      input.required = false;
+      input.value = '';
+      input.classList.remove('is-invalid');
+    }
   }
 }
 
@@ -23,21 +27,31 @@ function toggleReintegroField(show) {
   const duracionContainer = document.getElementById('duracionBajaContainer');
   const input = document.getElementById('fecha_reintegro');
   
-  container.style.display = show ? 'block' : 'none';
-  duracionContainer.style.display = show ? 'block' : 'none';
-  input.required = show;
-  
-  if (!show) {
-    input.value = '';
-    document.getElementById('duracionBaja').textContent = '0 días';
-    input.classList.remove('is-invalid', 'is-valid');
+  if (container && duracionContainer && input) {
+    container.style.display = show ? 'block' : 'none';
+    duracionContainer.style.display = show ? 'block' : 'none';
+    input.required = show;
+    
+    if (!show) {
+      input.value = '';
+      const duracionBadge = document.getElementById('duracionBaja');
+      if (duracionBadge) {
+        duracionBadge.textContent = '0 días';
+      }
+      input.classList.remove('is-invalid', 'is-valid');
+    }
   }
 }
 
 document.addEventListener('DOMContentLoaded', () => {
-  // Verificar dependencias
+  // ✅ VERIFICAR QUE LAS DEPENDENCIAS ESTÉN DISPONIBLES
   if (!window.FormatoGlobal) {
-    console.error('❌ FormatoGlobal no disponible');
+    console.error('❌ FormatoGlobal no disponible para modal de despidos');
+    return;
+  }
+
+  if (!window.AppRoutes) {
+    console.error('❌ AppRoutes no disponible para modal de despidos');
     return;
   }
 
@@ -50,11 +64,14 @@ document.addEventListener('DOMContentLoaded', () => {
   const observaciones = document.getElementById('observaciones');
   const btnSubmit = document.getElementById('btnConfirmarDespido');
   
-  if (!modal || !form) return;
+  if (!modal || !form) {
+    console.warn('⚠️ Elementos del modal de despidos no encontrados');
+    return;
+  }
 
   let fechaIngresoTrabajador = null;
 
-  // ✅ APLICAR FORMATO A CAMPOS DE FECHA - FUNCIÓN CORREGIDA
+  // ✅ APLICAR FORMATO A CAMPOS DE FECHA
   if (fechaBaja) {
     FormatoGlobal.configurarCampoFecha(fechaBaja);
   }
@@ -76,8 +93,9 @@ document.addEventListener('DOMContentLoaded', () => {
   // ✅ CALCULAR DURACIÓN DE BAJA TEMPORAL
   function calcularDuracion() {
     const duracionBadge = document.getElementById('duracionBaja');
+    if (!duracionBadge) return;
     
-    if (!fechaBaja.value || !fechaReintegro.value) {
+    if (!fechaBaja || !fechaBaja.value || !fechaReintegro || !fechaReintegro.value) {
       duracionBadge.textContent = '0 días';
       duracionBadge.className = 'badge bg-info';
       return;
@@ -125,7 +143,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // ✅ ABRIR MODAL
+  // ✅ ABRIR MODAL CON RUTAS DINÁMICAS
   document.querySelectorAll('.btn-despedir').forEach(btn => {
     btn.addEventListener('click', () => {
       // Resetear formulario
@@ -150,12 +168,26 @@ document.addEventListener('DOMContentLoaded', () => {
       }
 
       // Configurar datos del trabajador
+      const trabajadorId = btn.dataset.id;
+      const trabajadorNombre = btn.dataset.nombre;
+      
+      if (!trabajadorId) {
+        console.error('❌ No se encontró el ID del trabajador');
+        return;
+      }
+
+      // ✅ USAR RUTAS DINÁMICAS EN LUGAR DE HARDCODED
+      const actionUrl = AppRoutes.url(`trabajadores/${trabajadorId}/despedir`);
+      form.action = actionUrl;
+
+      console.log('🔄 Configurando modal de despidos para trabajador:', trabajadorId);
+      console.log('🔗 URL del formulario:', actionUrl);
+
       const nombreElement = document.getElementById('nombreTrabajador');
       if (nombreElement) {
-        nombreElement.textContent = btn.dataset.nombre;
+        nombreElement.textContent = trabajadorNombre;
       }
       
-      form.action = `/trabajadores/${btn.dataset.id}/despedir`;
       fechaIngresoTrabajador = btn.dataset.fechaIngreso;
 
       // Estado inicial
@@ -221,6 +253,16 @@ document.addEventListener('DOMContentLoaded', () => {
   // ✅ VALIDACIÓN AL ENVIAR
   form.addEventListener('submit', e => {
     e.preventDefault();
+    
+    // ✅ VERIFICAR QUE LA URL DEL FORMULARIO ESTÉ CONFIGURADA
+    if (!form.action || form.action.includes('undefined')) {
+      console.error('❌ URL del formulario no configurada correctamente:', form.action);
+      alert('Error: No se pudo configurar la URL del formulario. Recargue la página e intente nuevamente.');
+      return;
+    }
+
+    console.log('🔄 Enviando formulario de despido a:', form.action);
+    
     limpiarErrores();
     let esValido = true;
 
@@ -274,8 +316,11 @@ document.addEventListener('DOMContentLoaded', () => {
         btnSubmit.disabled = true;
         btnSubmit.innerHTML = '<i class="bi bi-hourglass-split"></i> Procesando...';
       }
+      
+      console.log('✅ Formulario de despido válido, enviando...');
       form.submit();
     } else {
+      console.warn('⚠️ Formulario de despido inválido, corrigiendo errores...');
       // Enfocar primer error
       const primerError = form.querySelector('.is-invalid');
       if (primerError) {
@@ -287,14 +332,16 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // ✅ FUNCIONES AUXILIARES
   function mostrarError(campo, mensaje) {
-    campo.classList.add('is-invalid');
-    let feedback = campo.parentNode.querySelector('.invalid-feedback');
-    if (!feedback) {
-      feedback = document.createElement('div');
-      feedback.className = 'invalid-feedback';
-      campo.parentNode.appendChild(feedback);
+    if (campo) {
+      campo.classList.add('is-invalid');
+      let feedback = campo.parentNode.querySelector('.invalid-feedback');
+      if (!feedback) {
+        feedback = document.createElement('div');
+        feedback.className = 'invalid-feedback';
+        campo.parentNode.appendChild(feedback);
+      }
+      feedback.textContent = mensaje;
     }
-    feedback.textContent = mensaje;
   }
 
   function limpiarErrores() {
@@ -326,5 +373,5 @@ document.addEventListener('DOMContentLoaded', () => {
     if (contadorObservaciones) contadorObservaciones.textContent = '0/1000';
   });
 
-  console.log('✅ Modal de despidos simplificado inicializado');
+  console.log('✅ Modal de despidos con rutas dinámicas inicializado correctamente');
 });
