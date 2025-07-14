@@ -265,36 +265,75 @@
 @include('trabajadores.modales.asignar_vacaciones', ['trabajador' => $trabajador])
 
 {{-- ===================================== --}}
-{{-- ✅ SCRIPTS EN ORDEN CORRECTO --}}
+{{-- ✅ SCRIPTS EN ORDEN CORRECTO CON RUTAS DINÁMICAS --}}
 {{-- ===================================== --}}
 
 <!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 
-<!-- 🎯 1. FORMATO GLOBAL (Debe ir PRIMERO) -->
-<script src="{{ asset('js/formato-global.js') }}"></script>
+{{-- ✅ 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
 
-<!-- 🏖️ 2. LISTA DE VACACIONES (Principal) -->
-<script src="{{ asset('js/vacaciones.js') }}"></script>
-
-<!-- 📝 3. MODAL DE ASIGNAR VACACIONES (Con formato global integrado) -->
-<script src="{{ asset('js/modales/asignar_vacacion.js') }}"></script>
-
-<!-- Variable global para el usuario actual -->
+{{-- ✅ 2. SEGUNDO: Variables globales de configuración --}}
 <script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
 window.currentUser = @json([
     'id' => Auth::id(),
     'nombre' => Auth::user()->nombre,
     'tipo' => Auth::user()->tipo
 ]);
 
-// Log de inicialización
-console.log('🎯 Sistema de vacaciones con formato global:');
-console.log('   📅 Formato Global: formato-global.js');
-console.log('   📋 Lista: vacaciones.js');
-console.log('   📝 Modal: modales/asignar_vacacion.js');
-console.log('   👤 Usuario:', window.currentUser);
-console.log('   🔧 Formato de fechas: DD/MM/YYYY → YYYY-MM-DD (backend)');
+// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente para vacaciones');
+} else {
+    console.log('✅ AppRoutes disponible para vacaciones, base URL:', AppRoutes.getBaseUrl());
+}
+</script>
+
+{{-- ✅ 3. TERCERO: FORMATO GLOBAL (Debe ir ANTES que otros scripts) --}}
+<script src="{{ asset('js/formato-global.js') }}"></script>
+
+{{-- ✅ 4. CUARTO: LISTA DE VACACIONES (Principal) --}}
+<script src="{{ asset('js/vacaciones.js') }}"></script>
+
+{{-- ✅ 5. QUINTO: MODAL DE ASIGNAR VACACIONES (Con formato global integrado) --}}
+<script src="{{ asset('js/modales/asignar_vacacion.js') }}"></script>
+
+{{-- ✅ 6. SEXTO: Script de verificación final --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ VERIFICACIÓN FINAL DE CARGA
+    setTimeout(() => {
+        if (typeof AppRoutes !== 'undefined' && typeof window.vacacionesApp !== 'undefined') {
+            console.log('🎉 Sistema de vacaciones completamente inicializado con rutas dinámicas');
+            
+            // ✅ DEBUG EN DESARROLLO
+            if (window.APP_DEBUG) {
+                console.log('🎯 Sistema de vacaciones con rutas dinámicas:');
+                console.log('   📅 Formato Global: formato-global.js');
+                console.log('   📋 Lista: vacaciones.js');
+                console.log('   📝 Modal: modales/asignar_vacacion.js');
+                console.log('   👤 Usuario:', window.currentUser);
+                console.log('   🔧 Base URL:', AppRoutes.getBaseUrl());
+                console.log('   🔗 Rutas de ejemplo:');
+                console.log('       API vacaciones:', AppRoutes.trabajadores('1/vacaciones/api'));
+                console.log('       Asignar vacaciones:', AppRoutes.trabajadores('1/vacaciones/asignar'));
+                console.log('       Calcular días:', AppRoutes.trabajadores('1/vacaciones/calcular-dias'));
+            }
+        } else {
+            console.error('❌ Error en la inicialización del sistema de vacaciones');
+            
+            if (typeof AppRoutes === 'undefined') {
+                console.error('   - AppRoutes no disponible');
+            }
+            if (typeof window.vacacionesApp === 'undefined') {
+                console.error('   - vacacionesApp no inicializada');
+            }
+        }
+    }, 500);
+});
 </script>
 
 <!-- Estilos -->

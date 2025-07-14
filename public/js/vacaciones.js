@@ -1,5 +1,5 @@
 /**
- * vacaciones.js - Gestión de Lista de Vacaciones ÚNICAMENTE
+ * vacaciones.js - Gestión de Lista de Vacaciones con RUTAS DINÁMICAS
  * Maneja exclusivamente la lista de vacaciones y sus acciones
  * El modal está separado en asignar_vacacion.js
  */
@@ -15,9 +15,16 @@ class VacacionesManager {
     }
 
     async init() {
+        // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+        if (typeof AppRoutes === 'undefined') {
+            console.error('❌ AppRoutes no está disponible para cargar vacaciones');
+            this.showError('Error de configuración: Sistema de rutas no disponible');
+            return;
+        }
+
         this.bindEvents();
         await this.loadVacaciones();
-        console.log('✅ VacacionesManager inicializado correctamente');
+        console.log('✅ VacacionesManager inicializado correctamente con rutas dinámicas');
     }
 
     bindEvents() {
@@ -54,7 +61,7 @@ class VacacionesManager {
     }
 
     // =================================
-    // CARGA Y GESTIÓN DE DATOS
+    // CARGA Y GESTIÓN DE DATOS CON RUTAS DINÁMICAS
     // =================================
 
     async loadVacaciones() {
@@ -62,7 +69,14 @@ class VacacionesManager {
             this.showLoading();
             console.log(`🔄 Cargando vacaciones para trabajador: ${this.trabajadorId}`);
             
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/api`, {
+            // ✅ USAR RUTAS DINÁMICAS EN LUGAR DE RUTAS ABSOLUTAS
+            // ❌ ANTES: const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/api`, {
+            // ✅ AHORA: Usar AppRoutes para construir la URL correcta
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/api`);
+            
+            console.log('🔄 Cargando desde URL:', url);
+            
+            const response = await fetch(url, {
                 method: 'GET',
                 headers: {
                     'Accept': 'application/json',
@@ -285,14 +299,18 @@ class VacacionesManager {
     }
 
     // =================================
-    // ACCIONES SOBRE VACACIONES EXISTENTES
+    // ACCIONES SOBRE VACACIONES EXISTENTES CON RUTAS DINÁMICAS
     // =================================
 
     async iniciarVacacion(vacacionId) {
         if (!confirm('¿Está seguro de iniciar estas vacaciones?')) return;
         
         try {
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/${vacacionId}/iniciar`, {
+            // ✅ USAR RUTAS DINÁMICAS
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/iniciar`);
+            console.log('🔄 Iniciando vacación desde:', url);
+            
+            const response = await fetch(url, {
                 method: 'PATCH',
                 headers: {
                     'Accept': 'application/json',
@@ -324,7 +342,11 @@ class VacacionesManager {
         if (motivo === null) return;
         
         try {
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/${vacacionId}/finalizar`, {
+            // ✅ USAR RUTAS DINÁMICAS
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/finalizar`);
+            console.log('🔄 Finalizando vacación desde:', url);
+            
+            const response = await fetch(url, {
                 method: 'PATCH',
                 headers: {
                     'Content-Type': 'application/json',
@@ -358,7 +380,11 @@ class VacacionesManager {
         if (!motivo || motivo.trim() === '') return;
         
         try {
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/${vacacionId}/cancelar`, {
+            // ✅ USAR RUTAS DINÁMICAS
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/cancelar`);
+            console.log('🔄 Cancelando vacación desde:', url);
+            
+            const response = await fetch(url, {
                 method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json',
@@ -502,13 +528,21 @@ class VacacionesManager {
 // =================================
 
 $(document).ready(function() {
-    console.log('🚀 Iniciando aplicación de lista de vacaciones...');
+    console.log('🚀 Iniciando aplicación de lista de vacaciones con rutas dinámicas...');
+    
+    // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+    if (typeof AppRoutes === 'undefined') {
+        console.error('❌ CRÍTICO: AppRoutes no está disponible para vacaciones');
+        alert('Error: Sistema de rutas no configurado. Recarga la página.');
+        return;
+    }
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
     
     if (trabajadorId) {
         window.vacacionesApp = new VacacionesManager(trabajadorId);
-        console.log(`✅ Lista de vacaciones iniciada para trabajador: ${trabajadorId}`);
+        console.log(`✅ Lista de vacaciones con rutas dinámicas iniciada para trabajador: ${trabajadorId}`);
+        console.log(`🔧 Base URL: ${AppRoutes.getBaseUrl()}`);
     } else {
         console.error('❌ No se pudo obtener el ID del trabajador');
     }

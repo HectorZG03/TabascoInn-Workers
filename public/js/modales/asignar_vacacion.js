@@ -1,5 +1,5 @@
 /**
- * asignar_vacacion.js - Modal con FORMATO GLOBAL integrado
+ * asignar_vacacion.js - Modal con FORMATO GLOBAL y RUTAS DINÁMICAS integrado
  * Maneja fechas DD/MM/YYYY en frontend, envía YYYY-MM-DD al backend
  */
 class AsignarVacacionModal {
@@ -14,10 +14,16 @@ class AsignarVacacionModal {
     init() {
         if (this.initialized) return;
         
+        // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+        if (typeof AppRoutes === 'undefined') {
+            console.error('❌ AppRoutes no está disponible para el modal de asignar vacaciones');
+            return;
+        }
+        
         this.bindEvents();
         this.setupFormatoGlobalValidations();
         this.initialized = true;
-        console.log('✅ Modal de asignar vacaciones inicializado con formato global');
+        console.log('✅ Modal de asignar vacaciones inicializado con formato global y rutas dinámicas');
     }
 
     bindEvents() {
@@ -80,15 +86,20 @@ class AsignarVacacionModal {
     }
 
     // =================================
-    // INICIALIZACIÓN DEL MODAL
+    // INICIALIZACIÓN DEL MODAL CON RUTAS DINÁMICAS
     // =================================
 
     async initModal() {
         try {
             console.log('🔄 Inicializando modal de asignar vacaciones...');
             
-            // Cargar días disponibles del trabajador
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/calcular-dias`, {
+            // ✅ USAR RUTAS DINÁMICAS PARA CARGAR DÍAS DISPONIBLES
+            // ❌ ANTES: const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/calcular-dias`, {
+            // ✅ AHORA: Usar AppRoutes
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/calcular-dias`);
+            console.log('🔄 Cargando días disponibles desde:', url);
+            
+            const response = await fetch(url, {
                 headers: {
                     'Accept': 'application/json',
                     'X-Requested-With': 'XMLHttpRequest'
@@ -109,11 +120,15 @@ class AsignarVacacionModal {
                     if (!data.puede_tomar_vacaciones) {
                         this.showAlert('El trabajador no puede tomar vacaciones en este momento.', 'warning');
                     }
+                } else {
+                    throw new Error(data.message || 'Error al obtener días disponibles');
                 }
+            } else {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
         } catch (error) {
             console.error('Error loading vacation data:', error);
-            this.showAlert('Error al cargar información de vacaciones', 'danger');
+            this.showAlert('Error al cargar información de vacaciones: ' + error.message, 'danger');
         }
         
         this.resetForm();
@@ -251,13 +266,13 @@ class AsignarVacacionModal {
     }
 
     // =================================
-    // ENVÍO DEL FORMULARIO CON CONVERSIÓN
+    // ENVÍO DEL FORMULARIO CON CONVERSIÓN Y RUTAS DINÁMICAS
     // =================================
 
     async handleSubmit(e) {
         e.preventDefault();
         
-        console.log('📤 Enviando formulario de asignación...');
+        console.log('📤 Enviando formulario de asignación con rutas dinámicas...');
         
         try {
             this.setLoadingState(true);
@@ -293,8 +308,13 @@ class AsignarVacacionModal {
             
             console.log('📤 Datos para backend (YYYY-MM-DD):', dataParaBackend);
             
-            // Enviar al servidor
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/asignar`, {
+            // ✅ USAR RUTAS DINÁMICAS PARA ENVIAR AL SERVIDOR
+            // ❌ ANTES: const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/asignar`, {
+            // ✅ AHORA: Usar AppRoutes
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/asignar`);
+            console.log('📤 Enviando a URL:', url);
+            
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -326,7 +346,7 @@ class AsignarVacacionModal {
             }
         } catch (error) {
             console.error('❌ Error assigning vacation:', error);
-            this.showAlert('Error de conexión al asignar vacaciones', 'danger');
+            this.showAlert('Error de conexión al asignar vacaciones: ' + error.message, 'danger');
         } finally {
             this.setLoadingState(false);
         }
@@ -544,7 +564,13 @@ class AsignarVacacionModal {
 
 // Inicializar automáticamente cuando el DOM esté listo
 $(document).ready(function() {
-    console.log('🚀 Iniciando modal de asignar vacaciones con formato global...');
+    console.log('🚀 Iniciando modal de asignar vacaciones con formato global y rutas dinámicas...');
+    
+    // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+    if (typeof AppRoutes === 'undefined') {
+        console.error('❌ CRÍTICO: AppRoutes no está disponible para el modal de vacaciones');
+        return;
+    }
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
     
@@ -552,7 +578,8 @@ $(document).ready(function() {
         // Verificar que el formato global esté disponible
         if (window.FormatoGlobal) {
             window.asignarVacacionModal = new AsignarVacacionModal(trabajadorId);
-            console.log(`✅ Modal con formato global iniciado para trabajador: ${trabajadorId}`);
+            console.log(`✅ Modal con formato global y rutas dinámicas iniciado para trabajador: ${trabajadorId}`);
+            console.log(`🔧 Base URL: ${AppRoutes.getBaseUrl()}`);
         } else {
             console.error('❌ FormatoGlobal no está disponible. Asegúrate de incluir formato-global.js');
         }
