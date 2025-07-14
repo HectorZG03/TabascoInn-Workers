@@ -1,4 +1,5 @@
-{{-- resources/views/trabajadores/tabs/datos_personales.blade.php --}}
+{{-- resources/views/trabajadores/secciones_perfil/datos_personales.blade.php --}}
+{{-- ✅ CAMBIAR SOLO LOS CAMPOS DE FECHA --}}
 
 <div class="card shadow">
     <div class="card-header bg-primary text-white">
@@ -61,24 +62,26 @@
             </div>
 
             <div class="row">
-                <!-- Fecha de Nacimiento -->
+                <!-- ✅ FECHA DE NACIMIENTO - CAMBIO DE date A text CON FORMATO GLOBAL -->
                 <div class="col-md-4 mb-3">
                     <label for="fecha_nacimiento" class="form-label">
                         <i class="bi bi-calendar"></i> Fecha de Nacimiento *
                     </label>
-                    <input type="date" 
-                           class="form-control @error('fecha_nacimiento') is-invalid @enderror" 
+                    <input type="text" 
+                           class="form-control formato-fecha @error('fecha_nacimiento') is-invalid @enderror" 
                            id="fecha_nacimiento" 
                            name="fecha_nacimiento" 
-                           value="{{ old('fecha_nacimiento', $trabajador->fecha_nacimiento?->format('Y-m-d')) }}" 
-                           max="{{ date('Y-m-d', strtotime('-18 years')) }}"
+                           value="{{ old('fecha_nacimiento', $trabajador->fecha_nacimiento ? $trabajador->fecha_nacimiento->format('d/m/Y') : '') }}" 
+                           placeholder="DD/MM/YYYY"
+                           maxlength="10"
+                           autocomplete="off"
                            required>
                     @error('fecha_nacimiento')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <!-- ✅ NUEVO: Lugar de Nacimiento -->
+                <!-- ✅ LUGAR DE NACIMIENTO - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="lugar_nacimiento" class="form-label">
                         <i class="bi bi-geo"></i> Lugar de Nacimiento
@@ -95,7 +98,7 @@
                     @enderror
                 </div>
 
-                <!-- CURP -->
+                <!-- CURP - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="curp" class="form-label">
                         <i class="bi bi-card-text"></i> CURP *
@@ -114,7 +117,7 @@
             </div>
 
             <div class="row">
-                <!-- RFC -->
+                <!-- RFC - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="rfc" class="form-label">
                         <i class="bi bi-card-text"></i> RFC *
@@ -131,7 +134,7 @@
                     @enderror
                 </div>
 
-                <!-- NSS -->
+                <!-- NSS - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="no_nss" class="form-label">
                         <i class="bi bi-shield-check"></i> NSS
@@ -147,7 +150,7 @@
                     @enderror
                 </div>
 
-                <!-- Teléfono -->
+                <!-- Teléfono - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="telefono" class="form-label">
                         <i class="bi bi-telephone"></i> Teléfono *
@@ -166,7 +169,7 @@
             </div>
 
             <div class="row">
-                <!-- Correo -->
+                <!-- Correo - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="correo" class="form-label">
                         <i class="bi bi-envelope"></i> Correo Electrónico
@@ -181,7 +184,7 @@
                     @enderror
                 </div>
 
-                <!-- ✅ NUEVO: Estado Actual -->
+                <!-- Estado Actual - SIN CAMBIOS (mantener como estaba) -->
                 <div class="col-md-4 mb-3">
                     <label for="estado_actual" class="form-label">
                         <i class="bi bi-map"></i> Estado Actual
@@ -238,7 +241,7 @@
                     @enderror
                 </div>
 
-                <!-- ✅ NUEVO: Ciudad Actual -->
+                <!-- Ciudad Actual - SIN CAMBIOS -->
                 <div class="col-md-4 mb-3">
                     <label for="ciudad_actual" class="form-label">
                         <i class="bi bi-building"></i> Ciudad Actual
@@ -257,7 +260,7 @@
             </div>
 
             <div class="row">
-                <!-- Dirección -->
+                <!-- Dirección - SIN CAMBIOS -->
                 <div class="col-md-8 mb-3">
                     <label for="direccion" class="form-label">
                         <i class="bi bi-geo-alt"></i> Dirección Completa
@@ -273,17 +276,19 @@
                     @enderror
                 </div>
                 
-                <!-- Fecha de Ingreso -->
+                <!-- ✅ FECHA DE INGRESO - CAMBIO DE date A text CON FORMATO GLOBAL -->
                 <div class="col-md-4 mb-3">
                     <label for="fecha_ingreso" class="form-label">
                         <i class="bi bi-calendar-check"></i> Fecha de Ingreso *
                     </label>
-                    <input type="date" 
-                           class="form-control @error('fecha_ingreso') is-invalid @enderror" 
+                    <input type="text" 
+                           class="form-control formato-fecha @error('fecha_ingreso') is-invalid @enderror" 
                            id="fecha_ingreso" 
                            name="fecha_ingreso" 
-                           value="{{ old('fecha_ingreso', $trabajador->fecha_ingreso?->format('Y-m-d')) }}" 
-                           max="{{ date('Y-m-d') }}"
+                           value="{{ old('fecha_ingreso', $trabajador->fecha_ingreso ? $trabajador->fecha_ingreso->format('d/m/Y') : '') }}" 
+                           placeholder="DD/MM/YYYY"
+                           maxlength="10"
+                           autocomplete="off"
                            required>
                     @error('fecha_ingreso')
                         <div class="invalid-feedback">{{ $message }}</div>
