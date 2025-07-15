@@ -14,9 +14,9 @@ use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
-use App\Http\Controllers\EstadisticasController; // ✅ NUEVO CONTROLADOR
-use App\Http\Controllers\VacacionesController; // ✅ NUEVO CONTROLADOR
-use App\Http\Controllers\DocumentosVacacionesController; // ✅ NUEVO CONTROLADOR
+use App\Http\Controllers\EstadisticasController; 
+use App\Http\Controllers\VacacionesController;
+use App\Http\Controllers\DocumentosVacacionesController;
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login

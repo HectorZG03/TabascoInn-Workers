@@ -9,6 +9,7 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -58,7 +59,7 @@ class DocumentosVacacionesController extends Controller
     }
 
     /**
-     * Subir documento firmado y asociar con vacaciones
+     * Subir documento firmado y asociar con vacaciones - CORREGIDO
      */
     public function subirDocumento(Request $request, Trabajador $trabajador): JsonResponse
     {
@@ -101,24 +102,56 @@ class DocumentosVacacionesController extends Controller
                 ], 422);
             }
 
-            // Guardar archivo
+            // ✅ CORREGIR: Guardar archivo con creación de directorios
             $rutaArchivo = DocumentoVacaciones::generarRutaArchivo(
                 $trabajador->id_trabajador,
                 $archivo->getClientOriginalName()
             );
 
-            if (!$archivo->storeAs('public', $rutaArchivo)) {
+            // ✅ NUEVO: Crear directorio si no existe y guardar archivo
+            try {
+                // Usar Storage::putFileAs para mejor control
+                $rutaCompleta = Storage::disk('public')->putFileAs(
+                    'vacaciones/documentos/trabajador_' . $trabajador->id_trabajador,
+                    $archivo,
+                    basename($rutaArchivo)
+                );
+
+                if (!$rutaCompleta) {
+                    throw new \Exception('Error al guardar el archivo en storage');
+                }
+
+                // Verificar que el archivo se guardó correctamente
+                if (!Storage::disk('public')->exists($rutaCompleta)) {
+                    throw new \Exception('El archivo no se guardó correctamente');
+                }
+
+                // Log para debugging
+                \Log::info("Archivo guardado exitosamente", [
+                    'ruta_generada' => $rutaArchivo,
+                    'ruta_guardada' => $rutaCompleta,
+                    'existe' => Storage::disk('public')->exists($rutaCompleta),
+                    'tamaño' => Storage::disk('public')->size($rutaCompleta)
+                ]);
+
+            } catch (\Exception $e) {
+                \Log::error("Error guardando archivo", [
+                    'error' => $e->getMessage(),
+                    'ruta' => $rutaArchivo,
+                    'trabajador_id' => $trabajador->id_trabajador
+                ]);
+
                 return response()->json([
                     'success' => false,
-                    'message' => 'Error al guardar el archivo'
+                    'message' => 'Error al guardar el archivo: ' . $e->getMessage()
                 ], 500);
             }
 
-            // Crear registro en BD
+            // Crear registro en BD con la ruta que realmente se guardó
             $documento = DocumentoVacaciones::create([
                 'trabajador_id' => $trabajador->id_trabajador,
                 'nombre_original' => $archivo->getClientOriginalName(),
-                'ruta' => $rutaArchivo
+                'ruta' => $rutaCompleta // ✅ Usar la ruta real guardada
             ]);
 
             // Asociar con vacaciones
@@ -131,10 +164,19 @@ class DocumentosVacacionesController extends Controller
             return response()->json([
                 'success' => true,
                 'message' => 'Documento subido y asociado correctamente',
-                'documento' => $documento->load('vacaciones')
+                'documento' => $documento->load('vacaciones'),
+                'debug' => [
+                    'ruta_guardada' => $rutaCompleta,
+                    'existe_archivo' => Storage::disk('public')->exists($rutaCompleta)
+                ]
             ]);
 
         } catch (\Exception $e) {
+            \Log::error("Error en subirDocumento", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al subir documento: ' . $e->getMessage()
@@ -143,7 +185,7 @@ class DocumentosVacacionesController extends Controller
     }
 
     /**
-     * Obtener lista de documentos de vacaciones
+     * Obtener lista de documentos de vacaciones - CORREGIDO
      */
     public function obtenerDocumentos(Trabajador $trabajador): JsonResponse
     {
@@ -152,13 +194,19 @@ class DocumentosVacacionesController extends Controller
                 ->with('vacaciones')
                 ->get()
                 ->map(function ($documento) {
+                    // ✅ Verificar integridad del documento
+                    $problemas = $documento->verificarIntegridad();
+                    $existe = $documento->existe();
+                    
                     return [
                         'id' => $documento->id,
                         'nombre_original' => $documento->nombre_original,
-                        'tamaño' => $documento->tamaño,
-                        'url' => $documento->url,
+                        'tamaño' => $existe ? $documento->tamaño : 'Archivo no encontrado',
+                        'url' => $existe ? $documento->url : '#',
                         'created_at' => $documento->created_at->format('d/m/Y H:i'),
                         'vacaciones_asociadas' => $documento->vacaciones->count(),
+                        'existe_archivo' => $existe, // ✅ Nuevo campo
+                        'problemas' => $problemas, // ✅ Nuevo campo para debugging
                         'vacaciones' => $documento->vacaciones->map(function ($vacacion) {
                             return [
                                 'id' => $vacacion->id_vacacion,
@@ -173,10 +221,21 @@ class DocumentosVacacionesController extends Controller
 
             return response()->json([
                 'success' => true,
-                'documentos' => $documentos
+                'documentos' => $documentos,
+                'debug' => [
+                    'total_documentos' => $documentos->count(),
+                    'documentos_existentes' => $documentos->where('existe_archivo', true)->count(),
+                    'documentos_faltantes' => $documentos->where('existe_archivo', false)->count()
+                ]
             ]);
 
         } catch (\Exception $e) {
+            \Log::error("Error en obtenerDocumentos", [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
             return response()->json([
                 'success' => false,
                 'message' => 'Error al obtener documentos: ' . $e->getMessage()
