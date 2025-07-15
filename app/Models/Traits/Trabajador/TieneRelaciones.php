@@ -12,7 +12,8 @@ use App\Models\{
     PermisosLaborales, 
     ContratoTrabajador, 
     HorasExtra,
-    VacacionesTrabajador  // ✅ NUEVA IMPORTACIÓN
+    VacacionesTrabajador,
+    DocumentoVacaciones
 };
 
 trait TieneRelaciones
@@ -143,5 +144,49 @@ trait TieneRelaciones
     public function despidosActivos(): int
     {
         return $this->despidos()->where('estado', 'activo')->count();
+    }
+
+    // ✅ NUEVAS RELACIONES - AGREGAR AL FINAL DEL TRAIT
+    /**
+     * Relación con documentos de amortización de vacaciones
+     */
+    public function documentosVacaciones(): HasMany
+    {
+        return $this->hasMany(DocumentoVacaciones::class, 'trabajador_id', 'id_trabajador')
+                    ->orderBy('created_at', 'desc');
+    }
+
+    /**
+     * Documentos de vacaciones recientes
+     */
+    public function documentosVacacionesRecientes(): HasMany
+    {
+        return $this->documentosVacaciones()
+                    ->where('created_at', '>=', now()->subMonths(6));
+    }
+
+    // ✅ NUEVOS MÉTODOS DE UTILIDAD - AGREGAR AL FINAL DEL TRAIT
+    /**
+     * Verificar si tiene documentos de vacaciones
+     */
+    public function tieneDocumentosVacaciones(): bool
+    {
+        return $this->documentosVacaciones()->exists();
+    }
+
+    /**
+     * Obtener el último documento de vacaciones
+     */
+    public function getUltimoDocumentoVacacionesAttribute(): ?DocumentoVacaciones
+    {
+        return $this->documentosVacaciones()->first();
+    }
+
+    /**
+     * Contar documentos de vacaciones
+     */
+    public function getTotalDocumentosVacacionesAttribute(): int
+    {
+        return $this->documentosVacaciones()->count();
     }
 }

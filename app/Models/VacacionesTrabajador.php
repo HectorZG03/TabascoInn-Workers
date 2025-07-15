@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Carbon\Carbon;
 
 class VacacionesTrabajador extends Model
@@ -29,7 +30,8 @@ class VacacionesTrabajador extends Model
         'fecha_reintegro',
         'estado',
         'observaciones',
-        'motivo_finalizacion'
+        'motivo_finalizacion',
+        'justificada_por_documento',
     ];
 
     protected $casts = [
@@ -43,6 +45,7 @@ class VacacionesTrabajador extends Model
         'dias_restantes' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        'justificada_por_documento' => 'boolean',
     ];
 
     // ✅ CONSTANTES
@@ -250,5 +253,45 @@ class VacacionesTrabajador extends Model
         ]);
 
         return true;
+    }
+
+    public function documentos(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            DocumentoVacaciones::class,
+            'documento_vacacion_vacaciones',
+            'vacacion_id',
+            'documento_vacacion_id',
+            'id_vacacion',
+            'id'
+        )->withTimestamps();
+    }
+
+    // ✅ NUEVOS ACCESSORS - AGREGAR AL FINAL DEL MODELO
+    public function getTieneDocumentoAttribute(): bool
+    {
+        return $this->documentos()->exists();
+    }
+
+    public function getDocumentoActivoAttribute(): ?DocumentoVacaciones
+    {
+        return $this->documentos()->latest()->first();
+    }
+
+    // ✅ NUEVOS MÉTODOS - AGREGAR AL FINAL DEL MODELO
+    public function asociarDocumento(DocumentoVacaciones $documento): void
+    {
+        $this->documentos()->attach($documento->id);
+        $this->update(['justificada_por_documento' => true]);
+    }
+
+    public function desasociarDocumento(DocumentoVacaciones $documento): void
+    {
+        $this->documentos()->detach($documento->id);
+        
+        // Si no tiene más documentos, actualizar el campo
+        if (!$this->documentos()->exists()) {
+            $this->update(['justificada_por_documento' => false]);
+        }
     }
 }

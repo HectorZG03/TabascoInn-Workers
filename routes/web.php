@@ -16,6 +16,7 @@ use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
 use App\Http\Controllers\EstadisticasController; // ✅ NUEVO CONTROLADOR
 use App\Http\Controllers\VacacionesController; // ✅ NUEVO CONTROLADOR
+use App\Http\Controllers\DocumentosVacacionesController; // ✅ NUEVO CONTROLADOR
 use Illuminate\Support\Facades\Route;
 
 // Redirigir la ruta raíz al login
@@ -40,22 +41,19 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-Route::prefix('configuracion')->group(function () {
-    Route::get('/areas-categorias', [AreaCategoriaController::class, 'index'])->name('areas.categorias.index');
-    Route::post('/areas', [AreaCategoriaController::class, 'storeArea'])->name('areas.store');
-    Route::post('/categorias', [AreaCategoriaController::class, 'storeCategoria'])->name('categorias.store');
-    Route::put('/areas/{area}', [AreaCategoriaController::class, 'updateArea'])->name('areas.update');
-    Route::delete('/areas/{area}', [AreaCategoriaController::class, 'destroyArea'])->name('areas.destroy');
-    Route::put('/categorias/{categoria}', [AreaCategoriaController::class, 'updateCategoria'])->name('categorias.update');
-    Route::delete('/categorias/{categoria}', [AreaCategoriaController::class, 'destroyCategoria'])->name('categorias.destroy');
-    // En tu web.php, dentro del grupo de configuración:
-    Route::get('/areas-categorias/estadisticas', [AreaCategoriaController::class, 'estadisticas'])->name('areas.categorias.estadisticas');
+    Route::prefix('configuracion')->group(function () {
+        Route::get('/areas-categorias', [AreaCategoriaController::class, 'index'])->name('areas.categorias.index');
+        Route::post('/areas', [AreaCategoriaController::class, 'storeArea'])->name('areas.store');
+        Route::post('/categorias', [AreaCategoriaController::class, 'storeCategoria'])->name('categorias.store');
+        Route::put('/areas/{area}', [AreaCategoriaController::class, 'updateArea'])->name('areas.update');
+        Route::delete('/areas/{area}', [AreaCategoriaController::class, 'destroyArea'])->name('areas.destroy');
+        Route::put('/categorias/{categoria}', [AreaCategoriaController::class, 'updateCategoria'])->name('categorias.update');
+        Route::delete('/categorias/{categoria}', [AreaCategoriaController::class, 'destroyCategoria'])->name('categorias.destroy');
+        // En tu web.php, dentro del grupo de configuración:
+        Route::get('/areas-categorias/estadisticas', [AreaCategoriaController::class, 'estadisticas'])->name('areas.categorias.estadisticas');
         Route::delete('/categorias/multiple', [AreaCategoriaController::class, 'destroyMultipleCategories'])
-        ->name('categorias.multiple.destroy');
-});
-
-
-
+            ->name('categorias.multiple.destroy');
+    });
 
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
@@ -124,6 +122,7 @@ Route::prefix('configuracion')->group(function () {
 
         Route::get('/despidos/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
             ->name('despidos.detalle');
+        
         // ✅ RUTAS DE ADMINISTRACIÓN DE CONTRATOS - OPTIMIZADAS Y CENTRALIZADAS
         Route::prefix('{trabajador}/contratos')->name('contratos.')->controller(AdminContratosController::class)->group(function () {
             // Vista principal de contratos del trabajador
@@ -156,7 +155,8 @@ Route::prefix('configuracion')->group(function () {
             Route::get('historial', 'obtenerHistorial')->name('historial');
             Route::get('estadisticas', 'obtenerEstadisticas')->name('estadisticas');
         });
- Route::prefix('{trabajador}/vacaciones')->name('vacaciones.')->group(function () {
+
+        Route::prefix('{trabajador}/vacaciones')->name('vacaciones.')->group(function () {
             // Vista dedicada principal
             Route::get('/', [VacacionesController::class, 'show'])->name('show');
             
@@ -172,8 +172,30 @@ Route::prefix('configuracion')->group(function () {
             Route::delete('/{vacacion}/cancelar', [VacacionesController::class, 'cancelar'])->name('cancelar');
         });
 
+        // ✅ RUTAS DE DOCUMENTOS DE VACACIONES - MOVIDAS AQUÍ DENTRO DEL GRUPO DE TRABAJADORES
+        Route::prefix('{trabajador}/documentos-vacaciones')->name('documentos-vacaciones.')->group(function () {
+            // Vista principal de documentos
+            Route::get('/', [DocumentosVacacionesController::class, 'index'])
+                ->name('index');
+            
+            // Descargar PDF de amortización (sin guardar en BD)
+            Route::get('/descargar-pdf', [DocumentosVacacionesController::class, 'descargarPDF'])
+                ->name('descargar-pdf');
+            
+            // Subir documento firmado
+            Route::post('/subir', [DocumentosVacacionesController::class, 'subirDocumento'])
+                ->name('subir');
+            
+            // API para obtener lista de documentos
+            Route::get('/api/documentos', [DocumentosVacacionesController::class, 'obtenerDocumentos'])
+                ->name('api.documentos');
+            
+            // Eliminar documento
+            Route::delete('/{documento}/eliminar', [DocumentosVacacionesController::class, 'eliminarDocumento'])
+                ->name('eliminar');
+        });
 
-    });
+    }); // ✅ AQUÍ TERMINA EL GRUPO DE TRABAJADORES
 
     // En web.php, dentro del grupo de despidos:
     Route::prefix('despidos')->name('despidos.')->controller(DespidosController::class)->group(function () {
@@ -188,41 +210,40 @@ Route::prefix('configuracion')->group(function () {
     });
 
     // ✅ RUTAS PARA PERMISOS LABORALES ACTUALIZADAS
-        Route::prefix('permisos')->name('permisos.')->group(function () {
-            Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
-            Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
-            
-            // ✅ ACCIONES DE GESTIÓN DE PERMISOS
-            Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
-            Route::patch('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar'); // ✅ CANCELAR CON MOTIVO
-            Route::delete('/{permiso}/eliminar', [PermisosLaboralesController::class, 'eliminar'])->name('eliminar'); // ✅ ELIMINAR DEFINITIVAMENTE
-            
-            // ✅ MANTENER COMPATIBILIDAD CON RUTA ANTIGUA (OPCIONAL)
-            Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'eliminar'])->name('cancelar.old');
-            
-            Route::get('/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])->name('detalle');
-            
-            // ✅ RUTAS DE PDFs DE PERMISOS
-            Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
-                Route::get('/generar', 'generarPDF')->name('generar');
-                Route::get('/descargar', 'descargarPDF')->name('descargar');
-                Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
-            });
-            Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
-            
-            // APIs
-            Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
-            Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
-            Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
+    Route::prefix('permisos')->name('permisos.')->group(function () {
+        Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
+        Route::get('/{permiso}', [PermisosLaboralesController::class, 'show'])->name('show');
+        
+        // ✅ ACCIONES DE GESTIÓN DE PERMISOS
+        Route::patch('/{permiso}/finalizar', [PermisosLaboralesController::class, 'finalizar'])->name('finalizar');
+        Route::patch('/{permiso}/cancelar', [PermisosLaboralesController::class, 'cancelar'])->name('cancelar'); // ✅ CANCELAR CON MOTIVO
+        Route::delete('/{permiso}/eliminar', [PermisosLaboralesController::class, 'eliminar'])->name('eliminar'); // ✅ ELIMINAR DEFINITIVAMENTE
+        
+        // ✅ MANTENER COMPATIBILIDAD CON RUTA ANTIGUA (OPCIONAL)
+        Route::delete('/{permiso}/cancelar', [PermisosLaboralesController::class, 'eliminar'])->name('cancelar.old');
+        
+        Route::get('/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])->name('detalle');
+        
+        // ✅ RUTAS DE PDFs DE PERMISOS
+        Route::prefix('{permiso}/pdf')->name('pdf.')->controller(FormatoPermisosController::class)->group(function () {
+            Route::get('/generar', 'generarPDF')->name('generar');
+            Route::get('/descargar', 'descargarPDF')->name('descargar');
+            Route::post('/regenerar', 'regenerarPDF')->name('regenerar');
         });
+        Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf'); // Compatibilidad
         
-        // ✅ RUTAS ADICIONALES PARA ARCHIVOS DE PERMISOS
-        Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
-            ->name('permisos.descargar');
-        
-        Route::post('/permisos/{permiso}/subir-archivo', [PermisosLaboralesController::class, 'subirArchivo'])
-            ->name('permisos.subirArchivo');
-
+        // APIs
+        Route::get('/api/estadisticas', [PermisosLaboralesController::class, 'estadisticas'])->name('estadisticas');
+        Route::get('/api/motivos-por-tipo', [PermisosLaboralesController::class, 'getMotivosPorTipo'])->name('api.motivos-por-tipo');
+        Route::post('/verificar-vencidos', [PermisosLaboralesController::class, 'verificarVencidos'])->name('verificar-vencidos');
+    });
+    
+    // ✅ RUTAS ADICIONALES PARA ARCHIVOS DE PERMISOS
+    Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
+        ->name('permisos.descargar');
+    
+    Route::post('/permisos/{permiso}/subir-archivo', [PermisosLaboralesController::class, 'subirArchivo'])
+        ->name('permisos.subirArchivo');
 
     // ✅ RUTAS AJAX PARA CONTRATOS - OPTIMIZADAS (Solo generación)
     Route::prefix('ajax/contratos')->name('ajax.contratos.')->controller(ContratoController::class)->group(function () {

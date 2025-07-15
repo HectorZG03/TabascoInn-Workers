@@ -87,6 +87,12 @@
                                     </div>
                                     <small class="text-muted">Disfrutados</small>
                                 </div>
+                                <div class="col-3">
+                                    <div class="h6 text-success mb-0">
+                                        {{ $trabajador->documentosVacaciones->count() }}
+                                    </div>
+                                    <small class="text-muted">Documentos</small>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -105,6 +111,9 @@
                             <i class="bi bi-plus-lg"></i> Asignar Vacaciones
                         </button>
                     @endif
+                    <a href="{{ route('trabajadores.documentos-vacaciones.index', $trabajador) }}" class="btn btn-outline-success">
+                        <i class="bi bi-file-earmark-pdf"></i> Documentos de Amortización
+                    </a>
                     <button class="btn btn-outline-primary" id="refresh-vacaciones">
                         <i class="bi bi-arrow-clockwise"></i> Actualizar
                     </button>
