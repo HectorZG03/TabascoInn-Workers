@@ -1,321 +1,174 @@
 {{-- resources/views/trabajadores/secciones_perfil/datos_laborales.blade.php --}}
 
 <div class="row">
-    <!-- Formulario de Datos Laborales -->
+    <!-- ✅ DATOS LABORALES CON TURNO MANUAL -->
     <div class="col-md-8">
-        <div class="card shadow">
-            <div class="card-header bg-success text-white">
+        <div class="card shadow mb-4">
+            <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
                     <i class="bi bi-briefcase-fill"></i> Datos Laborales
                 </h5>
+                <button class="btn btn-sm btn-light" data-bs-toggle="modal" data-bs-target="#modalEditarDatosLaborales">
+                    <i class="bi bi-pencil"></i> Editar
+                </button>
             </div>
             <div class="card-body">
-                <form action="{{ route('trabajadores.perfil.update-ficha', $trabajador) }}" method="POST">
-                    @csrf
-                    @method('PUT')
-                    
-                    <div class="row">
-                        <!-- Área -->
-                        <div class="col-md-6 mb-3">
-                            <label for="id_area" class="form-label">
-                                <i class="bi bi-building"></i> Área *
-                            </label>
-                            <select class="form-select @error('id_area') is-invalid @enderror" 
-                                    id="id_area" 
-                                    name="id_area" 
-                                    required>
-                                <option value="">Seleccionar área...</option>
-                                @if(isset($areas))
-                                    @foreach($areas as $area)
-                                        <option value="{{ $area->id_area }}" 
-                                                {{ old('id_area', $trabajador->fichaTecnica->categoria->id_area ?? '') == $area->id_area ? 'selected' : '' }}>
-                                            {{ $area->nombre_area }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                            @error('id_area')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
+                <!-- Información Principal -->
+                <div class="row mb-3">
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Área</label>
+                        <div class="fw-bold">{{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Categoría</label>
+                        <div class="fw-bold">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Sueldo Diario</label>
+                        <div class="fw-bold text-success">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}</div>
+                    </div>
+                </div>
 
-                        <!-- Categoría -->
-                        <div class="col-md-6 mb-3">
-                            <label for="id_categoria" class="form-label">
-                                <i class="bi bi-person-badge"></i> Categoría *
-                            </label>
-                            <select class="form-select @error('id_categoria') is-invalid @enderror" 
-                                    id="id_categoria" 
-                                    name="id_categoria" 
-                                    required>
-                                <option value="">Seleccionar categoría...</option>
-                                @if(isset($categorias))
-                                    @foreach($categorias as $categoria)
-                                        <option value="{{ $categoria->id_categoria }}" 
-                                                {{ old('id_categoria', $trabajador->fichaTecnica->id_categoria ?? '') == $categoria->id_categoria ? 'selected' : '' }}>
-                                            {{ $categoria->nombre_categoria }}
-                                        </option>
-                                    @endforeach
-                                @endif
-                            </select>
-                            @error('id_categoria')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                <!-- ✅ HORARIOS CON TURNO MANUAL -->
+                <div class="row mb-3">
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Hora Entrada</label>
+                        <div class="fw-bold">
+                            @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->hora_entrada)
+                                {{ \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_entrada)->format('H:i') }}
+                            @else
+                                <span class="text-muted">No definida</span>
+                            @endif
                         </div>
                     </div>
-
-                    <div class="row">
-                        <!-- Sueldo Diario -->
-                        <div class="col-md-6 mb-3">
-                            <label for="sueldo_diarios" class="form-label">
-                                <i class="bi bi-cash"></i> Sueldo Diario *
-                            </label>
-                            <div class="input-group">
-                                <span class="input-group-text">$</span>
-                                <input type="number" 
-                                       class="form-control @error('sueldo_diarios') is-invalid @enderror" 
-                                       id="sueldo_diarios" 
-                                       name="sueldo_diarios" 
-                                       value="{{ old('sueldo_diarios', $trabajador->fichaTecnica->sueldo_diarios ?? '') }}" 
-                                       step="0.01"
-                                       min="1"
-                                       required>
-                            </div>
-                            @error('sueldo_diarios')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Tipo de Cambio -->
-                        <div class="col-md-6 mb-3">
-                            <label for="tipo_cambio" class="form-label">
-                                <i class="bi bi-arrow-up-circle"></i> Tipo de Cambio
-                            </label>
-                            <select class="form-select @error('tipo_cambio') is-invalid @enderror" 
-                                    id="tipo_cambio" 
-                                    name="tipo_cambio">
-                                <option value="">Determinar automáticamente</option>
-                                <option value="promocion" {{ old('tipo_cambio') == 'promocion' ? 'selected' : '' }}>
-                                    🎉 Promoción
-                                </option>
-                                <option value="transferencia" {{ old('tipo_cambio') == 'transferencia' ? 'selected' : '' }}>
-                                    🔄 Transferencia
-                                </option>
-                                <option value="aumento_sueldo" {{ old('tipo_cambio') == 'aumento_sueldo' ? 'selected' : '' }}>
-                                    💰 Aumento de Sueldo
-                                </option>
-                                <option value="reclasificacion" {{ old('tipo_cambio') == 'reclasificacion' ? 'selected' : '' }}>
-                                    📋 Reclasificación
-                                </option>
-                                <option value="ajuste_salarial" {{ old('tipo_cambio') == 'ajuste_salarial' ? 'selected' : '' }}>
-                                    ⚖️ Ajuste Salarial
-                                </option>
-                            </select>
-                            <small class="text-muted">Si no seleccionas, se determinará automáticamente</small>
-                            @error('tipo_cambio')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Hora Salida</label>
+                        <div class="fw-bold">
+                            @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->hora_salida)
+                                {{ \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_salida)->format('H:i') }}
+                            @else
+                                <span class="text-muted">No definida</span>
+                            @endif
                         </div>
                     </div>
-
-                    <div class="row">
-                        <!-- Motivo del Cambio -->
-                        <div class="col-md-12 mb-3">
-                            <label for="motivo_cambio" class="form-label">
-                                <i class="bi bi-chat-text"></i> Motivo del Cambio
-                            </label>
-                            <input type="text" 
-                                   class="form-control @error('motivo_cambio') is-invalid @enderror" 
-                                   id="motivo_cambio" 
-                                   name="motivo_cambio" 
-                                   value="{{ old('motivo_cambio') }}"
-                                   placeholder="Ej: Promoción por excelente desempeño, Transferencia por necesidades operativas...">
-                            <small class="text-muted">Opcional - Se registrará en el historial de cambios</small>
-                            @error('motivo_cambio')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Horas Diarias</label>
+                        <div class="fw-bold">{{ number_format($trabajador->fichaTecnica->horas_trabajo ?? 0, 1) }}h</div>
+                    </div>
+                    <div class="col-md-3">
+                        <label class="form-label text-muted">Turno</label>
+                        <div class="fw-bold">
+                            @php
+                                $turno = $trabajador->fichaTecnica->turno ?? 'no_definido';
+                                $badgeClass = match($turno) {
+                                    'diurno' => 'warning',
+                                    'nocturno' => 'dark',
+                                    'mixto' => 'info',
+                                    default => 'secondary'
+                                };
+                                $turnoTexto = match($turno) {
+                                    'diurno' => 'Diurno',
+                                    'nocturno' => 'Nocturno',
+                                    'mixto' => 'Mixto',
+                                    default => 'No definido'
+                                };
+                            @endphp
+                            <span class="badge bg-{{ $badgeClass }}">{{ $turnoTexto }}</span>
+                            <small class="text-muted d-block">Configurado manualmente</small>
                         </div>
                     </div>
+                </div>
 
-                    <div class="row">
-                        <!-- Formación -->
-                        <div class="col-md-6 mb-3">
-                            <label for="formacion" class="form-label">
-                                <i class="bi bi-mortarboard"></i> Formación Académica
-                            </label>
-                            <select class="form-select @error('formacion') is-invalid @enderror" 
-                                    id="formacion" 
-                                    name="formacion">
-                                <option value="">Seleccionar...</option>
-                                @foreach(['Sin estudios', 'Primaria', 'Secundaria', 'Preparatoria', 'Universidad', 'Posgrado'] as $nivel)
-                                    <option value="{{ $nivel }}" 
-                                            {{ old('formacion', $trabajador->fichaTecnica->formacion ?? '') == $nivel ? 'selected' : '' }}>
-                                        {{ $nivel }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('formacion')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-
-                        <!-- Grado de Estudios -->
-                        <div class="col-md-6 mb-3">
-                            <label for="grado_estudios" class="form-label">
-                                <i class="bi bi-award"></i> Grado de Estudios
-                            </label>
-                            <input type="text" 
-                                   class="form-control @error('grado_estudios') is-invalid @enderror" 
-                                   id="grado_estudios" 
-                                   name="grado_estudios" 
-                                   value="{{ old('grado_estudios', $trabajador->fichaTecnica->grado_estudios ?? '') }}">
-                            @error('grado_estudios')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
+                <!-- Días Laborables -->
+                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                <div class="row mb-3">
+                    <div class="col-md-8">
+                        <label class="form-label text-muted">Días Laborables</label>
+                        <div class="fw-bold">
+                            @foreach($trabajador->fichaTecnica->dias_laborables as $dia)
+                                <span class="badge bg-primary me-1">{{ \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? $dia }}</span>
+                            @endforeach
                         </div>
                     </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Horas Semanales</label>
+                        <div class="fw-bold">{{ number_format($trabajador->fichaTecnica->horas_semanales ?? 0, 1) }}h</div>
+                    </div>
+                </div>
+                @endif
 
-                    <!-- ✅ NUEVA SECCIÓN: HORARIO LABORAL -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <h6 class="border-bottom pb-2">
-                                <i class="bi bi-clock"></i> Horario Laboral
-                            </h6>
+                <!-- Días de Descanso -->
+                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_descanso)
+                <div class="row mb-3">
+                    <div class="col-md-12">
+                        <label class="form-label text-muted">Días de Descanso</label>
+                        <div class="fw-bold">
+                            @foreach($trabajador->fichaTecnica->dias_descanso as $dia)
+                                <span class="badge bg-secondary me-1">{{ \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? $dia }}</span>
+                            @endforeach
                         </div>
-                        
-                        <!-- Hora de Entrada -->
-                        <div class="col-md-6 mb-3">
-                            <label for="hora_entrada" class="form-label">
-                                <i class="bi bi-door-open"></i> Hora de Entrada
-                            </label>
-                            <input type="time" 
-                                   class="form-control @error('hora_entrada') is-invalid @enderror" 
-                                   id="hora_entrada" 
-                                   name="hora_entrada" 
-                                   value="{{ old('hora_entrada', optional($trabajador->fichaTecnica)->hora_entrada ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_entrada)->format('H:i') : '') }}">
-                            @error('hora_entrada')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <!-- Hora de Salida -->
-                        <div class="col-md-6 mb-3">
-                            <label for="hora_salida" class="form-label">
-                                <i class="bi bi-door-closed"></i> Hora de Salida
-                            </label>
-                            <input type="time" 
-                                   class="form-control @error('hora_salida') is-invalid @enderror" 
-                                   id="hora_salida" 
-                                   name="hora_salida" 
-                                   value="{{ old('hora_salida', optional($trabajador->fichaTecnica)->hora_salida ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_salida)->format('H:i') : '') }}">
-                            @error('hora_salida')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <!-- Días Laborables -->
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-calendar-week"></i> Días Laborables
-                            </label>
-                            <div class="dias-laborables-container">
-                                @php
-                                    $diasLaborablesActuales = old('dias_laborables', optional($trabajador->fichaTecnica)->dias_laborables ?? []);
-                                    // Convertir a array si es string (JSON)
-                                    if (is_string($diasLaborablesActuales)) {
-                                        $diasLaborablesActuales = json_decode($diasLaborablesActuales, true) ?? [];
-                                    }
-                                @endphp
-                                
-                                @foreach(\App\Models\FichaTecnica::DIAS_SEMANA as $key => $dia)
-                                    <div class="form-check form-check-inline">
-                                        <input class="form-check-input" 
-                                               type="checkbox" 
-                                               id="dias_laborables_{{ $key }}"
-                                               name="dias_laborables[]"
-                                               value="{{ $key }}"
-                                               {{ in_array($key, $diasLaborablesActuales) ? 'checked' : '' }}>
-                                        <label class="form-check-label" for="dias_laborables_{{ $key }}">{{ $dia }}</label>
-                                    </div>
-                                @endforeach
-                            </div>
-                            @error('dias_laborables')
-                                <div class="invalid-feedback d-block">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <!-- Días de Descanso (solo lectura) -->
-                        <div class="col-md-12 mb-3">
-                            <label class="form-label">
-                                <i class="bi bi-calendar-event"></i> Días de Descanso
-                            </label>
-                            <div class="dias-descanso-container">
-                                @php
-                                    $diasDescanso = \App\Models\FichaTecnica::calcularDiasDescanso($diasLaborablesActuales);
-                                    $diasDescansoTexto = array_map(function($dia) {
-                                        return \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? $dia;
-                                    }, $diasDescanso);
-                                @endphp
-                                <p class="form-control-static">{{ implode(', ', $diasDescansoTexto) ?: 'No calculados' }}</p>
+                    </div>
+                </div>
+                @endif
+
+                <!-- Formación y Estudios -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Formación</label>
+                        <div class="fw-bold">{{ $trabajador->fichaTecnica->formacion ?? 'No especificada' }}</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Grado de Estudios</label>
+                        <div class="fw-bold">{{ $trabajador->fichaTecnica->grado_estudios ?? 'No especificado' }}</div>
+                    </div>
+                </div>
+
+                <!-- Beneficiario -->
+                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->beneficiario_nombre)
+                <div class="row">
+                    <div class="col-md-8">
+                        <label class="form-label text-muted">Beneficiario Principal</label>
+                        <div class="fw-bold">{{ $trabajador->fichaTecnica->beneficiario_nombre }}</div>
+                    </div>
+                    <div class="col-md-4">
+                        <label class="form-label text-muted">Parentesco</label>
+                        <div class="fw-bold">{{ \App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO[$trabajador->fichaTecnica->beneficiario_parentesco] ?? $trabajador->fichaTecnica->beneficiario_parentesco }}</div>
+                    </div>
+                </div>
+                @endif
+
+                <!-- Información Adicional -->
+                @if($trabajador->fichaTecnica)
+                <div class="row mt-3">
+                    <div class="col-12">
+                        <div class="alert alert-info">
+                            <div class="row text-center">
+                                <div class="col-md-3">
+                                    <strong>Horario:</strong><br>
+                                    <span class="text-primary">{{ $trabajador->fichaTecnica->horario_formateado }}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Total Semanal:</strong><br>
+                                    <span class="text-success">{{ number_format($trabajador->fichaTecnica->horas_semanales ?? 0, 1) }}h</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Días Laborables:</strong><br>
+                                    <span class="text-info">{{ count($trabajador->fichaTecnica->dias_laborables ?? []) }}</span>
+                                </div>
+                                <div class="col-md-3">
+                                    <strong>Días Descanso:</strong><br>
+                                    <span class="text-warning">{{ count($trabajador->fichaTecnica->dias_descanso ?? []) }}</span>
+                                </div>
                             </div>
                         </div>
                     </div>
-
-                    <!-- ✅ NUEVA SECCIÓN: BENEFICIARIO -->
-                    <div class="row mt-4">
-                        <div class="col-12">
-                            <h6 class="border-bottom pb-2">
-                                <i class="bi bi-person-heart"></i> Beneficiario Principal
-                            </h6>
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="beneficiario_nombre" class="form-label">
-                                <i class="bi bi-person-badge"></i> Nombre Completo
-                            </label>
-                            <input type="text" 
-                                   class="form-control @error('beneficiario_nombre') is-invalid @enderror" 
-                                   id="beneficiario_nombre" 
-                                   name="beneficiario_nombre" 
-                                   value="{{ old('beneficiario_nombre', optional($trabajador->fichaTecnica)->beneficiario_nombre ?? '') }}"
-                                   placeholder="Nombre completo del beneficiario">
-                            @error('beneficiario_nombre')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                        
-                        <div class="col-md-6 mb-3">
-                            <label for="beneficiario_parentesco" class="form-label">
-                                <i class="bi bi-diagram-3"></i> Parentesco
-                            </label>
-                            <select class="form-select @error('beneficiario_parentesco') is-invalid @enderror" 
-                                    id="beneficiario_parentesco" 
-                                    name="beneficiario_parentesco">
-                                <option value="">Seleccionar parentesco...</option>
-                                @foreach(\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO as $key => $parentesco)
-                                    <option value="{{ $key }}" 
-                                        {{ old('beneficiario_parentesco', optional($trabajador->fichaTecnica)->beneficiario_parentesco ?? '') == $key ? 'selected' : '' }}>
-                                        {{ $parentesco }}
-                                    </option>
-                                @endforeach
-                            </select>
-                            @error('beneficiario_parentesco')
-                                <div class="invalid-feedback">{{ $message }}</div>
-                            @enderror
-                        </div>
-                    </div>
-
-                    <div class="d-flex justify-content-end">
-                        <button type="submit" class="btn btn-success">
-                            <i class="bi bi-save"></i> Actualizar Datos Laborales
-                        </button>
-                    </div>
-                </form>
+                </div>
+                @endif
             </div>
         </div>
     </div>
 
-    <!-- ✅ PANEL DE HISTORIAL CON VERIFICACIONES DE SEGURIDAD -->
+    <!-- Panel de Historial -->
     <div class="col-md-4">
         <div class="card shadow">
             <div class="card-header bg-info text-white">
@@ -333,7 +186,7 @@
             </div>
             <div class="card-body p-2">
                 @if(isset($statsPromociones) && $statsPromociones['total_cambios'] > 0)
-                    <!-- ✅ ESTADÍSTICAS RÁPIDAS (CON VERIFICACIONES) -->
+                    <!-- Estadísticas -->
                     <div class="row text-center mb-3">
                         <div class="col-4">
                             <div class="text-success fw-bold">{{ $statsPromociones['promociones'] ?? 0 }}</div>
@@ -349,7 +202,7 @@
                         </div>
                     </div>
 
-                    <!-- ✅ ÚLTIMOS CAMBIOS (CON VERIFICACIONES) -->
+                    <!-- Últimos Cambios -->
                     @if(isset($historialReciente) && $historialReciente->isNotEmpty())
                         <div class="timeline-sm">
                             @foreach($historialReciente->take(3) as $cambio)
@@ -375,9 +228,9 @@
                                             </div>
                                             <div class="text-success small">
                                                 ${{ number_format($cambio->sueldo_nuevo ?? 0, 2) }}
-                                                @if(isset($cambio->sueldo_anterior) && $cambio->sueldo_anterior > 0)
+                                                @if(isset($cambio->diferencia_sueldo) && $cambio->diferencia_sueldo != 0)
                                                     <small class="text-muted">
-                                                        ({{ ($cambio->diferencia_sueldo ?? 0) >= 0 ? '+' : '' }}${{ number_format($cambio->diferencia_sueldo ?? 0, 2) }})
+                                                        ({{ $cambio->diferencia_sueldo >= 0 ? '+' : '' }}${{ number_format($cambio->diferencia_sueldo, 2) }})
                                                     </small>
                                                 @endif
                                             </div>
@@ -397,7 +250,6 @@
                         </div>
                     @endif
                 @else
-                    <!-- ✅ ESTADO VACÍO -->
                     <div class="text-center text-muted py-3">
                         <i class="bi bi-graph-up fs-2 opacity-50"></i>
                         <p class="mb-0 small">Sin historial de cambios</p>
@@ -409,26 +261,427 @@
     </div>
 </div>
 
-{{-- ✅ DEBUG TEMPORAL (remover en producción) --}}
-@if(config('app.debug'))
-    <div class="mt-3">
-        <details class="border rounded p-2 bg-light">
-            <summary class="text-muted small">🔍 Debug Info</summary>
-            <div class="mt-2 small">
-                <strong>Variables disponibles:</strong><br>
-                - $statsPromociones: {{ isset($statsPromociones) ? '✅' : '❌' }}<br>
-                - $historialReciente: {{ isset($historialReciente) ? '✅' : '❌' }}<br>
-                - $areas: {{ isset($areas) ? '✅' : '❌' }}<br>
-                - $categorias: {{ isset($categorias) ? '✅' : '❌' }}<br>
-                
-                @if(isset($statsPromociones))
-                    <strong>Stats:</strong> {{ json_encode($statsPromociones) }}<br>
-                @endif
-                
-                @if(isset($historialReciente))
-                    <strong>Historial count:</strong> {{ $historialReciente->count() }}<br>
-                @endif
+<!-- ✅ MODAL CON SELECCIÓN MANUAL DE TURNO -->
+<div class="modal fade" id="modalEditarDatosLaborales" tabindex="-1" aria-labelledby="modalEditarDatosLaboralesLabel">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="modalEditarDatosLaboralesLabel">
+                    <i class="bi bi-briefcase-fill"></i> Editar Datos Laborales
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
-        </details>
+            <form action="{{ route('trabajadores.perfil.update-ficha', $trabajador) }}" method="POST" id="formEditarDatosLaborales">
+                @csrf
+                @method('PUT')
+                <div class="modal-body">
+                    <!-- Área y Categoría -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="id_area" class="form-label">Área *</label>
+                            <select class="form-select" id="id_area" name="id_area" required>
+                                <option value="">Seleccionar área...</option>
+                                @foreach($areas as $area)
+                                    <option value="{{ $area->id_area }}" 
+                                            {{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->categoria->id_area == $area->id_area ? 'selected' : '' }}>
+                                        {{ $area->nombre_area }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="id_categoria" class="form-label">Categoría *</label>
+                            <select class="form-select" id="id_categoria" name="id_categoria" required>
+                                <option value="">Seleccionar categoría...</option>
+                                @foreach($categorias as $categoria)
+                                    <option value="{{ $categoria->id_categoria }}" 
+                                            {{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->id_categoria == $categoria->id_categoria ? 'selected' : '' }}>
+                                        {{ $categoria->nombre_categoria }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Sueldo -->
+                    <div class="row mb-3">
+                        <div class="col-md-12">
+                            <label for="sueldo_diarios" class="form-label">Sueldo Diario *</label>
+                            <div class="input-group">
+                                <span class="input-group-text">$</span>
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="sueldo_diarios" 
+                                       name="sueldo_diarios" 
+                                       value="{{ $trabajador->fichaTecnica->sueldo_diarios ?? '' }}" 
+                                       step="0.01"
+                                       min="1"
+                                       required>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ HORARIOS Y TURNO MANUAL -->
+                    <div class="row mb-3">
+                        <div class="col-md-4">
+                            <label for="hora_entrada" class="form-label">Hora de Entrada</label>
+                            <input type="text" 
+                                   class="form-control formato-hora" 
+                                   id="hora_entrada" 
+                                   name="hora_entrada" 
+                                   value="{{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->hora_entrada ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_entrada)->format('H:i') : '' }}" 
+                                   placeholder="HH:MM"
+                                   maxlength="5">
+                            <div class="form-text">Formato: HH:MM (24 horas)</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="hora_salida" class="form-label">Hora de Salida</label>
+                            <input type="text" 
+                                   class="form-control formato-hora" 
+                                   id="hora_salida" 
+                                   name="hora_salida" 
+                                   value="{{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->hora_salida ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_salida)->format('H:i') : '' }}" 
+                                   placeholder="HH:MM"
+                                   maxlength="5">
+                            <div class="form-text">Formato: HH:MM (24 horas)</div>
+                        </div>
+                        <div class="col-md-4">
+                            <label for="turno" class="form-label">Turno *</label>
+                            <select class="form-select" id="turno" name="turno" required>
+                                <option value="">Seleccionar turno...</option>
+                                @foreach(\App\Models\FichaTecnica::TURNOS_DISPONIBLES as $valor => $texto)
+                                    <option value="{{ $valor }}" 
+                                            {{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->turno == $valor ? 'selected' : '' }}>
+                                        {{ $texto }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <div class="form-text">Selecciona el turno manualmente</div>
+                        </div>
+                    </div>
+
+                    <!-- ✅ SUGERENCIA AUTOMÁTICA (OPCIONAL) -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="alert alert-info" id="sugerenciaTurno" style="display: none;">
+                                <div class="d-flex align-items-center">
+                                    <i class="bi bi-lightbulb me-2"></i>
+                                    <div>
+                                        <strong>Sugerencia:</strong> 
+                                        <span id="sugerenciaTurnoTexto"></span>
+                                        <button type="button" class="btn btn-sm btn-outline-primary ms-2" id="btnAplicarSugerencia">
+                                            Aplicar Sugerencia
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Días Laborables -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <label class="form-label">Días Laborables</label>
+                            <div class="border rounded p-3 bg-light">
+                                <div class="row">
+                                    @foreach(\App\Models\FichaTecnica::DIAS_SEMANA as $valor => $texto)
+                                        <div class="col-md-3 col-6 mb-2">
+                                            <div class="form-check">
+                                                <input class="form-check-input" 
+                                                       type="checkbox"
+                                                       id="dia_{{ $valor }}_perfil" 
+                                                       name="dias_laborables[]" 
+                                                       value="{{ $valor }}"
+                                                       {{ $trabajador->fichaTecnica && in_array($valor, $trabajador->fichaTecnica->dias_laborables ?? []) ? 'checked' : '' }}>
+                                                <label class="form-check-label" for="dia_{{ $valor }}_perfil">
+                                                    {{ $texto }}
+                                                </label>
+                                            </div>
+                                        </div>
+                                    @endforeach
+                                </div>
+                                
+                                <!-- Botones de selección rápida -->
+                                <div class="mt-3 pt-2 border-top">
+                                    <small class="text-muted">Selección rápida:</small>
+                                    <div class="btn-group btn-group-sm ms-2" role="group">
+                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarDiasPerfil(['lunes', 'martes', 'miercoles', 'jueves', 'viernes'])">
+                                            Lun-Vie
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarDiasPerfil(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'])">
+                                            Lun-Sáb
+                                        </button>
+                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarTodosDiasPerfil()">
+                                            Todos
+                                        </button>
+                                        <button type="button" class="btn btn-outline-secondary" onclick="limpiarDiasPerfil()">
+                                            Limpiar
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Beneficiario -->
+                    <div class="row mb-3">
+                        <div class="col-md-8">
+                            <label for="beneficiario_nombre" class="form-label">Beneficiario Principal</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="beneficiario_nombre" 
+                                   name="beneficiario_nombre" 
+                                   value="{{ $trabajador->fichaTecnica->beneficiario_nombre ?? '' }}" 
+                                   placeholder="Nombre del beneficiario"
+                                   style="text-transform: uppercase">
+                        </div>
+                        <div class="col-md-4">
+                            <label for="beneficiario_parentesco" class="form-label">Parentesco</label>
+                            <select class="form-select" id="beneficiario_parentesco" name="beneficiario_parentesco">
+                                <option value="">Seleccionar...</option>
+                                @foreach(\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO as $valor => $texto)
+                                    <option value="{{ $valor }}" 
+                                            {{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->beneficiario_parentesco == $valor ? 'selected' : '' }}>
+                                        {{ $texto }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Formación y Estudios -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="formacion" class="form-label">Formación</label>
+                            <select class="form-select" id="formacion" name="formacion">
+                                <option value="">Seleccionar...</option>
+                                @php
+                                    $opcionesFormacion = ['Sin estudios', 'Primaria', 'Secundaria', 'Preparatoria', 'Universidad', 'Posgrado'];
+                                @endphp
+                                @foreach($opcionesFormacion as $opcion)
+                                    <option value="{{ $opcion }}" {{ $trabajador->fichaTecnica && $trabajador->fichaTecnica->formacion == $opcion ? 'selected' : '' }}>
+                                        {{ $opcion }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="grado_estudios" class="form-label">Grado de Estudios</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="grado_estudios" 
+                                   name="grado_estudios" 
+                                   value="{{ $trabajador->fichaTecnica->grado_estudios ?? '' }}" 
+                                   placeholder="Ej: Licenciatura en Administración">
+                        </div>
+                    </div>
+
+                    <!-- Tipo de Cambio y Motivo -->
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label for="tipo_cambio" class="form-label">Tipo de Cambio</label>
+                            <select class="form-select" id="tipo_cambio" name="tipo_cambio">
+                                <option value="">Seleccionar...</option>
+                                <option value="promocion">Promoción</option>
+                                <option value="transferencia">Transferencia</option>
+                                <option value="aumento_sueldo">Aumento de Sueldo</option>
+                                <option value="reclasificacion">Reclasificación</option>
+                                <option value="ajuste_salarial">Ajuste Salarial</option>
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label for="motivo_cambio" class="form-label">Motivo del Cambio</label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="motivo_cambio" 
+                                   name="motivo_cambio" 
+                                   placeholder="Opcional"
+                                   maxlength="255">
+                        </div>
+                    </div>
+
+                    <!-- Vista Previa de Cálculos -->
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="alert alert-info" id="previewCalculos" style="display: none;">
+                                <h6><i class="bi bi-calculator"></i> Vista Previa de Cálculos</h6>
+                                <div class="row">
+                                    <div class="col-3">
+                                        <strong>Horas Diarias:</strong> <span id="preview-horas-diarias">-</span>
+                                    </div>
+                                    <div class="col-3">
+                                        <strong>Horas Semanales:</strong> <span id="preview-horas-semanales">-</span>
+                                    </div>
+                                    <div class="col-3">
+                                        <strong>Turno Seleccionado:</strong> <span id="preview-turno-seleccionado">-</span>
+                                    </div>
+                                    <div class="col-3">
+                                        <strong>Días Laborables:</strong> <span id="preview-dias-count">-</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="submit" class="btn btn-success">
+                        <i class="bi bi-check-lg"></i> Guardar Cambios
+                    </button>
+                </div>
+            </form>
+        </div>
     </div>
-@endif
+</div>
+
+<!-- ✅ SCRIPT PARA TURNO MANUAL -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Elementos del formulario
+    const horaEntrada = document.getElementById('hora_entrada');
+    const horaSalida = document.getElementById('hora_salida');
+    const turnoSelect = document.getElementById('turno');
+    const sugerenciaTurno = document.getElementById('sugerenciaTurno');
+    const sugerenciaTurnoTexto = document.getElementById('sugerenciaTurnoTexto');
+    const btnAplicarSugerencia = document.getElementById('btnAplicarSugerencia');
+    
+    // Función para calcular turno sugerido
+    function calcularTurnoSugerido() {
+        const entrada = horaEntrada.value;
+        const salida = horaSalida.value;
+        
+        if (!entrada || !salida) {
+            sugerenciaTurno.style.display = 'none';
+            return;
+        }
+        
+        const [horaEnt] = entrada.split(':').map(Number);
+        const [horaSal] = salida.split(':').map(Number);
+        
+        let turnoSugerido = 'mixto';
+        let descripcion = '';
+        
+        // Si cruza medianoche es nocturno
+        if (horaSal <= horaEnt) {
+            turnoSugerido = 'nocturno';
+            descripcion = 'Basado en horario que cruza medianoche';
+        }
+        // Diurno: 06:00 - 18:00
+        else if (horaEnt >= 6 && horaSal <= 18) {
+            turnoSugerido = 'diurno';
+            descripcion = 'Basado en horario de 06:00 a 18:00';
+        }
+        // Nocturno: 18:00 - 06:00
+        else if (horaEnt >= 18 || horaSal <= 6) {
+            turnoSugerido = 'nocturno';
+            descripcion = 'Basado en horario nocturno';
+        }
+        // Mixto: otros horarios
+        else {
+            turnoSugerido = 'mixto';
+            descripcion = 'Basado en horario mixto/rotativo';
+        }
+        
+        // Mostrar sugerencia solo si es diferente al seleccionado
+        if (turnoSelect.value !== turnoSugerido) {
+            const textoTurno = turnoSelect.querySelector(`option[value="${turnoSugerido}"]`).textContent;
+            sugerenciaTurnoTexto.textContent = `${textoTurno} - ${descripcion}`;
+            sugerenciaTurno.style.display = 'block';
+            
+            // Aplicar sugerencia
+            btnAplicarSugerencia.onclick = function() {
+                turnoSelect.value = turnoSugerido;
+                sugerenciaTurno.style.display = 'none';
+                actualizarPreviewCalculos();
+            };
+        } else {
+            sugerenciaTurno.style.display = 'none';
+        }
+    }
+    
+    // Funciones para días laborables
+    window.seleccionarDiasPerfil = function(dias) {
+        limpiarDiasPerfil();
+        dias.forEach(dia => {
+            const checkbox = document.getElementById(`dia_${dia}_perfil`);
+            if (checkbox) checkbox.checked = true;
+        });
+        actualizarPreviewCalculos();
+    };
+
+    window.seleccionarTodosDiasPerfil = function() {
+        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+        checkboxes.forEach(checkbox => checkbox.checked = true);
+        actualizarPreviewCalculos();
+    };
+
+    window.limpiarDiasPerfil = function() {
+        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+        checkboxes.forEach(checkbox => checkbox.checked = false);
+        actualizarPreviewCalculos();
+    };
+
+    // Función para actualizar preview
+    function actualizarPreviewCalculos() {
+        const entrada = horaEntrada.value;
+        const salida = horaSalida.value;
+        const turnoSeleccionado = turnoSelect.value;
+        const diasSeleccionados = Array.from(document.querySelectorAll('input[name="dias_laborables[]"]:checked')).length;
+        
+        let horasDiarias = 0;
+        
+        if (entrada && salida && window.FormatoGlobal) {
+            if (window.FormatoGlobal.validarFormatoHora(entrada) && window.FormatoGlobal.validarFormatoHora(salida)) {
+                horasDiarias = window.FormatoGlobal.calcularHoras(entrada, salida);
+            }
+        }
+        
+        const horasSemanales = horasDiarias * diasSeleccionados;
+        
+        // Actualizar preview
+        document.getElementById('preview-horas-diarias').textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) + 'h' : '-';
+        document.getElementById('preview-horas-semanales').textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) + 'h' : '-';
+        document.getElementById('preview-turno-seleccionado').textContent = turnoSeleccionado ? 
+            turnoSelect.querySelector(`option[value="${turnoSeleccionado}"]`).textContent : '-';
+        document.getElementById('preview-dias-count').textContent = diasSeleccionados || '-';
+        
+        // Mostrar/ocultar preview
+        const previewDiv = document.getElementById('previewCalculos');
+        if (entrada || salida || turnoSeleccionado || diasSeleccionados > 0) {
+            previewDiv.style.display = 'block';
+        } else {
+            previewDiv.style.display = 'none';
+        }
+    }
+
+    // Event listeners
+    horaEntrada.addEventListener('input', function() {
+        calcularTurnoSugerido();
+        actualizarPreviewCalculos();
+    });
+    
+    horaSalida.addEventListener('input', function() {
+        calcularTurnoSugerido();
+        actualizarPreviewCalculos();
+    });
+    
+    turnoSelect.addEventListener('change', function() {
+        sugerenciaTurno.style.display = 'none';
+        actualizarPreviewCalculos();
+    });
+    
+    document.querySelectorAll('input[name="dias_laborables[]"]').forEach(checkbox => {
+        checkbox.addEventListener('change', actualizarPreviewCalculos);
+    });
+
+    // Limpiar modal al cerrar
+    const modal = document.getElementById('modalEditarDatosLaborales');
+    if (modal) {
+        modal.addEventListener('hidden.bs.modal', function() {
+            sugerenciaTurno.style.display = 'none';
+            const previewDiv = document.getElementById('previewCalculos');
+            if (previewDiv) previewDiv.style.display = 'none';
+        });
+    }
+});
+</script>

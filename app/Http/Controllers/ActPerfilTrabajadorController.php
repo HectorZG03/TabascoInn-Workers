@@ -387,6 +387,38 @@ class ActPerfilTrabajadorController extends Controller
         $diasLaborables = $validated['dias_laborables'] ?? [];
         $diasDescanso = FichaTecnica::calcularDiasDescanso($diasLaborables);
 
+        // ✅ NUEVA LÓGICA: CALCULAR TURNO Y HORAS AUTOMÁTICAMENTE
+        $horasCalculadas = 0;
+        $horasSemanales = 0;
+        $turnoCalculado = 'mixto';
+
+        if (!empty($validated['hora_entrada']) && !empty($validated['hora_salida'])) {
+            // Calcular horas de trabajo
+            $entrada = Carbon::parse($validated['hora_entrada']);
+            $salida = Carbon::parse($validated['hora_salida']);
+            
+            // Si la salida es menor o igual que la entrada, asumimos que cruza medianoche
+            if ($salida->lte($entrada)) {
+                $salida->addDay();
+            }
+            
+            $horasCalculadas = round($entrada->diffInMinutes($salida) / 60, 2);
+            $horasSemanales = round($horasCalculadas * count($diasLaborables), 2);
+            
+            // Calcular turno basado en las horas
+            $horaEntradaStr = $entrada->format('H:i');
+            $horaSalidaOriginal = Carbon::parse($validated['hora_salida'])->format('H:i');
+            
+            // Usar las constantes de FichaTecnica para determinar el turno
+            if ($horaEntradaStr >= FichaTecnica::HORARIO_DIURNO_INICIO && $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
+                $turnoCalculado = 'diurno';
+            } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                $turnoCalculado = 'nocturno';
+            } else {
+                $turnoCalculado = 'mixto';
+            }
+        }
+
         DB::beginTransaction();
         
         try {
@@ -398,20 +430,26 @@ class ActPerfilTrabajadorController extends Controller
                     'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios,
                     'formacion' => $trabajador->fichaTecnica->formacion,
                     'grado_estudios' => $trabajador->fichaTecnica->grado_estudios,
+                    'turno' => $trabajador->fichaTecnica->turno,
+                    'horas_trabajo' => $trabajador->fichaTecnica->horas_trabajo,
+                    'horas_semanales' => $trabajador->fichaTecnica->horas_semanales,
                 ];
             }
 
-            // ✅ PREPARAR DATOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
+            // ✅ PREPARAR DATOS COMPLETOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
             $datosFicha = [
                 'id_categoria' => $validated['id_categoria'],
                 'sueldo_diarios' => $validated['sueldo_diarios'],
                 'formacion' => $validated['formacion'],
                 'grado_estudios' => $validated['grado_estudios'],
-                // ✅ NUEVOS CAMPOS
+                // ✅ NUEVOS CAMPOS CON CÁLCULOS AUTOMÁTICOS
                 'hora_entrada' => $validated['hora_entrada'],
                 'hora_salida' => $validated['hora_salida'],
+                'horas_trabajo' => $horasCalculadas,
+                'turno' => $turnoCalculado,
                 'dias_laborables' => $diasLaborables,
                 'dias_descanso' => $diasDescanso,
+                'horas_semanales' => $horasSemanales,
                 'beneficiario_nombre' => $validated['beneficiario_nombre'],
                 'beneficiario_parentesco' => $validated['beneficiario_parentesco'],
             ];
@@ -450,6 +488,13 @@ class ActPerfilTrabajadorController extends Controller
                             'formacion_nueva' => $validated['formacion'],
                             'grado_estudios_anterior' => $datosAnteriores['grado_estudios'],
                             'grado_estudios_nuevo' => $validated['grado_estudios'],
+                            // ✅ NUEVOS DATOS ADICIONALES
+                            'turno_anterior' => $datosAnteriores['turno'],
+                            'turno_nuevo' => $turnoCalculado,
+                            'horas_trabajo_anterior' => $datosAnteriores['horas_trabajo'],
+                            'horas_trabajo_nuevo' => $horasCalculadas,
+                            'horas_semanales_anterior' => $datosAnteriores['horas_semanales'],
+                            'horas_semanales_nuevo' => $horasSemanales,
                         ]
                     ];
 
@@ -464,16 +509,19 @@ class ActPerfilTrabajadorController extends Controller
 
             DB::commit();
 
-            Log::info('Ficha técnica actualizada', [
+            Log::info('Ficha técnica actualizada con cálculos automáticos', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'categoria_anterior' => $datosAnteriores['id_categoria'] ?? null,
                 'categoria_nueva' => $validated['id_categoria'],
                 'sueldo_anterior' => $datosAnteriores['sueldo_diarios'] ?? null,
                 'sueldo_nuevo' => $validated['sueldo_diarios'],
+                'turno_calculado' => $turnoCalculado,
+                'horas_calculadas' => $horasCalculadas,
+                'horas_semanales' => $horasSemanales,
                 'usuario' => $usuarioActual
             ]);
 
-            return back()->with('success', 'Datos laborales actualizados exitosamente');
+            return back()->with('success', 'Datos laborales actualizados exitosamente con cálculos automáticos');
 
         } catch (\Exception $e) {
             DB::rollback();
@@ -488,7 +536,7 @@ class ActPerfilTrabajadorController extends Controller
     }
 
     /**
-     * ✅ NUEVO MÉTODO: Verificar si hubo cambios significativos
+     * ✅ MÉTODO ACTUALIZADO: Verificar si hubo cambios significativos
      */
     private function verificarCambiosSignificativos(array $datosAnteriores, array $datosNuevos): bool
     {
@@ -501,9 +549,51 @@ class ActPerfilTrabajadorController extends Controller
         if (abs($datosAnteriores['sueldo_diarios'] - $datosNuevos['sueldo_diarios']) > 0.01) {
             return true;
         }
+
+        // ✅ NUEVOS: Cambios en formación y grado de estudios
+        if ($datosAnteriores['formacion'] != $datosNuevos['formacion']) {
+            return true;
+        }
+
+        if ($datosAnteriores['grado_estudios'] != $datosNuevos['grado_estudios']) {
+            return true;
+        }
+
+        // ✅ NUEVOS: Cambios en horarios y turnos
+        if (!empty($datosNuevos['hora_entrada']) && !empty($datosNuevos['hora_salida'])) {
+            // Calcular el turno nuevo para comparar
+            $entrada = Carbon::parse($datosNuevos['hora_entrada']);
+            $salida = Carbon::parse($datosNuevos['hora_salida']);
+            
+            if ($salida->lte($entrada)) {
+                $salida->addDay();
+            }
+            
+            $horasNuevas = round($entrada->diffInMinutes($salida) / 60, 2);
+            $horaEntradaStr = $entrada->format('H:i');
+            $horaSalidaOriginal = Carbon::parse($datosNuevos['hora_salida'])->format('H:i');
+            
+            $turnoNuevo = 'mixto';
+            if ($horaEntradaStr >= FichaTecnica::HORARIO_DIURNO_INICIO && $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
+                $turnoNuevo = 'diurno';
+            } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                $turnoNuevo = 'nocturno';
+            }
+            
+            // Comparar turno
+            if (($datosAnteriores['turno'] ?? 'mixto') != $turnoNuevo) {
+                return true;
+            }
+            
+            // Comparar horas de trabajo (diferencia mayor a 0.1 horas)
+            if (abs(($datosAnteriores['horas_trabajo'] ?? 0) - $horasNuevas) > 0.1) {
+                return true;
+            }
+        }
         
         return false;
     }
+
 
     /**
      * Subir o actualizar documento
