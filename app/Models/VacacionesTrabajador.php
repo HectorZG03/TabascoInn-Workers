@@ -31,13 +31,17 @@ class VacacionesTrabajador extends Model
         'estado',
         'observaciones',
         'motivo_finalizacion',
+        'motivo_cancelacion',
         'justificada_por_documento',
+        'cancelado_por',
+        'fecha_cancelacion',
     ];
 
     protected $casts = [
         'fecha_inicio' => 'date',
         'fecha_fin' => 'date',
         'fecha_reintegro' => 'date',
+        'fecha_cancelacion' => 'datetime',
         'año_correspondiente' => 'integer',
         'dias_correspondientes' => 'integer',
         'dias_solicitados' => 'integer',
@@ -48,26 +52,28 @@ class VacacionesTrabajador extends Model
         'justificada_por_documento' => 'boolean',
     ];
 
-    // ✅ CONSTANTES
+    // ✅ CONSTANTES ACTUALIZADAS CON ESTADO CANCELADO
     public const ESTADOS = [
         'pendiente' => 'Pendiente',
         'activa' => 'Activa',
-        'finalizada' => 'Finalizada'
+        'finalizada' => 'Finalizada',
+        'cancelada' => 'Cancelada'
     ];
 
     public const ESTADOS_COLORES = [
         'pendiente' => 'warning',
         'activa' => 'success',
-        'finalizada' => 'secondary'
+        'finalizada' => 'secondary',
+        'cancelada' => 'danger'
     ];
 
     public const ESTADOS_ICONOS = [
         'pendiente' => 'bi-clock-history',
         'activa' => 'bi-calendar-check',
-        'finalizada' => 'bi-check-circle'
+        'finalizada' => 'bi-check-circle',
+        'cancelada' => 'bi-x-circle'
     ];
 
-    // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO
     // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO (2023+)
     public const DIAS_POR_ANTIGUEDAD = [
         0  => 6,   // Menos de 1 año (se asignan manualmente si aplica)
@@ -84,7 +90,6 @@ class VacacionesTrabajador extends Model
         31 => 32,
     ];
 
-
     // ✅ RELACIONES
     public function trabajador(): BelongsTo
     {
@@ -94,6 +99,11 @@ class VacacionesTrabajador extends Model
     public function creadoPor(): BelongsTo
     {
         return $this->belongsTo(User::class, 'creado_por');
+    }
+
+    public function canceladoPor(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'cancelado_por');
     }
 
     // ✅ ACCESSORS
@@ -141,7 +151,7 @@ class VacacionesTrabajador extends Model
         return ($this->dias_disfrutados / $this->dias_solicitados) * 100;
     }
 
-    // ✅ MÉTODOS DE ESTADO
+    // ✅ MÉTODOS DE ESTADO ACTUALIZADOS
     public function esPendiente(): bool
     {
         return $this->estado === 'pendiente';
@@ -157,16 +167,25 @@ class VacacionesTrabajador extends Model
         return $this->estado === 'finalizada';
     }
 
+    public function esCancelada(): bool
+    {
+        return $this->estado === 'cancelada';
+    }
+
     public function puedeIniciar(): bool
     {
         return $this->esPendiente() && 
-               //arbon::today()->gte($this->fecha_inicio) &&
                !$this->trabajador->tieneVacacionesActivas();
     }
 
     public function puedeFinalizarse(): bool
     {
-        return $this->esActiva();
+        return $this->esActiva() && Carbon::today()->gte($this->fecha_fin);
+    }
+
+    public function puedeCancelarse(): bool
+    {
+        return in_array($this->estado, ['pendiente', 'activa']);
     }
 
     // ✅ MÉTODOS ESTÁTICOS
@@ -186,7 +205,7 @@ class VacacionesTrabajador extends Model
         return $año . '-' . ($año + 1);
     }
 
-    // ✅ SCOPES
+    // ✅ SCOPES ACTUALIZADOS
     public function scopeActivas($query)
     {
         return $query->where('estado', 'activa');
@@ -202,6 +221,11 @@ class VacacionesTrabajador extends Model
         return $query->where('estado', 'finalizada');
     }
 
+    public function scopeCanceladas($query)
+    {
+        return $query->where('estado', 'cancelada');
+    }
+
     public function scopePorTrabajador($query, int $idTrabajador)
     {
         return $query->where('id_trabajador', $idTrabajador);
@@ -212,7 +236,7 @@ class VacacionesTrabajador extends Model
         return $query->where('periodo_vacacional', $periodo);
     }
 
-    // ✅ MÉTODOS DE ACCIÓN
+    // ✅ MÉTODOS DE ACCIÓN ACTUALIZADOS
     public function iniciar(int $usuarioId = null): bool
     {
         if (!$this->puedeIniciar()) {
@@ -231,6 +255,9 @@ class VacacionesTrabajador extends Model
         return true;
     }
 
+    /**
+     * ✅ NUEVO: Finalizar vacaciones cuando lleguen a su fecha fin
+     */
     public function finalizar(?string $motivo = null, int $usuarioId = null): bool
     {
         if (!$this->puedeFinalizarse()) {
@@ -247,7 +274,7 @@ class VacacionesTrabajador extends Model
         $this->update([
             'estado' => 'finalizada',
             'dias_disfrutados' => $diasDisfrutados,
-            'dias_restantes' => $this->dias_solicitados - $diasDisfrutados,
+            'dias_restantes' => max(0, $this->dias_solicitados - $diasDisfrutados),
             'fecha_reintegro' => Carbon::today(),
             'motivo_finalizacion' => $motivo
         ]);
@@ -255,6 +282,35 @@ class VacacionesTrabajador extends Model
         return true;
     }
 
+    /**
+     * ✅ NUEVO: Cancelar vacaciones y devolver los días
+     */
+    public function cancelar(string $motivo, int $usuarioId): bool
+    {
+        if (!$this->puedeCancelarse()) {
+            return false;
+        }
+
+        // Si estaba activa, cambiar estado del trabajador de vuelta a activo
+        if ($this->esActiva()) {
+            $this->trabajador->update(['estatus' => 'activo']);
+        }
+
+        // Actualizar vacación como cancelada
+        $this->update([
+            'estado' => 'cancelada',
+            'motivo_cancelacion' => $motivo,
+            'cancelado_por' => $usuarioId,
+            'fecha_cancelacion' => Carbon::now(),
+            'dias_disfrutados' => 0, // No disfrutó días ya que se canceló
+            'dias_restantes' => $this->dias_solicitados, // Devolver todos los días
+            'fecha_reintegro' => $this->esActiva() ? Carbon::today() : null
+        ]);
+
+        return true;
+    }
+
+    // ✅ RELACIONES CON DOCUMENTOS (sin cambios)
     public function documentos(): BelongsToMany
     {
         return $this->belongsToMany(
@@ -267,7 +323,7 @@ class VacacionesTrabajador extends Model
         )->withTimestamps();
     }
 
-    // ✅ NUEVOS ACCESSORS - AGREGAR AL FINAL DEL MODELO
+    // ✅ ACCESSORS ADICIONALES (sin cambios)
     public function getTieneDocumentoAttribute(): bool
     {
         return $this->documentos()->exists();
@@ -278,7 +334,7 @@ class VacacionesTrabajador extends Model
         return $this->documentos()->latest()->first();
     }
 
-    // ✅ NUEVOS MÉTODOS - AGREGAR AL FINAL DEL MODELO
+    // ✅ MÉTODOS PARA DOCUMENTOS (sin cambios)
     public function asociarDocumento(DocumentoVacaciones $documento): void
     {
         $this->documentos()->attach($documento->id);

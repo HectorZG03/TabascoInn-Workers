@@ -16,6 +16,7 @@ trait TieneAccessors
             'activo' => 'Activo',
             'permiso' => 'Permiso',
             'suspendido' => 'Suspendido',
+            'vacaciones' => 'En Vacaciones',
             'prueba' => 'En Prueba',
             'inactivo' => 'Inactivo',
             default => 'Estado Desconocido',
@@ -29,6 +30,7 @@ trait TieneAccessors
             'activo' => 'success',
             'permiso' => 'info', 
             'suspendido' => 'danger',
+            'vacaciones' => 'primary',
             'prueba' => 'warning',
             'inactivo' => 'secondary'
         ];
@@ -41,6 +43,7 @@ trait TieneAccessors
         $iconos = [
             'activo' => 'bi-person-check',
             'permiso' => 'bi-calendar-event',
+            'vacaciones' => 'bi-calendar-heart',
             'suspendido' => 'bi-exclamation-triangle', 
             'prueba' => 'bi-clock-history',
             'inactivo' => 'bi-person-x'

@@ -184,6 +184,7 @@
                                                             data-bs-target="#detalleContratoModal"
                                                             data-contrato="{{ json_encode([
                                                                 'id' => $contrato->id_contrato,
+                                                                'tipo_duracion' => $contrato->tipo_duracion,
                                                                 'inicio' => $contrato->fecha_inicio_contrato->format('d/m/Y'),
                                                                 'fin' => $contrato->fecha_fin_contrato->format('d/m/Y'),
                                                                 'duracion' => $contrato->duracion_completa,

@@ -229,26 +229,42 @@ class VacacionesManager {
         const currentUser = window.currentUser || {};
         const canManage = currentUser.tipo === 'Gerencia' || currentUser.tipo === 'Recursos_Humanos';
         
-        if (vacacion.estado === 'pendiente' && canManage) {
-            $acciones.append(`
-                <button class="btn btn-success btn-sm" onclick="vacacionesApp.iniciarVacacion(${vacacion.id_vacacion})">
-                    <i class="bi bi-play"></i> Iniciar
-                </button>
-                <button class="btn btn-outline-danger btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})">
-                    <i class="bi bi-x"></i> Cancelar
-                </button>
-            `);
-        } else if (vacacion.estado === 'activa' && canManage) {
-            $acciones.append(`
-                <button class="btn btn-warning btn-sm" onclick="vacacionesApp.finalizarVacacion(${vacacion.id_vacacion})">
-                    <i class="bi bi-stop"></i> Finalizar
-                </button>
-            `);
+        if (canManage) {
+            if (vacacion.estado === 'pendiente') {
+                // ✅ ACCIONES PARA VACACIONES PENDIENTES
+                $acciones.append(`
+                    <button class="btn btn-success btn-sm" onclick="vacacionesApp.iniciarVacacion(${vacacion.id_vacacion})" title="Iniciar vacaciones">
+                        <i class="bi bi-play"></i> Iniciar
+                    </button>
+                    <button class="btn btn-danger btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})" title="Cancelar y devolver días">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                `);
+            } else if (vacacion.estado === 'activa') {
+                // ✅ ACCIONES PARA VACACIONES ACTIVAS
+                const hoy = new Date();
+                const fechaFin = new Date(vacacion.fecha_fin);
+                const puedeFinalizarse = hoy >= fechaFin;
+                
+                if (puedeFinalizarse) {
+                    $acciones.append(`
+                        <button class="btn btn-primary btn-sm" onclick="vacacionesApp.finalizarVacacion(${vacacion.id_vacacion})" title="Finalizar vacaciones (fecha cumplida)">
+                            <i class="bi bi-check-circle"></i> Finalizar
+                        </button>
+                    `);
+                }
+                
+                $acciones.append(`
+                    <button class="btn btn-warning btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})" title="Cancelar vacaciones activas">
+                        <i class="bi bi-x-circle"></i> Cancelar
+                    </button>
+                `);
+            }
         }
         
-        // Botón de detalles
+        // ✅ BOTÓN DE DETALLES PARA TODOS LOS ESTADOS
         $acciones.append(`
-            <button class="btn btn-outline-info btn-sm" onclick="vacacionesApp.verDetalles(${vacacion.id_vacacion})">
+            <button class="btn btn-outline-info btn-sm" onclick="vacacionesApp.verDetalles(${vacacion.id_vacacion})" title="Ver detalles">
                 <i class="bi bi-eye"></i> Detalles
             </button>
         `);
@@ -258,7 +274,8 @@ class VacacionesManager {
         const colores = {
             'pendiente': 'warning',
             'activa': 'success',
-            'finalizada': 'secondary'
+            'finalizada': 'secondary',
+            'cancelada': 'danger' // ✅ NUEVO
         };
         return colores[estado] || 'secondary';
     }
@@ -267,11 +284,11 @@ class VacacionesManager {
         const textos = {
             'pendiente': 'Pendiente',
             'activa': 'Activa',
-            'finalizada': 'Finalizada'
+            'finalizada': 'Finalizada',
+            'cancelada': 'Cancelada' // ✅ NUEVO
         };
         return textos[estado] || estado;
     }
-
     updateFilters() {
         const periodos = [...new Set(this.vacaciones.map(v => v.periodo_vacacional))];
         const $filtroPeriodo = $('#filtro-periodo');
@@ -337,12 +354,18 @@ class VacacionesManager {
         }
     }
 
-    async finalizarVacacion(vacacionId) {
-        const motivo = prompt('Motivo de finalización (opcional):');
-        if (motivo === null) return;
+     async finalizarVacacion(vacacionId) {
+        // Confirmar acción
+        const confirmacion = confirm(
+            '¿Está seguro de finalizar estas vacaciones?\n\n' +
+            'Esta acción solo debe realizarse cuando las vacaciones hayan llegado a su fecha fin natural.'
+        );
+        if (!confirmacion) return;
+        
+        // Solicitar motivo opcional
+        const motivo = prompt('Motivo de finalización (opcional):') || 'Vacaciones finalizadas por cumplimiento de fecha';
         
         try {
-            // ✅ USAR RUTAS DINÁMICAS
             const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/finalizar`);
             console.log('🔄 Finalizando vacación desde:', url);
             
@@ -370,17 +393,49 @@ class VacacionesManager {
                 this.showNotification('error', result.message);
             }
         } catch (error) {
-            console.error('Error ending vacation:', error);
+            console.error('Error finalizing vacation:', error);
             this.showNotification('error', 'Error al finalizar vacaciones');
         }
     }
 
+    // ✅ MÉTODO DE CANCELAR COMPLETAMENTE NUEVO
     async cancelarVacacion(vacacionId) {
-        const motivo = prompt('Motivo de cancelación:');
-        if (!motivo || motivo.trim() === '') return;
+        // Obtener detalles de la vacación
+        const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
+        if (!vacacion) {
+            this.showNotification('error', 'Vacación no encontrada');
+            return;
+        }
+        
+        // Confirmar acción con información detallada
+        const esActiva = vacacion.estado === 'activa';
+        const mensaje = esActiva 
+            ? `¿Está seguro de CANCELAR estas vacaciones activas?\n\n` +
+              `• Se devolverán ${vacacion.dias_solicitados} días al trabajador\n` +
+              `• El trabajador volverá al estado "Activo"\n` +
+              `• Esta acción NO se puede deshacer`
+            : `¿Está seguro de CANCELAR estas vacaciones pendientes?\n\n` +
+              `• Se devolverán ${vacacion.dias_solicitados} días al trabajador\n` +
+              `• Esta acción NO se puede deshacer`;
+        
+        if (!confirm(mensaje)) return;
+        
+        // Solicitar motivo OBLIGATORIO
+        let motivo = '';
+        while (!motivo || motivo.trim().length < 10) {
+            motivo = prompt(
+                'Motivo de cancelación (OBLIGATORIO - mínimo 10 caracteres):\n\n' +
+                'Ejemplo: "Cambio en las fechas solicitadas por el trabajador"'
+            );
+            
+            if (motivo === null) return; // Usuario canceló
+            
+            if (!motivo || motivo.trim().length < 10) {
+                alert('El motivo debe tener al menos 10 caracteres. Intente nuevamente.');
+            }
+        }
         
         try {
-            // ✅ USAR RUTAS DINÁMICAS
             const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/cancelar`);
             console.log('🔄 Cancelando vacación desde:', url);
             
@@ -392,14 +447,21 @@ class VacacionesManager {
                     'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
                     'X-Requested-With': 'XMLHttpRequest'
                 },
-                body: JSON.stringify({ motivo_cancelacion: motivo })
+                body: JSON.stringify({ motivo_cancelacion: motivo.trim() })
             });
             
             const result = await response.json();
             
             if (result.success) {
                 await this.loadVacaciones();
-                this.showNotification('success', 'Vacaciones canceladas correctamente');
+                
+                const mensajeExito = `Vacaciones canceladas correctamente. ` +
+                    `Se devolvieron ${result.dias_devueltos || vacacion.dias_solicitados} días al trabajador.`;
+                this.showNotification('success', mensajeExito);
+                
+                if (result.trabajador_estatus) {
+                    this.updateTrabajadorStatus(result.trabajador_estatus);
+                }
             } else {
                 this.showNotification('error', result.message);
             }
@@ -409,6 +471,7 @@ class VacacionesManager {
         }
     }
 
+    // ✅ MÉTODO VERDETALLES ACTUALIZADO CON NUEVA INFORMACIÓN
     verDetalles(vacacionId) {
         const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
         if (!vacacion) return;
@@ -416,7 +479,39 @@ class VacacionesManager {
         const fechaInicio = this.formatearFecha(vacacion.fecha_inicio);
         const fechaFin = this.formatearFecha(vacacion.fecha_fin);
         
-        alert(`Detalles de vacación:\n\nPeríodo: ${vacacion.periodo_vacacional}\nDías: ${vacacion.dias_solicitados}\nEstado: ${vacacion.estado}\nFechas: ${fechaInicio} - ${fechaFin}`);
+        let detallesExtra = '';
+        
+        // Información específica según el estado
+        if (vacacion.estado === 'cancelada') {
+            const fechaCancelacion = vacacion.fecha_cancelacion ? 
+                new Date(vacacion.fecha_cancelacion).toLocaleString('es-ES') : 'No disponible';
+            const canceladoPor = vacacion.cancelado_por?.nombre || 'Sistema';
+            
+            detallesExtra = `\n\n=== INFORMACIÓN DE CANCELACIÓN ===\n` +
+                          `Fecha de cancelación: ${fechaCancelacion}\n` +
+                          `Cancelado por: ${canceladoPor}\n` +
+                          `Motivo: ${vacacion.motivo_cancelacion || 'No especificado'}\n` +
+                          `Días devueltos: ${vacacion.dias_restantes}`;
+        } else if (vacacion.estado === 'finalizada') {
+            const fechaReintegro = vacacion.fecha_reintegro ? 
+                this.formatearFecha(vacacion.fecha_reintegro) : 'No disponible';
+            
+            detallesExtra = `\n\n=== INFORMACIÓN DE FINALIZACIÓN ===\n` +
+                          `Fecha de reintegro: ${fechaReintegro}\n` +
+                          `Días disfrutados: ${vacacion.dias_disfrutados}\n` +
+                          `Motivo: ${vacacion.motivo_finalizacion || 'Finalización normal'}`;
+        }
+        
+        const mensaje = `=== DETALLES DE VACACIÓN ===\n\n` +
+                       `Período: ${vacacion.periodo_vacacional}\n` +
+                       `Estado: ${this.getEstadoTexto(vacacion.estado)}\n` +
+                       `Días solicitados: ${vacacion.dias_solicitados}\n` +
+                       `Fechas: ${fechaInicio} - ${fechaFin}\n` +
+                       `Creado por: ${vacacion.creado_por?.nombre || 'Sistema'}\n` +
+                       `Observaciones: ${vacacion.observaciones || 'Sin observaciones'}` +
+                       detallesExtra;
+        
+        alert(mensaje);
     }
 
     // =================================

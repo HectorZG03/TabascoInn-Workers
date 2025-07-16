@@ -1,16 +1,12 @@
 <?php
 
 namespace App\Models\Traits\Trabajador;
-
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use App\Models\VacacionesTrabajador;
 use Carbon\Carbon;
 
 trait TieneVacaciones
 {
-    // ✅ NOTA: Las relaciones vacaciones(), vacacionesActivas(), etc. 
-    // están definidas en TieneRelaciones.php para evitar duplicación
-
-    // ✅ MÉTODOS DE ESTADO ESPECÍFICOS DE VACACIONES
     public function estaEnVacaciones(): bool
     {
         return $this->estatus === 'vacaciones';
@@ -20,8 +16,6 @@ trait TieneVacaciones
     {
         return $this->estaActivo() && !$this->tieneVacacionesActivas();
     }
-
-    // ✅ CÁLCULOS Y ESTADÍSTICAS
     public function getDiasVacacionesCorrespondientesAttribute(): int
     {
         return VacacionesTrabajador::calcularDiasCorrespondientes($this->antiguedad ?? 0);
@@ -37,6 +31,7 @@ trait TieneVacaciones
         $añoActual = Carbon::now()->year;
         $vacacionesEsteAño = $this->vacaciones()
             ->where('año_correspondiente', $añoActual)
+            ->whereNotIn('estado', ['cancelada'])
             ->get();
 
         $diasCorrespondientes = $this->dias_vacaciones_correspondientes;
@@ -45,7 +40,12 @@ trait TieneVacaciones
         return max(0, $diasCorrespondientes - $diasUsados);
     }
 
-    // ✅ MÉTODOS PARA GESTIÓN DE VACACIONES
+       
+    public function vacacionesCanceladas(): HasMany
+    {
+        return $this->vacaciones()->where('estado', 'cancelada');
+    }
+
     public function asignarVacaciones(array $datos, int $usuarioId): VacacionesTrabajador
     {
         // Calcular días correspondientes automáticamente
@@ -108,7 +108,8 @@ trait TieneVacaciones
             'vacaciones_activas' => $vacaciones->where('estado', 'activa')->count(),
             'vacaciones_pendientes' => $vacaciones->where('estado', 'pendiente')->count(),
             'vacaciones_finalizadas' => $vacaciones->where('estado', 'finalizada')->count(),
-            'total_dias_tomados' => $vacaciones->sum('dias_disfrutados'),
+            'vacaciones_canceladas' => $vacaciones->where('estado', 'cancelada')->count(), 
+            'total_dias_tomados' => $vacaciones->whereNotIn('estado', ['cancelada'])->sum('dias_disfrutados'),
             'dias_correspondientes_año_actual' => $this->dias_vacaciones_correspondientes,
             'dias_restantes_año_actual' => $this->dias_vacaciones_restantes_este_año,
             'ultima_vacacion' => $vacaciones->first()?->created_at?->format('Y-m-d'),
@@ -116,7 +117,7 @@ trait TieneVacaciones
         ];
     }
 
-    // ✅ VALIDACIONES
+   // ✅ VALIDACIONES ACTUALIZADAS
     public function puedeAsignarVacaciones(array $datos): array
     {
         $errores = [];
@@ -131,7 +132,7 @@ trait TieneVacaciones
             $errores[] = 'El trabajador ya tiene vacaciones activas.';
         }
 
-        // Validar días disponibles
+        // ✅ ACTUALIZADO: Validar días disponibles (excluyendo canceladas)
         $diasDisponibles = $this->dias_vacaciones_restantes_este_año;
         $diasSolicitados = $datos['dias_solicitados'] ?? 0;
         

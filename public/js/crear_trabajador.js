@@ -310,18 +310,14 @@ document.addEventListener('DOMContentLoaded', function() {
     // 🛠️ FUNCIONES AUXILIARES
     // =================================
 
-    function configurarFechasPorDefecto() {
+function configurarFechasPorDefecto() {
         const fechaIngreso = get('fecha_ingreso');
         const fechaInicioContrato = get('fecha_inicio_contrato');
-        const hoy = new Date();
-        const fechaHoy = formatearFechaParaInput(hoy);
-        
-        if (fechaIngreso && !fechaIngreso.value) {
-            fechaIngreso.value = fechaHoy;
+        // Solo sugerir fecha actual como placeholder visual, pero sin forzar
+        if (fechaIngreso && !fechaIngreso.value && fechaIngreso.placeholder === 'DD/MM/YYYY') {
         }
         
-        if (fechaInicioContrato && !fechaInicioContrato.value) {
-            fechaInicioContrato.value = fechaHoy;
+        if (fechaInicioContrato && !fechaInicioContrato.value && fechaInicioContrato.placeholder === 'DD/MM/YYYY') {
         }
     }
 

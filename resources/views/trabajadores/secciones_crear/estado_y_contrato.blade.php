@@ -55,7 +55,7 @@
                        placeholder="DD/MM/YYYY"
                        maxlength="10"
                        required>
-                <div class="form-text">Formato: DD/MM/YYYY (no puede ser anterior a hoy)</div>
+                <div class="form-text">Formato: DD/MM/YYYY (fecha real de inicio del contrato)</div>
                 @error('fecha_inicio_contrato')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror

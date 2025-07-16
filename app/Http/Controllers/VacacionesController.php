@@ -158,9 +158,6 @@ class VacacionesController extends Controller
         }
     }
 
-    /**
-     * Finalizar vacaciones activas
-     */
     public function finalizar(Request $request, Trabajador $trabajador, VacacionesTrabajador $vacacion): JsonResponse
     {
         try {
@@ -171,13 +168,20 @@ class VacacionesController extends Controller
                 ], 403);
             }
 
-            $motivo = $request->input('motivo_finalizacion');
+            if (!$vacacion->puedeFinalizarse()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Solo se pueden finalizar vacaciones activas que hayan llegado a su fecha fin'
+                ], 422);
+            }
+
+            $motivo = $request->input('motivo_finalizacion', 'Vacaciones finalizadas por cumplimiento de fecha');
 
             if ($vacacion->finalizar($motivo, Auth::id())) {
                 return response()->json([
                     'success' => true,
                     'message' => 'Vacaciones finalizadas correctamente',
-                    'vacacion' => $vacacion->fresh(),
+                    'vacacion' => $vacacion->fresh(['creadoPor', 'canceladoPor']),
                     'trabajador_estatus' => $trabajador->fresh()->estatus
                 ]);
             } else {
@@ -196,7 +200,7 @@ class VacacionesController extends Controller
     }
 
     /**
-     * Cancelar vacaciones pendientes
+     * ✅ NUEVO: Cancelar vacaciones (separado de finalizar)
      */
     public function cancelar(Request $request, Trabajador $trabajador, VacacionesTrabajador $vacacion): JsonResponse
     {
@@ -208,27 +212,46 @@ class VacacionesController extends Controller
                 ], 403);
             }
 
-            if (!$vacacion->esPendiente()) {
+            if (!$vacacion->puedeCancelarse()) {
                 return response()->json([
                     'success' => false,
-                    'message' => 'Solo se pueden cancelar vacaciones pendientes'
+                    'message' => 'Solo se pueden cancelar vacaciones pendientes o activas'
                 ], 422);
             }
 
-            $motivo = $request->input('motivo_cancelacion', 'Cancelada por usuario');
-            
-            $vacacion->update([
-                'estado' => 'finalizada',
-                'motivo_finalizacion' => 'CANCELADA: ' . $motivo,
-                'dias_disfrutados' => 0,
-                'dias_restantes' => $vacacion->dias_solicitados
+            // Validar motivo de cancelación
+            $validator = Validator::make($request->all(), [
+                'motivo_cancelacion' => 'required|string|min:10|max:500'
+            ], [
+                'motivo_cancelacion.required' => 'El motivo de cancelación es obligatorio',
+                'motivo_cancelacion.min' => 'El motivo debe tener al menos 10 caracteres',
+                'motivo_cancelacion.max' => 'El motivo no puede exceder 500 caracteres'
             ]);
 
-            return response()->json([
-                'success' => true,
-                'message' => 'Vacaciones canceladas correctamente',
-                'vacacion' => $vacacion->fresh()
-            ]);
+            if ($validator->fails()) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Motivo de cancelación inválido',
+                    'errors' => $validator->errors()
+                ], 422);
+            }
+
+            $motivo = $request->input('motivo_cancelacion');
+            
+            if ($vacacion->cancelar($motivo, Auth::id())) {
+                return response()->json([
+                    'success' => true,
+                    'message' => 'Vacaciones canceladas correctamente. Los días han sido devueltos.',
+                    'vacacion' => $vacacion->fresh(['creadoPor', 'canceladoPor']),
+                    'trabajador_estatus' => $trabajador->fresh()->estatus,
+                    'dias_devueltos' => $vacacion->dias_solicitados
+                ]);
+            } else {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se pueden cancelar estas vacaciones'
+                ], 422);
+            }
 
         } catch (\Exception $e) {
             return response()->json([

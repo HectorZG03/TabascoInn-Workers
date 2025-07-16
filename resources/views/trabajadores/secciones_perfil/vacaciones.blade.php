@@ -126,6 +126,7 @@
                         <option value="pendiente">Pendientes</option>
                         <option value="activa">Activas</option>
                         <option value="finalizada">Finalizadas</option>
+                        <option value="cancelada">Canceladas</option>
                     </select>
                     <select class="form-select form-select-sm" id="filtro-periodo" style="width: auto;">
                         <option value="">Todos los períodos</option>
@@ -356,6 +357,9 @@ document.addEventListener('DOMContentLoaded', function() {
 .vacacion-item[data-estado="finalizada"] { 
     border-left-color: #6c757d !important; 
 }
+.vacacion-item[data-estado="cancelada"] { 
+    border-left-color: #dc3545 !important; 
+}
 
 .avatar-lg {
     box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
@@ -370,6 +374,14 @@ document.addEventListener('DOMContentLoaded', function() {
     box-shadow: 0 4px 25px rgba(0,0,0,0.1);
 }
 
+/* ✅ NUEVO: Estilo especial para vacaciones canceladas */
+.vacacion-item[data-estado="cancelada"] {
+    opacity: 0.8;
+}
+
+.vacacion-item[data-estado="cancelada"] .card-body {
+    background-color: rgba(220, 53, 69, 0.05);
+}
 </style>
 
 @endsection

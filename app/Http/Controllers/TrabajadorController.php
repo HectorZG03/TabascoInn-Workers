@@ -224,11 +224,13 @@ class TrabajadorController extends Controller
         }
     }
 
-    private function validarFechaIngreso($fecha, $fail)
+   private function validarFechaIngreso($fecha, $fail)
     {
         if (!$this->validarFechaPersonalizada($fecha)) {
             return $fail('La fecha de ingreso no es válida.');
         }
+        // ✅ ELIMINADA: Validación que impedía fechas anteriores
+        // Solo mantener validación contra fechas futuras si es necesario
         $fechaIngreso = $this->convertirFechaACarbon($fecha);
         if ($fechaIngreso && $fechaIngreso->gt(now())) {
             $fail('La fecha de ingreso no puede ser futura.');
@@ -255,10 +257,8 @@ class TrabajadorController extends Controller
         if (!$this->validarFechaPersonalizada($fecha)) {
             return $fail('La fecha de inicio del contrato no es válida.');
         }
-        $fechaInicio = $this->convertirFechaACarbon($fecha);
-        if ($fechaInicio && $fechaInicio->lt(now()->startOfDay())) {
-            $fail('La fecha de inicio del contrato no puede ser anterior a hoy.');
-        }
+        // ✅ ELIMINADA: Validación que impedía fechas anteriores a hoy
+        // Ahora permite cualquier fecha válida, pasada o futura
     }
 
     private function validarFechaFinContrato($fechaFin, $fechaInicioStr, $fail)

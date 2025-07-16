@@ -91,49 +91,50 @@
         
         .signatures {
             margin-top: 60px;
+            width: 100%;
         }
         
         .signature-row {
-            display: flex;
-            justify-content: space-between;
-            margin-bottom: 50px;
+            width: 100%;
+            margin-bottom: 60px;
+            display: table;
+            table-layout: fixed;
         }
         
         .signature-box {
+            display: table-cell;
             text-align: center;
-            width: 45%;
+            width: 50%;
+            padding: 0 15px;
+            vertical-align: top;
         }
         
         .signature-line {
             border-top: 1px solid #000;
-            margin-bottom: 5px;
+            margin-bottom: 8px;
             height: 1px;
             width: 100%;
         }
         
         .signature-name {
             font-weight: bold;
-            font-size: 14px;
+            font-size: 13px;
+            margin-bottom: 3px;
         }
         
         .signature-title {
-            font-size: 12px;
+            font-size: 11px;
             margin-top: 2px;
-        }
-        
-        .estado-badge {
-            display: inline-block;
-            padding: 2px 6px;
-            border-radius: 3px;
-            font-size: 10px;
-            font-weight: bold;
-            color: white;
-            background-color: #ffc107;
+            font-weight: normal;
         }
         
         @media print {
             body {
                 padding: 20px;
+            }
+            
+            .signature-row {
+                margin-bottom: 40px;
             }
         }
     </style>
@@ -188,8 +189,6 @@
                 <th>Fecha Inicio</th>
                 <th>Fecha Fin</th>
                 <th>Año Correspondiente</th>
-                <th>Estado</th>
-                <th>Observaciones</th>
             </tr>
         </thead>
         <tbody>
@@ -200,10 +199,6 @@
                     <td>{{ $vacacion->fecha_inicio->format('d/m/Y') }}</td>
                     <td>{{ $vacacion->fecha_fin->format('d/m/Y') }}</td>
                     <td>{{ $vacacion->año_correspondiente }}</td>
-                    <td>
-                        <span class="estado-badge">{{ strtoupper($vacacion->estado) }}</span>
-                    </td>
-                    <td class="text-left">{{ $vacacion->observaciones ?: '-' }}</td>
                 </tr>
             @endforeach
             
@@ -211,7 +206,7 @@
             <tr class="total-row">
                 <td><strong>TOTAL</strong></td>
                 <td><strong>{{ $total_dias }} días</strong></td>
-                <td colspan="5">-</td>
+                <td colspan="3">-</td>
             </tr>
         </tbody>
     </table>

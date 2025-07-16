@@ -4,23 +4,6 @@
 
 @section('content')
 <div class="dashboard-container">
-    <!-- Tarjeta de bienvenida -->
-    <div class="welcome-section">
-        <div class="welcome-card">
-            <div class="welcome-header">
-                <div class="welcome-icon">
-                    <i class="bi bi-house-heart"></i>
-                </div>
-                <h1 class="welcome-title">¡Hola {{ $user->nombre }}!</h1>
-                <p class="welcome-subtitle">Sistema de Administración de Fichas Técnicas</p>
-                <span class="badge {{ $user->esGerencia() ? 'badge-management' : 'badge-user' }}">
-                    <i class="bi bi-{{ $user->esGerencia() ? 'person-gear' : 'people' }}"></i>
-                    {{ str_replace('_', ' ', $user->tipo) }}
-                </span>
-            </div>
-        </div>
-    </div>
-
     <!-- Grid de funcionalidades -->
     <div class="functions-grid">
         <!-- Alta de Empleado -->

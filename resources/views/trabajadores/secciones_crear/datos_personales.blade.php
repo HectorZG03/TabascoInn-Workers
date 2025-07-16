@@ -220,7 +220,7 @@
                 @enderror
             </div>
             
-            <!-- Fecha de Ingreso -->
+        <!-- Fecha de Ingreso -->
             <div class="col-md-4 mb-3">
                 <label for="fecha_ingreso" class="form-label">
                     <i class="bi bi-calendar-check"></i> Fecha de Ingreso *
@@ -233,7 +233,7 @@
                     placeholder="DD/MM/YYYY"
                     maxlength="10"
                     required>
-                <div class="form-text">Formato: DD/MM/YYYY (no puede ser futura)</div>
+                <div class="form-text">Formato: DD/MM/YYYY (fecha real de ingreso del trabajador)</div>
                 @error('fecha_ingreso')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
