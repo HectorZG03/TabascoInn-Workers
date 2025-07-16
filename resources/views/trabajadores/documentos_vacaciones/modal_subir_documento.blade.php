@@ -50,13 +50,13 @@
                             <span class="text-danger">*</span>
                         </label>
                         
-                        @if($trabajador->vacacionesPendientes->count() > 0)
+                        @if($vacacionesPendientesSinDocumento->count() > 0)
                             <div class="border rounded p-3 bg-light">
                                 <div class="form-text mb-3">
                                     Selecciona las vacaciones que están cubiertas por este documento:
                                 </div>
                                 
-                                @foreach($trabajador->vacacionesPendientes as $vacacion)
+                                @foreach($vacacionesPendientesSinDocumento as $vacacion)
                                     <div class="form-check mb-2">
                                         <input class="form-check-input" 
                                                type="checkbox" 

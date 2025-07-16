@@ -10,6 +10,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -21,13 +22,25 @@ class DocumentosVacacionesController extends Controller
      */
     public function index(Trabajador $trabajador)
     {
-        $trabajador->load([
-            'documentosVacaciones.vacaciones',
-            'vacacionesPendientes'
-        ]);
+        // Cargar relaciones necesarias
+        $trabajador->load('documentosVacaciones.vacaciones');
 
-        return view('trabajadores.documentos_vacaciones.index', compact('trabajador'));
+        // Obtener IDs de vacaciones que ya están ligadas a documentos
+        $vacacionesConDocumento = DB::table('documento_vacacion_vacaciones')
+            ->pluck('vacacion_id')
+            ->toArray();
+
+
+        // Obtener vacaciones pendientes filtrando las que NO tienen documento
+        $vacacionesPendientesSinDocumento = $trabajador->vacacionesPendientes
+            ->whereNotIn('id_vacacion', $vacacionesConDocumento);
+
+        return view('trabajadores.documentos_vacaciones.index', [
+            'trabajador' => $trabajador,
+            'vacacionesPendientesSinDocumento' => $vacacionesPendientesSinDocumento,
+        ]);
     }
+
 
     /**
      * Generar y descargar PDF de amortización de vacaciones
@@ -127,7 +140,7 @@ class DocumentosVacacionesController extends Controller
                 }
 
                 // Log para debugging
-                \Log::info("Archivo guardado exitosamente", [
+                Log::info("Archivo guardado exitosamente", [
                     'ruta_generada' => $rutaArchivo,
                     'ruta_guardada' => $rutaCompleta,
                     'existe' => Storage::disk('public')->exists($rutaCompleta),
@@ -135,7 +148,7 @@ class DocumentosVacacionesController extends Controller
                 ]);
 
             } catch (\Exception $e) {
-                \Log::error("Error guardando archivo", [
+                Log::error("Error guardando archivo", [
                     'error' => $e->getMessage(),
                     'ruta' => $rutaArchivo,
                     'trabajador_id' => $trabajador->id_trabajador
@@ -172,7 +185,7 @@ class DocumentosVacacionesController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error("Error en subirDocumento", [
+            Log::error("Error en subirDocumento", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
@@ -230,7 +243,7 @@ class DocumentosVacacionesController extends Controller
             ]);
 
         } catch (\Exception $e) {
-            \Log::error("Error en obtenerDocumentos", [
+            Log::error("Error en obtenerDocumentos", [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
