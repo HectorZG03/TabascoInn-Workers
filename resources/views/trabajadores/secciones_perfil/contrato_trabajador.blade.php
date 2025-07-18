@@ -398,7 +398,7 @@
 {{-- Modal crear contrato --}}
 @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 
-{{-- Modal renovar contrato --}}
+<!-- Actualizar el modal de renovar en contrato_trabajador.blade.php -->
 <div class="modal fade" id="modalRenovarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -414,21 +414,72 @@
                     <div class="alert alert-info">
                         <i class="bi bi-info-circle"></i> Renovando contrato próximo a vencer
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fecha de Inicio</label>
-                        <input type="date" name="fecha_inicio" class="form-control" required>
+                    
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Inicio</label>
+                            <input type="date" 
+                                   name="fecha_inicio" 
+                                   id="fecha_inicio_renovar"
+                                   class="form-control" 
+                                   required>
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Fecha de Fin</label>
+                            <input type="date" 
+                                   name="fecha_fin" 
+                                   id="fecha_fin_renovar"
+                                   class="form-control" 
+                                   required>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Fecha de Fin</label>
-                        <input type="date" name="fecha_fin" class="form-control" required>
+
+                    <!-- ✅ NUEVO: Tipo de Duración Calculado Automáticamente -->
+                    <div class="row">
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Tipo de Duración</label>
+                            <div class="form-control bg-light d-flex align-items-center">
+                                <span id="tipo-duracion-renovar" class="text-muted">Seleccione las fechas</span>
+                            </div>
+                            <input type="hidden" name="tipo_duracion" id="tipo_duracion_renovar">
+                        </div>
+                        <div class="col-md-6 mb-3">
+                            <label class="form-label">Duración Calculada</label>
+                            <div class="form-control bg-light d-flex align-items-center">
+                                <span id="duracion-renovar" class="text-muted">Seleccione las fechas</span>
+                            </div>
+                        </div>
                     </div>
-                    <div class="mb-3">
-                        <label class="form-label">Tipo de Duración</label>
-                        <select name="tipo_duracion" class="form-select" required>
-                            <option value="meses" selected>Meses</option>
-                            <option value="dias">Días</option>
-                        </select>
+
+                    <!-- ✅ NUEVO: Resumen de Renovación -->
+                    <div id="resumen-renovacion" class="row mt-3" style="display: none;">
+                        <div class="col-12">
+                            <div class="card border-warning">
+                                <div class="card-header bg-warning text-dark">
+                                    <h6 class="mb-0">
+                                        <i class="bi bi-arrow-repeat"></i> Resumen de Renovación
+                                    </h6>
+                                </div>
+                                <div class="card-body">
+                                    <div class="row">
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Inicio:</small>
+                                            <div class="fw-bold" id="resumen-inicio-renovar">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Fin:</small>
+                                            <div class="fw-bold" id="resumen-fin-renovar">-</div>
+                                        </div>
+                                        <div class="col-md-4">
+                                            <small class="text-muted">Duración:</small>
+                                            <div class="fw-bold text-warning" id="resumen-duracion-renovar">-</div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
+
                     <div class="mb-3">
                         <label class="form-label">Observaciones de Renovación (Opcional)</label>
                         <textarea name="observaciones_renovacion" class="form-control" rows="3" 

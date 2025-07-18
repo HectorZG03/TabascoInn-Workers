@@ -68,21 +68,30 @@ class AdminContratosController extends Controller
         ));
     }
 
-    /**
-     * ✅ CREAR contrato nuevo
-     */
+    // AdminContratosController.php - Método store actualizado
     public function store(Request $request, Trabajador $trabajador)
     {
         $validated = $request->validate([
             'fecha_inicio_contrato' => 'required|date',
             'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
-            'tipo_duracion' => 'required|in:dias,meses',
+            'tipo_duracion' => 'required|in:dias,meses', // ✅ Ahora viene del frontend
             'observaciones' => 'nullable|string|max:500'
         ]);
 
         DB::beginTransaction();
         
         try {
+            // ✅ VERIFICAR QUE EL TIPO DE DURACIÓN SEA CONSISTENTE
+            $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
+            $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
+            $diasTotales = $fechaInicio->diffInDays($fechaFin);
+            
+            // ✅ MISMA LÓGICA: > 30 días = meses, <= 30 días = días
+            $tipoDuracionCalculado = $diasTotales > 30 ? 'meses' : 'dias';
+            
+            // ✅ USAR EL CALCULADO EN LUGAR DEL ENVIADO PARA CONSISTENCIA
+            $validated['tipo_duracion'] = $tipoDuracionCalculado;
+
             // ✅ DELEGAR generación a ContratoController
             $contrato = $this->contratoController->generarDefinitivo($trabajador, $validated);
 
@@ -92,11 +101,9 @@ class AdminContratosController extends Controller
 
             DB::commit();
 
-            $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
-            $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
-            
             $mensaje = "Contrato creado exitosamente para {$trabajador->nombre_completo}. ";
             $mensaje .= "Vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+            $mensaje .= "Duración: " . ($tipoDuracionCalculado === 'meses' ? 'Por meses' : 'Por días') . ". ";
             $mensaje .= "Estado: ACTIVO.";
 
             return redirect()->route('trabajadores.perfil.show', $trabajador)
