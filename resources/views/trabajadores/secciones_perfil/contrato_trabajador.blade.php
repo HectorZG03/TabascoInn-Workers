@@ -36,9 +36,8 @@
         </div>
     </div>
 
-    {{-- ✅ Alertas actualizadas --}}
+    {{-- ✅ Alertas existentes... --}}
     @if($contratos->count() > 0)
-        {{-- ✅ ACTUALIZADO: Alerta para próximos a vencer (solo los que ya están en período vigente) --}}
         @if($estadisticas['proximos_vencer'] > 0)
             <div class="alert alert-warning d-flex align-items-center mb-3" role="alert">
                 <i class="bi bi-exclamation-triangle-fill me-2"></i>
@@ -48,7 +47,6 @@
             </div>
         @endif
 
-        {{-- ✅ SIMPLIFICADO: Sin contrato vigente --}}
         @if(!$estadisticas['tiene_contrato_vigente'])
             <div class="alert alert-danger d-flex align-items-center justify-content-between mb-3" role="alert">
                 <div class="d-flex align-items-center">
@@ -59,7 +57,6 @@
             </div>
         @endif
 
-        {{-- ✅ SIMPLIFICADO: Alerta para contratos que pueden renovarse --}}
         @if($estadisticas['renovables'] > 0)
             <div class="alert alert-info d-flex align-items-center mb-3" role="alert">
                 <i class="bi bi-info-circle-fill me-2"></i>
@@ -82,7 +79,6 @@
                                 <i class="bi bi-list-ul text-primary"></i>
                                 Historial de Contratos
                             </h5>
-                            {{-- ✅ REMOVIDO: Botón crear contrato aquí, solo aparece cuando no hay contratos --}}
                         </div>
                     </div>
                     <div class="card-body p-0">
@@ -92,7 +88,7 @@
                                     <tr>
                                         <th>Estado</th>
                                         <th>Período</th>
-                                        <th>Duración</th>
+                                        <th>Duración y Tipo</th> {{-- ✅ ACTUALIZADO --}}
                                         <th>Información</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -100,7 +96,7 @@
                                 <tbody>
                                     @foreach($contratos as $contrato)
                                         <tr class="{{ $contrato->esta_vigente_bool ? 'table-success' : '' }}">
-                                            {{-- ✅ SIMPLIFICADO: Estado usando solo 3 estados --}}
+                                            {{-- Estado --}}
                                             <td>
                                                 <span class="badge bg-{{ $contrato->color_estado_final }}">
                                                     @if($contrato->esta_vigente_bool)
@@ -113,14 +109,12 @@
                                                     {{ $contrato->texto_estado_final }}
                                                 </span>
 
-                                                {{-- ✅ SIMPLIFICADO: Indicador de renovación --}}
                                                 @if($contrato->esRenovacion())
                                                     <small class="d-block text-muted mt-1">
                                                         <i class="bi bi-link-45deg"></i> Renovación de #{{ $contrato->contrato_anterior_id }}
                                                     </small>
                                                 @endif
 
-                                                {{-- ✅ NUEVO: Indicador de expiración para vigentes --}}
                                                 @if($contrato->esta_vigente_bool && $contrato->ya_expiro_bool)
                                                     <small class="d-block text-warning mt-1">
                                                         <i class="bi bi-exclamation-triangle"></i> Expirado
@@ -137,15 +131,27 @@
                                                 </div>
                                             </td>
 
-                                            {{-- Duración --}}
+                                            {{-- ✅ ACTUALIZADO: Duración y Tipo más prominente --}}
                                             <td>
-                                                <span class="fw-bold">{{ $contrato->duracion_texto }}</span>
-                                                <small class="d-block text-muted">
-                                                    {{ $contrato->esPorDias() ? 'Por días' : 'Por meses' }}
-                                                </small>
+                                                <div class="d-flex align-items-center gap-2">
+                                                    <div>
+                                                        <span class="fw-bold">{{ $contrato->duracion_texto }}</span>
+                                                        <div class="mt-1">
+                                                            @if($contrato->esPorDias())
+                                                                <span class="badge bg-primary">
+                                                                    <i class="bi bi-calendar-day"></i> Por días
+                                                                </span>
+                                                            @else
+                                                                <span class="badge bg-info">
+                                                                    <i class="bi bi-calendar3"></i> Por meses
+                                                                </span>
+                                                            @endif
+                                                        </div>
+                                                    </div>
+                                                </div>
                                             </td>
 
-                                            {{-- ✅ SIMPLIFICADA: Información usando info_estado --}}
+                                            {{-- Información --}}
                                             <td>
                                                 @if($contrato->esta_vigente_bool)
                                                     @if($contrato->esta_proximo_vencer_bool)
@@ -174,7 +180,7 @@
                                                 @endif
                                             </td>
 
-                                            {{-- ✅ ACTUALIZADAS: Acciones con botón eliminar --}}
+                                            {{-- Acciones --}}
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     {{-- Ver detalles --}}
@@ -188,6 +194,9 @@
                                                                 'inicio' => $contrato->fecha_inicio_contrato->format('d/m/Y'),
                                                                 'fin' => $contrato->fecha_fin_contrato->format('d/m/Y'),
                                                                 'duracion' => $contrato->duracion_completa,
+                                                                'duracion_texto' => $contrato->duracion_texto,
+                                                                'es_por_dias' => $contrato->esPorDias(),
+                                                                'es_por_meses' => $contrato->esPorMeses(),
                                                                 'estado' => $contrato->estado_final_calculado,
                                                                 'texto_estado' => $contrato->texto_estado_final,
                                                                 'info_estado' => $contrato->info_estado,
@@ -210,7 +219,7 @@
                                                         </a>
                                                     @endif
 
-                                                    {{-- Renovar contrato (solo si puede renovarse) --}}
+                                                    {{-- Renovar contrato --}}
                                                     @if($contrato->puede_renovarse_bool)
                                                         <button type="button" 
                                                                 class="btn btn-outline-warning"
@@ -223,7 +232,7 @@
                                                         </button>
                                                     @endif
 
-                                                    {{-- ✅ SIMPLIFICADO: Eliminar contrato (solo si está vigente) --}}
+                                                    {{-- Eliminar contrato --}}
                                                     @if($contrato->esta_vigente_bool)
                                                         <button type="button" 
                                                                 class="btn btn-outline-danger"
@@ -245,7 +254,7 @@
                     </div>
                 </div>
 
-                {{-- ✅ SIMPLIFICADA: Información del contrato vigente --}}
+                {{-- ✅ ACTUALIZADO: Información del contrato vigente con tipo --}}
                 @if($estadisticas['tiene_contrato_vigente'] && $estadisticas['contrato_actual'])
                     @php
                         $contratoActual = $estadisticas['contrato_actual'];
@@ -282,6 +291,17 @@
                                         <div class="col-md-3">
                                             <strong>Duración:</strong><br>
                                             {{ $contratoActual->duracion_texto }}
+                                            <div class="mt-1">
+                                                @if($contratoActual->esPorDias())
+                                                    <span class="badge bg-primary">
+                                                        <i class="bi bi-calendar-day"></i> Por días
+                                                    </span>
+                                                @else
+                                                    <span class="badge bg-info">
+                                                        <i class="bi bi-calendar3"></i> Por meses
+                                                    </span>
+                                                @endif
+                                            </div>
                                         </div>
                                         <div class="col-md-3">
                                             <strong>Estado:</strong><br>
@@ -308,7 +328,6 @@
                                         </div>
                                     </div>
                                     
-                                    {{-- ✅ Mostrar observaciones si existen --}}
                                     @if($contratoActual->observaciones)
                                         <hr>
                                         <div class="row">
@@ -325,7 +344,7 @@
                 @endif
 
             @else
-                {{-- ✅ ACTUALIZADO: Estado vacío --}}
+                {{-- Estado vacío --}}
                 <div class="card border-0 shadow-sm">
                     <div class="card-body text-center py-5">
                         <i class="bi bi-file-earmark-text text-muted mb-3" style="font-size: 4rem;"></i>
@@ -365,7 +384,7 @@
 
 {{-- ✅ MODALES ACTUALIZADOS --}}
 
-{{-- Modal de detalles (actualizado) --}}
+{{-- ✅ ACTUALIZADO: Modal de detalles con tipo de contrato --}}
 <div class="modal fade" id="detalleContratoModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -398,7 +417,7 @@
 {{-- Modal crear contrato --}}
 @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 
-<!-- Actualizar el modal de renovar en contrato_trabajador.blade.php -->
+{{-- Modal renovar contrato --}}
 <div class="modal fade" id="modalRenovarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -434,7 +453,6 @@
                         </div>
                     </div>
 
-                    <!-- ✅ NUEVO: Tipo de Duración Calculado Automáticamente -->
                     <div class="row">
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Tipo de Duración</label>
@@ -451,7 +469,6 @@
                         </div>
                     </div>
 
-                    <!-- ✅ NUEVO: Resumen de Renovación -->
                     <div id="resumen-renovacion" class="row mt-3" style="display: none;">
                         <div class="col-12">
                             <div class="card border-warning">
@@ -497,7 +514,7 @@
     </div>
 </div>
 
-{{-- ✅ NUEVO: Modal eliminar contrato --}}
+{{-- Modal eliminar contrato --}}
 <div class="modal fade" id="modalEliminarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
