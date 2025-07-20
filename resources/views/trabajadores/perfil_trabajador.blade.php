@@ -281,7 +281,7 @@ if (typeof AppRoutes === 'undefined') {
 <script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/contratos.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/dias_laborables.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/dias_laborales.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/validaciones_campos.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/navegacion.js') }}"></script>
 <script src="{{ asset('js/perfil_trabajador/notificaciones.js') }}"></script>

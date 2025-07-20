@@ -194,14 +194,13 @@ class TrabajadorController extends Controller
                 ]);
             }
 
-            // Generar contrato (dejo igual)
+            // ✅ Generar contrato (SIN limpiar archivos temporales)
             $contratoController = new ContratoController();
             $contratoController->generarDefinitivo($trabajador, [
                 'fecha_inicio_contrato' => $fechaInicioContrato->format('Y-m-d'),
                 'fecha_fin_contrato' => $fechaFinContrato->format('Y-m-d'),
                 'tipo_duracion' => $tipoDuracion,
             ]);
-            $contratoController->limpiarArchivosTemporales();
 
             DB::commit();
 
