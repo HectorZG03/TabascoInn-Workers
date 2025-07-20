@@ -1,12 +1,10 @@
 /**
- * ✅ CREAR TRABAJADOR SIMPLIFICADO
- * Script optimizado que usa funciones globales para formato
- * Sin duplicación de código, enfoque directo y simple
- * ACTUALIZADO: Usa rutas dinámicas con AppRoutes
+ * ✅ CREAR TRABAJADOR CON CONTRATOS DETERMINADO/INDETERMINADO - VERSIÓN CORREGIDA
+ * Script actualizado para manejar tipos de contrato sin conflictos
  */
 
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Iniciando sistema de creación de trabajadores');
+    console.log('🚀 Iniciando sistema de creación de trabajadores con contratos determinado/indeterminado');
 
     // Elementos principales
     const form = document.getElementById('formTrabajador');
@@ -14,9 +12,25 @@ document.addEventListener('DOMContentLoaded', function() {
     const categoriaSelect = document.getElementById('id_categoria');
     const horaEntradaInput = document.getElementById('hora_entrada');
     const horaSalidaInput = document.getElementById('hora_salida');
+    
+    // ✅ Elementos de contrato
+    const tipoContratoSelect = document.getElementById('tipo_contrato');
+    const fechaInicioContrato = document.getElementById('fecha_inicio_contrato');
+    const fechaFinContrato = document.getElementById('fecha_fin_contrato');
 
     // Helpers
     const get = id => document.getElementById(id);
+
+    // ✅ FUNCIÓN SEGURA PARA ACTUALIZAR VISTA PREVIA
+    function actualizarVistaPreviaSafe() {
+        try {
+            if (typeof window.actualizarVistaPrevia === 'function') {
+                window.actualizarVistaPrevia();
+            }
+        } catch (error) {
+            console.warn('⚠️ Error al actualizar vista previa:', error);
+        }
+    }
 
     // =================================
     // 🎯 INICIALIZACIÓN
@@ -40,12 +54,16 @@ document.addEventListener('DOMContentLoaded', function() {
             const areaId = this.value;
             
             // Limpiar y deshabilitar categorías
-            categoriaSelect.innerHTML = '<option value="">Cargando...</option>';
-            categoriaSelect.disabled = true;
+            if (categoriaSelect) {
+                categoriaSelect.innerHTML = '<option value="">Cargando...</option>';
+                categoriaSelect.disabled = true;
+            }
 
             if (!areaId) {
-                categoriaSelect.innerHTML = '<option value="">Primero selecciona un área</option>';
-                actualizarVistaPrevia();
+                if (categoriaSelect) {
+                    categoriaSelect.innerHTML = '<option value="">Primero selecciona un área</option>';
+                }
+                actualizarVistaPreviaSafe();
                 return;
             }
 
@@ -56,28 +74,32 @@ document.addEventListener('DOMContentLoaded', function() {
                     return response.json();
                 })
                 .then(data => {
-                    categoriaSelect.innerHTML = '<option value="">Seleccionar categoría...</option>';
-                    data.forEach(categoria => {
-                        const option = document.createElement('option');
-                        option.value = categoria.id_categoria;
-                        option.textContent = categoria.nombre_categoria;
-                        categoriaSelect.appendChild(option);
-                    });
-                    categoriaSelect.disabled = false;
+                    if (categoriaSelect) {
+                        categoriaSelect.innerHTML = '<option value="">Seleccionar categoría...</option>';
+                        data.forEach(categoria => {
+                            const option = document.createElement('option');
+                            option.value = categoria.id_categoria;
+                            option.textContent = categoria.nombre_categoria;
+                            categoriaSelect.appendChild(option);
+                        });
+                        categoriaSelect.disabled = false;
+                    }
                     console.log(`✅ Categorías cargadas para área ${areaId}:`, data.length);
                 })
                 .catch(error => {
                     console.error('❌ Error cargando categorías:', error);
-                    categoriaSelect.innerHTML = '<option value="">Error al cargar categorías</option>';
+                    if (categoriaSelect) {
+                        categoriaSelect.innerHTML = '<option value="">Error al cargar categorías</option>';
+                    }
                     mostrarAlerta('Error al cargar categorías. Recarga la página.', 'danger');
                 });
 
-            actualizarVistaPrevia();
+            actualizarVistaPreviaSafe();
         });
     }
 
     if (categoriaSelect) {
-        categoriaSelect.addEventListener('change', actualizarVistaPrevia);
+        categoriaSelect.addEventListener('change', actualizarVistaPreviaSafe);
     }
 
     // =================================
@@ -96,7 +118,7 @@ document.addEventListener('DOMContentLoaded', function() {
         if (window.FormatoGlobal && horaEntradaInput && horaSalidaInput) {
             window.FormatoGlobal.validarRangoHorario(horaEntradaInput, horaSalidaInput);
         }
-        actualizarVistaPrevia();
+        actualizarVistaPreviaSafe();
     }
 
     // =================================
@@ -128,7 +150,7 @@ document.addEventListener('DOMContentLoaded', function() {
             btnTodosDias.addEventListener('click', () => {
                 const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
                 checkboxes.forEach(cb => cb.checked = true);
-                actualizarVistaPrevia();
+                actualizarVistaPreviaSafe();
             });
         }
         
@@ -136,13 +158,13 @@ document.addEventListener('DOMContentLoaded', function() {
             btnLimpiarDias.addEventListener('click', () => {
                 const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
                 checkboxes.forEach(cb => cb.checked = false);
-                actualizarVistaPrevia();
+                actualizarVistaPreviaSafe();
             });
         }
 
         // Event listeners para cambios en días laborables
         document.querySelectorAll('input[name="dias_laborables[]"]').forEach(checkbox => {
-            checkbox.addEventListener('change', actualizarVistaPrevia);
+            checkbox.addEventListener('change', actualizarVistaPreviaSafe);
         });
     }
 
@@ -156,33 +178,53 @@ document.addEventListener('DOMContentLoaded', function() {
             if (checkbox) checkbox.checked = true;
         });
         
-        actualizarVistaPrevia();
+        actualizarVistaPreviaSafe();
     }
 
     // =================================
-    // ⚡ VALIDACIÓN EN TIEMPO REAL
+    // ⚡ VALIDACIÓN EN TIEMPO REAL ACTUALIZADA
     // =================================
     
-    // Validar relaciones entre fechas de contrato
-    const fechaInicio = get('fecha_inicio_contrato');
-    const fechaFin = get('fecha_fin_contrato');
-    
-    if (fechaInicio && fechaFin) {
-        [fechaInicio, fechaFin].forEach(campo => {
+    // ✅ Validar tipo de contrato y fechas
+    if (tipoContratoSelect) {
+        tipoContratoSelect.addEventListener('change', () => {
+            validarContratosSegunTipo();
+            actualizarVistaPreviaSafe();
+        });
+    }
+
+    if (fechaInicioContrato && fechaFinContrato) {
+        [fechaInicioContrato, fechaFinContrato].forEach(campo => {
             campo.addEventListener('input', () => {
                 setTimeout(() => {
-                    // Usar función global para validar rango de fechas
-                    if (window.FormatoGlobal) {
-                        window.FormatoGlobal.validarRangoFechas(fechaInicio, fechaFin);
-                    }
-                    actualizarVistaPrevia();
-                }, 500);
+                    validarContratosSegunTipo();
+                    actualizarVistaPreviaSafe();
+                }, 300);
             });
         });
     }
 
+    // ✅ Función para validar contratos según tipo
+    function validarContratosSegunTipo() {
+        const tipoContrato = tipoContratoSelect?.value;
+        
+        if (!tipoContrato) return;
+
+        if (tipoContrato === 'indeterminado') {
+            // Para contratos indeterminados, solo validar fecha inicio
+            if (window.FormatoGlobal && fechaInicioContrato?.value) {
+                window.FormatoGlobal.validarFormatoFecha(fechaInicioContrato);
+            }
+        } else if (tipoContrato === 'determinado') {
+            // Para contratos determinados, validar ambas fechas
+            if (window.FormatoGlobal && fechaInicioContrato && fechaFinContrato) {
+                window.FormatoGlobal.validarRangoFechas(fechaInicioContrato, fechaFinContrato);
+            }
+        }
+    }
+
     // =================================
-    // 📝 VALIDACIÓN DEL FORMULARIO
+    // 📝 VALIDACIÓN DEL FORMULARIO ACTUALIZADA
     // =================================
     
     if (form) {
@@ -213,18 +255,20 @@ document.addEventListener('DOMContentLoaded', function() {
     function validarFormulario() {
         let esValido = true;
         
-        // Validar campos requeridos básicos
-        const camposRequeridos = [
+        // ✅ Campos requeridos básicos sin fecha_fin_contrato
+        const camposBasicos = [
             'nombre_trabajador', 'ape_pat', 'fecha_nacimiento', 'curp', 'rfc', 
             'telefono', 'fecha_ingreso', 'id_area', 'id_categoria', 'sueldo_diarios',
-            'hora_entrada', 'hora_salida', 'estatus', 'fecha_inicio_contrato', 'fecha_fin_contrato'
+            'hora_entrada', 'hora_salida', 'estatus', 'tipo_contrato', 'fecha_inicio_contrato'
         ];
 
-        camposRequeridos.forEach(campo => {
+        // Validar campos básicos
+        camposBasicos.forEach(campo => {
             const elemento = get(campo);
             if (!elemento?.value?.trim()) {
                 elemento?.classList.add('is-invalid');
                 esValido = false;
+                console.warn(`❌ Campo requerido faltante: ${campo}`);
             } else {
                 elemento?.classList.remove('is-invalid');
                 
@@ -243,6 +287,37 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
 
+        // ✅ Validación condicional de fecha_fin_contrato
+        const tipoContrato = get('tipo_contrato')?.value;
+        const fechaFin = get('fecha_fin_contrato');
+        
+        if (tipoContrato === 'determinado') {
+            // Para contratos determinados, fecha fin ES requerida
+            if (!fechaFin?.value?.trim()) {
+                fechaFin?.classList.add('is-invalid');
+                esValido = false;
+                console.warn('❌ Fecha fin requerida para contrato determinado');
+            } else {
+                fechaFin?.classList.remove('is-invalid');
+                
+                // Validar formato de fecha fin
+                if (window.validarFormatoFecha && !window.validarFormatoFecha(fechaFin.value)) {
+                    fechaFin.classList.add('is-invalid');
+                    esValido = false;
+                }
+            }
+        } else if (tipoContrato === 'indeterminado') {
+            // Para contratos indeterminados, fecha fin NO debe estar presente
+            if (fechaFin?.value?.trim()) {
+                fechaFin.classList.add('is-invalid');
+                esValido = false;
+                console.warn('❌ Fecha fin no debe especificarse para contrato indeterminado');
+                mostrarAlerta('Los contratos indeterminados no deben tener fecha de fin', 'warning');
+            } else {
+                fechaFin?.classList.remove('is-invalid');
+            }
+        }
+
         // Validar días laborables
         const diasSeleccionados = document.querySelectorAll('input[name="dias_laborables[]"]:checked');
         if (diasSeleccionados.length === 0) {
@@ -257,9 +332,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // Validar rango de fechas usando función global
-        if (window.FormatoGlobal && fechaInicio && fechaFin) {
-            if (!window.FormatoGlobal.validarRangoFechas(fechaInicio, fechaFin)) {
+        // ✅ Validación de fechas según tipo de contrato
+        if (tipoContrato === 'determinado' && window.FormatoGlobal && fechaInicioContrato && fechaFinContrato) {
+            if (!window.FormatoGlobal.validarRangoFechas(fechaInicioContrato, fechaFinContrato)) {
                 esValido = false;
             }
         }
@@ -280,29 +355,21 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     // =================================
-    // 🎨 FUNCIONES DE VISTA PREVIA
+    // 🎨 EVENT LISTENERS PARA VISTA PREVIA
     // =================================
     
-    // Event listeners para actualizar vista previa
+    // ✅ Event listeners para actualizar vista previa (incluye tipo_contrato)
     const camposConVistaPrevia = [
         'nombre_trabajador', 'ape_pat', 'ape_mat', 'fecha_nacimiento', 'sueldo_diarios',
         'ciudad_actual', 'estado_actual', 'hora_entrada', 'hora_salida', 'estatus',
-        'fecha_inicio_contrato', 'fecha_fin_contrato'
+        'tipo_contrato', 'fecha_inicio_contrato', 'fecha_fin_contrato'
     ];
 
     camposConVistaPrevia.forEach(campo => {
         const elemento = get(campo);
         if (elemento) {
-            elemento.addEventListener('input', () => {
-                if (typeof actualizarVistaPrevia === 'function') {
-                    actualizarVistaPrevia();
-                }
-            });
-            elemento.addEventListener('change', () => {
-                if (typeof actualizarVistaPrevia === 'function') {
-                    actualizarVistaPrevia();
-                }
-            });
+            elemento.addEventListener('input', actualizarVistaPreviaSafe);
+            elemento.addEventListener('change', actualizarVistaPreviaSafe);
         }
     });
 
@@ -310,22 +377,17 @@ document.addEventListener('DOMContentLoaded', function() {
     // 🛠️ FUNCIONES AUXILIARES
     // =================================
 
-function configurarFechasPorDefecto() {
+    function configurarFechasPorDefecto() {
         const fechaIngreso = get('fecha_ingreso');
         const fechaInicioContrato = get('fecha_inicio_contrato');
         // Solo sugerir fecha actual como placeholder visual, pero sin forzar
         if (fechaIngreso && !fechaIngreso.value && fechaIngreso.placeholder === 'DD/MM/YYYY') {
+            // No establecer valor automático
         }
         
         if (fechaInicioContrato && !fechaInicioContrato.value && fechaInicioContrato.placeholder === 'DD/MM/YYYY') {
+            // No establecer valor automático
         }
-    }
-
-    function formatearFechaParaInput(fecha) {
-        const dia = String(fecha.getDate()).padStart(2, '0');
-        const mes = String(fecha.getMonth() + 1).padStart(2, '0');
-        const año = fecha.getFullYear();
-        return `${dia}/${mes}/${año}`;
     }
 
     function configurarCamposMayusculas() {
@@ -386,10 +448,10 @@ function configurarFechasPorDefecto() {
     // 🎯 INICIALIZACIÓN FINAL
     // =================================
     
-    // Ejecutar vista previa inicial
-    if (typeof actualizarVistaPrevia === 'function') {
-        actualizarVistaPrevia();
-    }
+    // ✅ Ejecutar vista previa inicial con delay para asegurar que todo esté cargado
+    setTimeout(() => {
+        actualizarVistaPreviaSafe();
+    }, 200);
 
-    console.log('✅ Sistema de creación de trabajadores inicializado correctamente');
+    console.log('✅ Sistema de creación de trabajadores inicializado correctamente con soporte para contratos determinado/indeterminado');
 });

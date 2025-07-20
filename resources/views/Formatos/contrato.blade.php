@@ -103,7 +103,14 @@
 </head>
 <body>
     <img src="{{asset('img/images.png')}}" alt="Log">
-    <h1>CONTRATO INDIVIDUAL DE TRABAJO<br>POR TIEMPO DETERMINADO</h1>
+    <h1>
+        CONTRATO INDIVIDUAL DE TRABAJO<br>
+        @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
+            POR TIEMPO INDETERMINADO
+        @else
+            POR TIEMPO DETERMINADO
+        @endif
+    </h1>
     
     <p class="clausula">
         CONTRATO INDIVIDUAL DE TRABAJO QUE CELEBRAN POR UNA PARTE LA EMPRESA <span class="bold uppercase">TABASCO INN, S.A. DE C.V.</span> REPRESENTADA POR EL LIC. GUSTAVO ENRIQUE ZURITA GONZÁLEZ, A LA CUAL EN LO SUCESIVO SE LE DENOMINARÁ "PATRÓN", 
@@ -216,9 +223,13 @@
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XI:</span> El presente Contrato Individual de Trabajo se celebra por tiempo determinado de {{ $duracion_texto }}, del período comprendido del <span class="bold">{{ $fecha_inicio }}</span> al <span class="bold">{{ $fecha_fin }}</span>, en términos de los artículos 35 y 40 de la Ley Federal del Trabajo.
+            <span class="clausula-numero">CLÁUSULA XI:</span> 
+            @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
+                El presente Contrato Individual de Trabajo se celebra por <span class="bold">tiempo indeterminado</span>, en términos de los artículos 35 y 40 de la Ley Federal del Trabajo.
+            @else
+                El presente Contrato Individual de Trabajo se celebra por <span class="bold">tiempo determinado de {{ $duracion_texto ?? 'duración a determinar' }}</span>, del período comprendido del <span class="bold">{{ $fecha_inicio ? $fecha_inicio->format('d \d\e F \d\e\l Y') : 'fecha a determinar' }}</span> al <span class="bold">{{ $fecha_fin ? $fecha_fin->format('d \d\e F \d\e\l Y') : 'fecha a determinar' }}</span>, en términos de los artículos 35 y 40 de la Ley Federal del Trabajo.
+            @endif
         </p>
-
         <p class="clausula">
             <span class="clausula-numero">CLÁUSULA XII:</span> EL TRABAJADOR percibirá como salario diario la cantidad de <span class="bold">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }} ({{ $salario_texto ?? 'CANTIDAD A DETERMINAR' }}) PESOS MEXICANOS</span>; el cual se le pagará los días quince y último de cada mes incluyéndose 
             en dicho pago el séptimo día, días festivos y descansos obligatorios que por Ley existan, con fundamento en los artículos 69, 70, 71, 72, 74, 88, 108 y 109 de la Ley Federal del Trabajo, debiendo EL TRABAJADOR firmar los comprobantes respectivos.

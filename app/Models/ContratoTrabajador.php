@@ -13,26 +13,28 @@ class ContratoTrabajador extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'id_trabajador',
-        'fecha_inicio_contrato',
-        'fecha_fin_contrato',
-        'tipo_duracion',
-        'duracion',
-        'estatus',
-        'contrato_anterior_id',
-        'observaciones',
-        'ruta_archivo',
-        'duracion_meses', // Legacy
+    'id_trabajador',
+    'tipo_contrato',               // ✅ NUEVO
+    'fecha_inicio_contrato',
+    'fecha_fin_contrato',
+    'tipo_duracion',
+    'duracion',
+    'estatus',
+    'contrato_anterior_id',
+    'observaciones',
+    'ruta_archivo',
+    'duracion_meses',
     ];
 
     protected $casts = [
-        'fecha_inicio_contrato' => 'date',
-        'fecha_fin_contrato' => 'date',
-        'tipo_duracion' => 'string',
-        'estatus' => 'string',
-        'duracion' => 'integer',
-        'duracion_meses' => 'integer',
-        'contrato_anterior_id' => 'integer',
+    'fecha_inicio_contrato' => 'date',
+    'fecha_fin_contrato' => 'date',
+    'tipo_contrato' => 'string',        // ✅ NUEVO
+    'tipo_duracion' => 'string',
+    'estatus' => 'string',
+    'duracion' => 'integer',
+    'duracion_meses' => 'integer',
+    'contrato_anterior_id' => 'integer',
     ];
 
     // ✅ CONSTANTES DE ESTATUS MEJORADAS
@@ -40,6 +42,14 @@ class ContratoTrabajador extends Model
     public const ESTATUS_TERMINADO = 'terminado';
     public const ESTATUS_REVOCADO = 'revocado';
     public const ESTATUS_RENOVADO = 'renovado';
+    public const TIPO_DETERMINADO = 'determinado';
+    public const TIPO_INDETERMINADO = 'indeterminado';
+
+    public const TIPOS_CONTRATO = [
+        self::TIPO_DETERMINADO => 'Por Tiempo Determinado',
+        self::TIPO_INDETERMINADO => 'Por Tiempo Indeterminado'
+    ];
+
 
     public const TODOS_ESTATUS = [
         self::ESTATUS_ACTIVO => 'Activo',
@@ -117,6 +127,11 @@ class ContratoTrabajador extends Model
      */
     public function diasRestantes(): int
     {
+        // Para contratos indeterminados, no aplica el concepto de "días restantes"
+        if ($this->esIndeterminado()) {
+            return 0;
+        }
+
         if (!$this->estaVigente()) {
             return 0;
         }
@@ -132,45 +147,47 @@ class ContratoTrabajador extends Model
         return $hoy->diffInDays($this->fecha_fin_contrato, false);
     }
 
-    /**
-     * ✅ SIMPLIFICADO: Información adicional para mostrar en vista
-     */
     public function getInfoEstadoAttribute(): string
     {
         if (!$this->estaVigente()) {
             return ucfirst($this->estado_final);
         }
 
+        // Para contratos indeterminados
+        if ($this->esIndeterminado()) {
+            $diasDesdeInicio = Carbon::today()->diffInDays($this->fecha_inicio_contrato);
+            return "Vigente desde hace {$diasDesdeInicio} días";
+        }
+
+        // Para contratos determinados (lógica original)
         $hoy = Carbon::today();
         $diasRestantes = $this->diasRestantes();
 
-        // Aún no inicia
         if ($hoy->isBefore($this->fecha_inicio_contrato)) {
             return "Inicia en {$diasRestantes} días";
         }
 
-        // Ya expiró pero sigue marcado como vigente
         if ($hoy->isAfter($this->fecha_fin_contrato)) {
             $diasPasados = abs($diasRestantes);
             return "Expiró hace {$diasPasados} días";
         }
 
-        // En período vigente normal
         return "{$diasRestantes} días restantes";
     }
 
-    /**
-     * ✅ SIMPLIFICADO: Verifica si está próximo a vencer (solo para vigentes)
-     */
     public function estaProximoAVencer(int $dias = 30): bool
     {
+        // Los contratos indeterminados nunca están próximos a vencer
+        if ($this->esIndeterminado()) {
+            return false;
+        }
+
         if (!$this->estaVigente()) {
             return false;
         }
 
         $hoy = Carbon::today();
         
-        // Solo considera próximo a vencer si ya está en período vigente
         if ($hoy->isBefore($this->fecha_inicio_contrato)) {
             return false;
         }
@@ -178,9 +195,6 @@ class ContratoTrabajador extends Model
         return $this->diasRestantes() <= $dias && $this->diasRestantes() >= 0;
     }
 
-    /**
-     * ✅ SIMPLIFICADO: Verifica si puede renovarse
-     */
     public function puedeRenovarse(): bool
     {
         // Solo contratos vigentes pueden renovarse
@@ -188,15 +202,24 @@ class ContratoTrabajador extends Model
             return false;
         }
 
-        // Y deben estar próximos a vencer
+        // Los contratos indeterminados no se "renuevan", se mantienen
+        if ($this->esIndeterminado()) {
+            return false;
+        }
+
+        // Contratos determinados: deben estar próximos a vencer
         return $this->estaProximoAVencer(30);
     }
-
     /**
      * ✅ SIMPLIFICADO: Verifica si ya expiró (para marcado automático)
      */
-    public function yaExpiro(): bool
+   public function yaExpiro(): bool
     {
+        // Los contratos indeterminados no expiran
+        if ($this->esIndeterminado()) {
+            return false;
+        }
+
         if (!$this->estaVigente()) {
             return false;
         }
@@ -268,10 +291,12 @@ class ContratoTrabajador extends Model
         };
     }
 
-    // ===== MÉTODOS EXISTENTES =====
-
     public function getDuracionTextoAttribute(): string
     {
+        if ($this->esIndeterminado()) {
+            return 'Tiempo Indeterminado';
+        }
+
         if ($this->tipo_duracion === 'dias') {
             return $this->duracion . ' ' . ($this->duracion === 1 ? 'día' : 'días');
         } else {
@@ -352,4 +377,27 @@ class ContratoTrabajador extends Model
     {
         return $query->whereNull('contrato_anterior_id');
     }
+
+/**
+     * ✅ NUEVO: Verifica si es contrato indeterminado
+     */
+    public function esIndeterminado(): bool
+    {
+        return $this->tipo_contrato === self::TIPO_INDETERMINADO;
+    }
+
+    /**
+     * ✅ NUEVO: Verifica si es contrato determinado
+     */
+    public function esDeterminado(): bool
+    {
+        return $this->tipo_contrato === self::TIPO_DETERMINADO;
+    }
+
+    public function getTipoContratoTextoAttribute(): string
+    {
+        return self::TIPOS_CONTRATO[$this->tipo_contrato] ?? 'Tipo Desconocido';
+    }
+
+
 }

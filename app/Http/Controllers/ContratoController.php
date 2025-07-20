@@ -17,8 +17,7 @@ use Illuminate\Support\Facades\Log;
 class ContratoController extends Controller
 {
     /**
-     * ✅ GENERAR CONTRATO DEFINITIVO (crea registro en BD)
-     * Este método es llamado por AdminContratosController
+     * ✅ ACTUALIZADO: GENERAR CONTRATO DEFINITIVO (determinado e indeterminado)
      */
     public function generarDefinitivo(Trabajador $trabajador, array $datosContrato): ContratoTrabajador
     {
@@ -35,21 +34,29 @@ class ContratoController extends Controller
             $ruta = 'contratos/' . $nombreArchivo;
             Storage::disk('public')->put($ruta, $pdf->output());
 
-            // Crear registro en BD
-            $contrato = ContratoTrabajador::create([
+            // ✅ CREAR REGISTRO CON DATOS CONDICIONALES
+            $datosContratoDB = [
                 'id_trabajador' => $trabajador->id_trabajador,
+                'tipo_contrato' => $datosContratoProcesados['tipo_contrato'],
                 'fecha_inicio_contrato' => $datosContratoProcesados['fecha_inicio'],
-                'fecha_fin_contrato' => $datosContratoProcesados['fecha_fin'],
-                'tipo_duracion' => $datosContratoProcesados['tipo_duracion'],
-                'duracion' => $datosContratoProcesados['duracion'],
-                'duracion_meses' => $datosContratoProcesados['tipo_duracion'] === 'meses' ? $datosContratoProcesados['duracion'] : null,
                 'estatus' => ContratoTrabajador::ESTATUS_ACTIVO,
                 'ruta_archivo' => $ruta
-            ]);
+            ];
+
+            // Solo añadir datos de duración para contratos determinados
+            if ($datosContratoProcesados['tipo_contrato'] === 'determinado') {
+                $datosContratoDB['fecha_fin_contrato'] = $datosContratoProcesados['fecha_fin'];
+                $datosContratoDB['tipo_duracion'] = $datosContratoProcesados['tipo_duracion'];
+                $datosContratoDB['duracion'] = $datosContratoProcesados['duracion'];
+                $datosContratoDB['duracion_meses'] = $datosContratoProcesados['tipo_duracion'] === 'meses' ? $datosContratoProcesados['duracion'] : null;
+            }
+
+            $contrato = ContratoTrabajador::create($datosContratoDB);
 
             Log::info('✅ Contrato definitivo creado', [
                 'contrato_id' => $contrato->id_contrato,
-                'trabajador_id' => $trabajador->id_trabajador
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $datosContratoProcesados['tipo_contrato']
             ]);
 
             return $contrato;
@@ -74,22 +81,37 @@ class ContratoController extends Controller
     private function procesarDatosContrato($request): array
     {
         $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio_contrato);
-        $fechaFin = \Carbon\Carbon::parse($request->fecha_fin_contrato);
-        $tipoDuracion = $request->tipo_duracion;
+        $tipoContrato = $request->tipo_contrato;
         
-        $duracion = $this->calcularDuracion($fechaInicio, $fechaFin, $tipoDuracion);
-        $duracionTexto = $this->formatearDuracion($duracion, $tipoDuracion);
-        $salarioTexto = $this->numeroATexto($request->sueldo_diarios ?? 0);
-
-        return [
+        $datos = [
+            'tipo_contrato' => $tipoContrato,
             'fecha_inicio' => $fechaInicio,
-            'fecha_fin' => $fechaFin,
-            'tipo_duracion' => $tipoDuracion,
-            'duracion' => $duracion,
-            'duracion_texto' => $duracionTexto,
-            'salario_texto' => $salarioTexto
+            'salario_texto' => $this->numeroATexto($request->sueldo_diarios ?? 0)
         ];
+
+        // ✅ PROCESAR DATOS SEGÚN TIPO DE CONTRATO
+        if ($tipoContrato === 'determinado') {
+            $fechaFin = \Carbon\Carbon::parse($request->fecha_fin_contrato);
+            $tipoDuracion = $request->tipo_duracion;
+            
+            $duracion = $this->calcularDuracion($fechaInicio, $fechaFin, $tipoDuracion);
+            $duracionTexto = $this->formatearDuracion($duracion, $tipoDuracion);
+
+            $datos['fecha_fin'] = $fechaFin;
+            $datos['tipo_duracion'] = $tipoDuracion;
+            $datos['duracion'] = $duracion;
+            $datos['duracion_texto'] = $duracionTexto;
+        } else {
+            // Para contratos indeterminados
+            $datos['fecha_fin'] = null;
+            $datos['tipo_duracion'] = null;
+            $datos['duracion'] = null;
+            $datos['duracion_texto'] = 'Tiempo Indeterminado';
+        }
+
+        return $datos;
     }
+
 
     /**
      * ✅ Generar PDF del contrato (método central)
@@ -98,8 +120,9 @@ class ContratoController extends Controller
     {
         return PDF::loadView('Formatos.contrato', [
             'trabajador' => $trabajador,
+            'tipo_contrato' => $datosContrato['tipo_contrato'],
             'fecha_inicio' => $datosContrato['fecha_inicio'],
-            'fecha_fin' => $datosContrato['fecha_fin'],
+            'fecha_fin' => $datosContrato['fecha_fin'], // Puede ser null para indeterminados
             'duracion' => $datosContrato['duracion'],
             'tipo_duracion' => $datosContrato['tipo_duracion'],
             'duracion_texto' => $datosContrato['duracion_texto'],
