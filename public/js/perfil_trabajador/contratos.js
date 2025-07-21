@@ -1,4 +1,4 @@
-// js/perfil_trabajador/contratos.js - CORREGIDO
+// js/perfil_trabajador/contratos.js - CORREGIDO CON SOPORTE INDETERMINADO
 window.initContratos = function() {
     // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
     if (typeof AppRoutes === 'undefined') {
@@ -49,17 +49,22 @@ window.initContratos = function() {
     });
 
     // ========================================
-    // ✅ FUNCIÓN CORREGIDA: INICIALIZAR CÁLCULOS DE CONTRATOS
+    // ✅ FUNCIÓN CORREGIDA: INICIALIZAR CÁLCULOS DE CONTRATOS CON SOPORTE INDETERMINADO
     // ========================================
     const inicializarCalculosContratos = () => {
         console.log('🔄 Inicializando cálculos de contratos...');
         
         // ✅ CONFIGURAR CÁLCULOS PARA CREAR CONTRATO
+        const tipoContratoCrear = document.getElementById('tipo_contrato');
         const fechaInicioCrear = document.getElementById('fecha_inicio_contrato');
         const fechaFinCrear = document.getElementById('fecha_fin_contrato');
         
-        if (fechaInicioCrear && fechaFinCrear) {
+        if (tipoContratoCrear && fechaInicioCrear && fechaFinCrear) {
             console.log('✅ Configurando cálculos para crear contrato');
+            
+            tipoContratoCrear.addEventListener('change', () => {
+                setTimeout(() => manejarTipoContrato('crear'), 100);
+            });
             fechaInicioCrear.addEventListener('change', () => {
                 setTimeout(() => calcularDuracionContrato('crear'), 100);
             });
@@ -86,10 +91,70 @@ window.initContratos = function() {
     };
 
     // ========================================
-    // ✅ FUNCIÓN CORREGIDA: CALCULAR DURACIÓN DEL CONTRATO
+    // ✅ NUEVA FUNCIÓN: MANEJAR TIPO DE CONTRATO
+    // ========================================
+    const manejarTipoContrato = (tipo) => {
+        console.log(`🔄 Manejando tipo de contrato para: ${tipo}`);
+        
+        const tipoContratoSelect = document.getElementById('tipo_contrato');
+        const fechaFinContainer = document.getElementById('fecha_fin_container');
+        const duracionContainer = document.getElementById('duracion_container');
+        const indeterminadoInfo = document.getElementById('indeterminado_info');
+        const fechaFinInput = document.getElementById('fecha_fin_contrato');
+        
+        if (!tipoContratoSelect) return;
+        
+        const tipoContrato = tipoContratoSelect.value;
+        
+        if (tipoContrato === 'indeterminado') {
+            // ✅ CONFIGURAR PARA INDETERMINADO
+            if (fechaFinContainer) fechaFinContainer.style.display = 'none';
+            if (duracionContainer) duracionContainer.style.display = 'none';
+            if (indeterminadoInfo) indeterminadoInfo.style.display = 'block';
+            
+            // Limpiar campos de fecha fin
+            if (fechaFinInput) {
+                fechaFinInput.value = '';
+                fechaFinInput.removeAttribute('required');
+            }
+            
+            // Mostrar resumen para indeterminado
+            mostrarResumenIndeterminado(tipo);
+            
+        } else if (tipoContrato === 'determinado') {
+            // ✅ CONFIGURAR PARA DETERMINADO
+            if (fechaFinContainer) fechaFinContainer.style.display = 'block';
+            if (duracionContainer) duracionContainer.style.display = 'block';
+            if (indeterminadoInfo) indeterminadoInfo.style.display = 'none';
+            
+            // Hacer fecha fin requerida
+            if (fechaFinInput) fechaFinInput.setAttribute('required', 'required');
+            
+            // Calcular duración
+            setTimeout(() => calcularDuracionContrato(tipo), 100);
+            
+        } else {
+            // ✅ NO HAY SELECCIÓN
+            if (fechaFinContainer) fechaFinContainer.style.display = 'block';
+            if (duracionContainer) duracionContainer.style.display = 'block';
+            if (indeterminadoInfo) indeterminadoInfo.style.display = 'none';
+            
+            ocultarResumen(tipo);
+        }
+    };
+
+    // ========================================
+    // ✅ FUNCIÓN ACTUALIZADA: CALCULAR DURACIÓN DEL CONTRATO CON SOPORTE INDETERMINADO
     // ========================================
     const calcularDuracionContrato = (tipo) => {
         console.log(`🔄 Calculando duración para: ${tipo}`);
+        
+        // ✅ VERIFICAR TIPO DE CONTRATO PRIMERO
+        const tipoContratoSelect = document.getElementById('tipo_contrato');
+        if (tipoContratoSelect && tipoContratoSelect.value === 'indeterminado') {
+            mostrarResumenIndeterminado(tipo);
+            return;
+        }
         
         // ✅ CORREGIR IDs SEGÚN EL HTML REAL
         let fechaInicioId, fechaFinId, tipoDuracionElId, duracionElId, tipoDuracionHiddenId;
@@ -100,6 +165,7 @@ window.initContratos = function() {
             tipoDuracionElId = 'tipo_duracion_texto';        // ✅ CORREGIDO
             duracionElId = 'duracion_calculada';             // ✅ CORREGIDO
             tipoDuracionHiddenId = 'tipo_duracion_hidden';   // ✅ CORREGIDO
+        
         } else {
             fechaInicioId = 'fecha_inicio_renovar';
             fechaFinId = 'fecha_fin_renovar';
@@ -192,23 +258,26 @@ window.initContratos = function() {
         if (tipoDuracionHidden) tipoDuracionHidden.value = tipoDuracion;
         
         // ✅ MOSTRAR RESUMEN
-        mostrarResumen(tipo, fechaInicio, fechaFin, duracionMostrar);
+        mostrarResumenDeterminado(tipo, fechaInicio, fechaFin, duracionMostrar);
         
         console.log(`✅ Duración calculada para ${tipo}: ${duracionMostrar} (${tipoTexto})`);
     };
 
     // ========================================
-    // ✅ FUNCIONES AUXILIARES CORREGIDAS
+    // ✅ FUNCIONES AUXILIARES ACTUALIZADAS
     // ========================================
-    const mostrarResumen = (tipo, fechaInicio, fechaFin, duracion) => {
+    const mostrarResumenDeterminado = (tipo, fechaInicio, fechaFin, duracion) => {
         // ✅ CORREGIR IDs DE RESUMEN
-        let resumenId, inicioId, finId, duracionId;
+        let resumenId, inicioId, finId, duracionId, tipoId, finColId, duracionColId;
         
         if (tipo === 'crear') {
             resumenId = 'resumen_contrato';           // ✅ CORREGIDO
+            tipoId = 'resumen_tipo';                  // ✅ NUEVO
             inicioId = 'resumen_inicio';              // ✅ CORREGIDO
             finId = 'resumen_fin';                    // ✅ CORREGIDO
+            finColId = 'resumen_fin_col';             // ✅ NUEVO
             duracionId = 'resumen_duracion';          // ✅ CORREGIDO
+            duracionColId = 'resumen_duracion_col';   // ✅ NUEVO
         } else {
             resumenId = 'resumen-renovacion';         // ✅ CORREGIDO
             inicioId = 'resumen-inicio-renovar';      // ✅ CORREGIDO
@@ -219,17 +288,55 @@ window.initContratos = function() {
         const resumenEl = document.getElementById(resumenId);
         
         if (resumenEl) {
+            const tipoEl = document.getElementById(tipoId);
             const inicioEl = document.getElementById(inicioId);
             const finEl = document.getElementById(finId);
+            const finColEl = document.getElementById(finColId);
             const duracionEl = document.getElementById(duracionId);
+            const duracionColEl = document.getElementById(duracionColId);
             
+            if (tipoEl) tipoEl.textContent = 'Por Tiempo Determinado';
             if (inicioEl) inicioEl.textContent = formatearFecha(fechaInicio);
             if (finEl) finEl.textContent = formatearFecha(fechaFin);
             if (duracionEl) duracionEl.textContent = duracion;
             
+            // Mostrar columnas de fin y duración si existen
+            if (finColEl) finColEl.style.display = 'block';
+            if (duracionColEl) duracionColEl.style.display = 'block';
+            
             resumenEl.style.display = 'block';
         } else {
             console.warn(`⚠️ Elemento de resumen no encontrado: ${resumenId}`);
+        }
+    };
+
+    const mostrarResumenIndeterminado = (tipo) => {
+        const resumenId = tipo === 'crear' ? 'resumen_contrato' : 'resumen-renovacion';
+        const tipoId = tipo === 'crear' ? 'resumen_tipo' : null;
+        const inicioId = tipo === 'crear' ? 'resumen_inicio' : 'resumen-inicio-renovar';
+        const finColId = tipo === 'crear' ? 'resumen_fin_col' : null;
+        const duracionColId = tipo === 'crear' ? 'resumen_duracion_col' : null;
+        const fechaInicioInput = document.getElementById(tipo === 'crear' ? 'fecha_inicio_contrato' : 'fecha_inicio_renovar');
+        
+        const resumenEl = document.getElementById(resumenId);
+        
+        if (resumenEl) {
+            const tipoEl = document.getElementById(tipoId);
+            const inicioEl = document.getElementById(inicioId);
+            const finColEl = document.getElementById(finColId);
+            const duracionColEl = document.getElementById(duracionColId);
+            
+            if (tipoEl) tipoEl.textContent = 'Por Tiempo Indeterminado';
+            if (inicioEl) {
+                inicioEl.textContent = fechaInicioInput && fechaInicioInput.value ? 
+                    formatearFecha(fechaInicioInput.value) : '-';
+            }
+            
+            // Ocultar columnas de fin y duración si existen
+            if (finColEl) finColEl.style.display = 'none';
+            if (duracionColEl) duracionColEl.style.display = 'none';
+            
+            resumenEl.style.display = 'block';
         }
     };
 
@@ -308,23 +415,31 @@ window.initContratos = function() {
             
             form.reset();
             const hoy = new Date().toISOString().split('T')[0];
-            const fechaDefault = new Date();
-            fechaDefault.setMonth(fechaDefault.getMonth() + 6);
             
+            const tipoContratoSelect = form.querySelector('select[name="tipo_contrato"]');
             const fechaInicioInput = form.querySelector('input[name="fecha_inicio_contrato"]');
             const fechaFinInput = form.querySelector('input[name="fecha_fin_contrato"]');
             
+            if (tipoContratoSelect) tipoContratoSelect.value = '';
             if (fechaInicioInput) {
                 fechaInicioInput.min = hoy;
                 fechaInicioInput.value = hoy;
             }
             if (fechaFinInput) {
-                fechaFinInput.value = fechaDefault.toISOString().split('T')[0];
+                fechaFinInput.value = '';
+                fechaFinInput.removeAttribute('required');
             }
 
-            // ✅ LIMPIAR CÁLCULOS
+            // ✅ LIMPIAR CÁLCULOS Y CONTENEDORES
+            const fechaFinContainer = document.getElementById('fecha_fin_container');
+            const duracionContainer = document.getElementById('duracion_container');
+            const indeterminadoInfo = document.getElementById('indeterminado_info');
+            
+            if (fechaFinContainer) fechaFinContainer.style.display = 'block';
+            if (duracionContainer) duracionContainer.style.display = 'block';
+            if (indeterminadoInfo) indeterminadoInfo.style.display = 'none';
+            
             ocultarResumen('crear');
-            setTimeout(() => calcularDuracionContrato('crear'), 200);
         } catch (error) {
             console.error('Error configurando modal de creación:', error);
         }
@@ -407,11 +522,15 @@ window.initContratos = function() {
                 <hr>
                 ${contratoData.es_renovacion ? `<div><strong>Renovación de:</strong> #${contratoData.contrato_anterior_id}</div><hr>` : ''}
                 <div class="row">
+                    <div class="col-6"><strong>Tipo:</strong><br>${contratoData.tipo_contrato === 'indeterminado' ? 'Por Tiempo Indeterminado' : 'Por Tiempo Determinado'}</div>
                     <div class="col-6"><strong>Inicio:</strong><br>${contratoData.inicio}</div>
-                    <div class="col-6"><strong>Fin:</strong><br>${contratoData.fin}</div>
                 </div>
-                <hr>
-                <div><strong>Duración:</strong><br>${contratoData.duracion}</div>
+                ${contratoData.tipo_contrato !== 'indeterminado' ? `
+                <div class="row mt-2">
+                    <div class="col-6"><strong>Fin:</strong><br>${contratoData.fin}</div>
+                    <div class="col-6"><strong>Duración:</strong><br>${contratoData.duracion}</div>
+                </div>
+                ` : '<div class="alert alert-info mt-2"><i class="bi bi-infinity"></i> Este contrato no tiene fecha de terminación</div>'}
                 ${contratoData.observaciones ? `<hr><div><strong>Observaciones:</strong><br><small>${contratoData.observaciones}</small></div>` : ''}
             `;
             
@@ -422,7 +541,7 @@ window.initContratos = function() {
     };
 
     // ========================================
-    // ✅ VALIDACIONES ACTUALIZADAS
+    // ✅ VALIDACIONES ACTUALIZADAS CON SOPORTE INDETERMINADO
     // ========================================
     
     const inicializarValidacionesContratos = () => {
@@ -443,28 +562,48 @@ window.initContratos = function() {
     const validarCrearForm = (e) => {
         try {
             const form = e.target;
-            const fechaInicio = new Date(form.querySelector('input[name="fecha_inicio_contrato"]').value);
-            const fechaFin = new Date(form.querySelector('input[name="fecha_fin_contrato"]').value);
-            const tipoDuracionHidden = form.querySelector('input[name="tipo_duracion"]');
-            const tipoDuracion = tipoDuracionHidden ? tipoDuracionHidden.value : null;
-            
-            if (!tipoDuracion) {
+            const tipoContrato = form.querySelector('select[name="tipo_contrato"]').value;
+
+            if (!tipoContrato) {
                 e.preventDefault();
-                alert('Por favor, seleccione fechas válidas para calcular la duración');
+                alert('Por favor, seleccione el tipo de contrato');
                 return false;
             }
-            
-            if (fechaFin <= fechaInicio) {
-                e.preventDefault();
-                alert('La fecha de fin debe ser posterior a la fecha de inicio');
-                return false;
+
+            // ✅ Solo validar fechas para contratos determinados
+            if (tipoContrato === 'determinado') {
+                const fechaInicio = new Date(form.querySelector('input[name="fecha_inicio_contrato"]').value);
+                const fechaFin = new Date(form.querySelector('input[name="fecha_fin_contrato"]').value);
+                const tipoDuracionHidden = form.querySelector('input[name="tipo_duracion"]');
+                const tipoDuracion = tipoDuracionHidden ? tipoDuracionHidden.value : null;
+
+                if (!tipoDuracion) {
+                    e.preventDefault();
+                    alert('Por favor, seleccione fechas válidas para calcular la duración');
+                    return false;
+                }
+
+                if (fechaFin <= fechaInicio) {
+                    e.preventDefault();
+                    alert('La fecha de fin debe ser posterior a la fecha de inicio');
+                    return false;
+                }
+
+                const diferenciaDias = (fechaFin - fechaInicio) / (1000 * 60 * 60 * 24);
+                if (diferenciaDias < 1) {
+                    e.preventDefault();
+                    alert('El contrato debe tener al menos 1 día de duración');
+                    return false;
+                }
             }
-            
-            const diferenciaDias = (fechaFin - fechaInicio) / (1000 * 60 * 60 * 24);
-            if (diferenciaDias < 1) {
-                e.preventDefault();
-                alert('El contrato debe tener al menos 1 día de duración');
-                return false;
+            // ✅ Para contratos indeterminados, solo validar fecha de inicio
+            else if (tipoContrato === 'indeterminado') {
+                const fechaInicio = form.querySelector('input[name="fecha_inicio_contrato"]').value;
+                if (!fechaInicio) {
+                    e.preventDefault();
+                    alert('Por favor, seleccione la fecha de inicio del contrato');
+                    return false;
+                }
             }
 
             console.log('✅ Validación de creación exitosa');
@@ -543,5 +682,5 @@ window.initContratos = function() {
         contratosTab.dispatchEvent(new Event('shown.bs.tab'));
     };
     
-    console.log('📋 Contratos inicializados con cálculos automáticos de duración - IDs corregidos');
+    console.log('📋 Contratos inicializados con soporte completo para contratos indeterminados');
 };

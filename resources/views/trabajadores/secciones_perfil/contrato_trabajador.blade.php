@@ -71,7 +71,7 @@
     <div class="row">
         <div class="col-12">
             @if($contratos->count() > 0)
-                {{-- ✅ Lista de contratos (tabla actualizada) --}}
+                {{-- ✅ Lista de contratos (tabla actualizada con soporte indeterminado) --}}
                 <div class="card border-0 shadow-sm">
                     <div class="card-header bg-white border-bottom">
                         <div class="d-flex justify-content-between align-items-center">
@@ -87,8 +87,8 @@
                                 <thead class="table-light">
                                     <tr>
                                         <th>Estado</th>
-                                        <th>Período</th>
-                                        <th>Duración y Tipo</th> {{-- ✅ ACTUALIZADO --}}
+                                        <th>Tipo y Período</th>
+                                        <th>Duración</th>
                                         <th>Información</th>
                                         <th>Acciones</th>
                                     </tr>
@@ -122,61 +122,103 @@
                                                 @endif
                                             </td>
 
-                                            {{-- Período --}}
+                                            {{-- ✅ ACTUALIZADO: Tipo y Período --}}
                                             <td>
+                                                {{-- Tipo de contrato --}}
+                                                <div class="mb-2">
+                                                    @if($contrato->tipo_contrato === 'indeterminado')
+                                                        <span class="badge bg-info">
+                                                            <i class="bi bi-infinity"></i> Tiempo Indeterminado
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-primary">
+                                                            <i class="bi bi-calendar-range"></i> Tiempo Determinado
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                
+                                                {{-- Período --}}
                                                 <div>
                                                     <strong>{{ $contrato->fecha_inicio_contrato->format('d/m/Y') }}</strong>
                                                     <small class="text-muted"> hasta </small>
-                                                    <strong>{{ $contrato->fecha_fin_contrato->format('d/m/Y') }}</strong>
+                                                    <strong>
+                                                        @if($contrato->tipo_contrato === 'indeterminado')
+                                                            <span class="text-info">Sin fecha fin</span>
+                                                        @else
+                                                            {{ $contrato->fecha_fin_contrato->format('d/m/Y') }}
+                                                        @endif
+                                                    </strong>
                                                 </div>
                                             </td>
 
-                                            {{-- ✅ ACTUALIZADO: Duración y Tipo más prominente --}}
+                                            {{-- ✅ ACTUALIZADO: Duración (manejo especial para indeterminados) --}}
                                             <td>
-                                                <div class="d-flex align-items-center gap-2">
-                                                    <div>
-                                                        <span class="fw-bold">{{ $contrato->duracion_texto }}</span>
-                                                        <div class="mt-1">
-                                                            @if($contrato->esPorDias())
-                                                                <span class="badge bg-primary">
-                                                                    <i class="bi bi-calendar-day"></i> Por días
-                                                                </span>
-                                                            @else
-                                                                <span class="badge bg-info">
-                                                                    <i class="bi bi-calendar3"></i> Por meses
-                                                                </span>
-                                                            @endif
+                                                @if($contrato->tipo_contrato === 'indeterminado')
+                                                    <div class="text-center">
+                                                        <i class="bi bi-infinity text-info" style="font-size: 1.5rem;"></i>
+                                                        <div class="small text-muted">Sin límite</div>
+                                                    </div>
+                                                @else
+                                                    <div class="d-flex align-items-center gap-2">
+                                                        <div>
+                                                            <span class="fw-bold">{{ $contrato->duracion_texto }}</span>
+                                                            <div class="mt-1">
+                                                                @if($contrato->esPorDias())
+                                                                    <span class="badge bg-primary">
+                                                                        <i class="bi bi-calendar-day"></i> Por días
+                                                                    </span>
+                                                                @else
+                                                                    <span class="badge bg-info">
+                                                                        <i class="bi bi-calendar3"></i> Por meses
+                                                                    </span>
+                                                                @endif
+                                                            </div>
                                                         </div>
                                                     </div>
-                                                </div>
+                                                @endif
                                             </td>
 
-                                            {{-- Información --}}
+                                            {{-- ✅ ACTUALIZADO: Información (manejo especial para indeterminados) --}}
                                             <td>
-                                                @if($contrato->esta_vigente_bool)
-                                                    @if($contrato->esta_proximo_vencer_bool)
-                                                        <span class="text-warning fw-bold">
-                                                            <i class="bi bi-exclamation-triangle"></i>
-                                                            {{ $contrato->info_estado }}
-                                                        </span>
-                                                        <small class="d-block text-warning">Próximo a vencer</small>
-                                                    @elseif($contrato->ya_expiro_bool)
-                                                        <span class="text-danger fw-bold">
-                                                            <i class="bi bi-x-circle"></i>
-                                                            {{ $contrato->info_estado }}
-                                                        </span>
-                                                        <small class="d-block text-danger">Requiere acción</small>
-                                                    @else
+                                                @if($contrato->tipo_contrato === 'indeterminado')
+                                                    @if($contrato->esta_vigente_bool)
                                                         <span class="text-success">
                                                             <i class="bi bi-check-circle"></i>
-                                                            {{ $contrato->info_estado }}
+                                                            Vigente Indefinidamente
+                                                        </span>
+                                                        <small class="d-block text-muted">Sin fecha de vencimiento</small>
+                                                    @else
+                                                        <span class="text-muted">
+                                                            <i class="bi bi-dash-circle"></i> 
+                                                            Terminado
                                                         </span>
                                                     @endif
                                                 @else
-                                                    <span class="text-muted">
-                                                        <i class="bi bi-dash-circle"></i> 
-                                                        {{ $contrato->info_estado }}
-                                                    </span>
+                                                    @if($contrato->esta_vigente_bool)
+                                                        @if($contrato->esta_proximo_vencer_bool)
+                                                            <span class="text-warning fw-bold">
+                                                                <i class="bi bi-exclamation-triangle"></i>
+                                                                {{ $contrato->info_estado }}
+                                                            </span>
+                                                            <small class="d-block text-warning">Próximo a vencer</small>
+                                                        @elseif($contrato->ya_expiro_bool)
+                                                            <span class="text-danger fw-bold">
+                                                                <i class="bi bi-x-circle"></i>
+                                                                {{ $contrato->info_estado }}
+                                                            </span>
+                                                            <small class="d-block text-danger">Requiere acción</small>
+                                                        @else
+                                                            <span class="text-success">
+                                                                <i class="bi bi-check-circle"></i>
+                                                                {{ $contrato->info_estado }}
+                                                            </span>
+                                                        @endif
+                                                    @else
+                                                        <span class="text-muted">
+                                                            <i class="bi bi-dash-circle"></i> 
+                                                            {{ $contrato->info_estado }}
+                                                        </span>
+                                                    @endif
                                                 @endif
                                             </td>
 
@@ -190,21 +232,22 @@
                                                             data-bs-target="#detalleContratoModal"
                                                             data-contrato="{{ json_encode([
                                                                 'id' => $contrato->id_contrato,
+                                                                'tipo_contrato' => $contrato->tipo_contrato,
                                                                 'tipo_duracion' => $contrato->tipo_duracion,
                                                                 'inicio' => $contrato->fecha_inicio_contrato->format('d/m/Y'),
-                                                                'fin' => $contrato->fecha_fin_contrato->format('d/m/Y'),
-                                                                'duracion' => $contrato->duracion_completa,
-                                                                'duracion_texto' => $contrato->duracion_texto,
-                                                                'es_por_dias' => $contrato->esPorDias(),
-                                                                'es_por_meses' => $contrato->esPorMeses(),
+                                                                'fin' => $contrato->tipo_contrato === 'indeterminado' ? 'Sin fecha fin' : $contrato->fecha_fin_contrato->format('d/m/Y'),
+                                                                'duracion' => $contrato->tipo_contrato === 'indeterminado' ? 'Tiempo Indeterminado' : $contrato->duracion_completa,
+                                                                'duracion_texto' => $contrato->tipo_contrato === 'indeterminado' ? 'Sin límite de tiempo' : $contrato->duracion_texto,
+                                                                'es_por_dias' => $contrato->tipo_contrato === 'indeterminado' ? false : $contrato->esPorDias(),
+                                                                'es_por_meses' => $contrato->tipo_contrato === 'indeterminado' ? false : $contrato->esPorMeses(),
                                                                 'estado' => $contrato->estado_final_calculado,
                                                                 'texto_estado' => $contrato->texto_estado_final,
-                                                                'info_estado' => $contrato->info_estado,
+                                                                'info_estado' => $contrato->tipo_contrato === 'indeterminado' ? 'Vigente indefinidamente' : $contrato->info_estado,
                                                                 'es_renovacion' => $contrato->esRenovacion(),
                                                                 'contrato_anterior_id' => $contrato->contrato_anterior_id,
                                                                 'observaciones' => $contrato->observaciones,
                                                                 'esta_vigente' => $contrato->esta_vigente_bool,
-                                                                'ya_expiro' => $contrato->ya_expiro_bool
+                                                                'ya_expiro' => $contrato->tipo_contrato === 'indeterminado' ? false : $contrato->ya_expiro_bool
                                                             ]) }}"
                                                             title="Ver detalles">
                                                         <i class="bi bi-eye"></i>
@@ -219,8 +262,8 @@
                                                         </a>
                                                     @endif
 
-                                                    {{-- Renovar contrato --}}
-                                                    @if($contrato->puede_renovarse_bool)
+                                                    {{-- ✅ Renovar contrato (solo para determinados que pueden renovarse) --}}
+                                                    @if($contrato->tipo_contrato === 'determinado' && $contrato->puede_renovarse_bool)
                                                         <button type="button" 
                                                                 class="btn btn-outline-warning"
                                                                 data-bs-toggle="modal" 
@@ -239,7 +282,7 @@
                                                                 data-bs-toggle="modal" 
                                                                 data-bs-target="#modalEliminarContrato"
                                                                 data-contrato-id="{{ $contrato->id_contrato }}"
-                                                                data-contrato-info="{{ $contrato->fecha_inicio_contrato->format('d/m/Y') }} - {{ $contrato->fecha_fin_contrato->format('d/m/Y') }}"
+                                                                data-contrato-info="{{ $contrato->fecha_inicio_contrato->format('d/m/Y') }} - {{ $contrato->tipo_contrato === 'indeterminado' ? 'Sin fecha fin' : $contrato->fecha_fin_contrato->format('d/m/Y') }}"
                                                                 title="Eliminar contrato">
                                                             <i class="bi bi-trash"></i>
                                                         </button>
@@ -254,7 +297,7 @@
                     </div>
                 </div>
 
-                {{-- ✅ ACTUALIZADO: Información del contrato vigente con tipo --}}
+                {{-- ✅ ACTUALIZADO: Información del contrato vigente con manejo de indeterminados --}}
                 @if($estadisticas['tiene_contrato_vigente'] && $estadisticas['contrato_actual'])
                     @php
                         $contratoActual = $estadisticas['contrato_actual'];
@@ -267,13 +310,26 @@
                                     <h6 class="mb-0">
                                         <i class="bi bi-file-earmark-check"></i>
                                         Contrato Vigente
+                                        
+                                        {{-- Tipo de contrato --}}
+                                        @if($contratoActual->tipo_contrato === 'indeterminado')
+                                            <span class="ms-2 badge bg-info">
+                                                <i class="bi bi-infinity"></i> Tiempo Indeterminado
+                                            </span>
+                                        @else
+                                            <span class="ms-2 badge bg-primary">
+                                                <i class="bi bi-calendar-range"></i> Tiempo Determinado
+                                            </span>
+                                        @endif
+                                        
                                         @if($contratoActual->esRenovacion())
                                             <small class="ms-2">
                                                 <i class="bi bi-arrow-repeat"></i> 
                                                 Renovación de #{{ $contratoActual->contrato_anterior_id }}
                                             </small>
                                         @endif
-                                        @if($contratoActual->yaExpiro())
+                                        
+                                        @if($contratoActual->tipo_contrato === 'determinado' && $contratoActual->yaExpiro())
                                             <small class="ms-2 text-warning">
                                                 <i class="bi bi-exclamation-triangle"></i> 
                                                 Expirado - Requiere acción
@@ -286,32 +342,49 @@
                                         <div class="col-md-3">
                                             <strong>Período:</strong><br>
                                             {{ $contratoActual->fecha_inicio_contrato->format('d/m/Y') }} -
-                                            {{ $contratoActual->fecha_fin_contrato->format('d/m/Y') }}
+                                            @if($contratoActual->tipo_contrato === 'indeterminado')
+                                                <span class="text-info">Sin fecha fin</span>
+                                            @else
+                                                {{ $contratoActual->fecha_fin_contrato->format('d/m/Y') }}
+                                            @endif
                                         </div>
+                                        
                                         <div class="col-md-3">
                                             <strong>Duración:</strong><br>
-                                            {{ $contratoActual->duracion_texto }}
-                                            <div class="mt-1">
-                                                @if($contratoActual->esPorDias())
-                                                    <span class="badge bg-primary">
-                                                        <i class="bi bi-calendar-day"></i> Por días
-                                                    </span>
-                                                @else
-                                                    <span class="badge bg-info">
-                                                        <i class="bi bi-calendar3"></i> Por meses
-                                                    </span>
-                                                @endif
-                                            </div>
+                                            @if($contratoActual->tipo_contrato === 'indeterminado')
+                                                <span class="text-info">
+                                                    <i class="bi bi-infinity"></i> Tiempo Indeterminado
+                                                </span>
+                                            @else
+                                                {{ $contratoActual->duracion_texto }}
+                                                <div class="mt-1">
+                                                    @if($contratoActual->esPorDias())
+                                                        <span class="badge bg-primary">
+                                                            <i class="bi bi-calendar-day"></i> Por días
+                                                        </span>
+                                                    @else
+                                                        <span class="badge bg-info">
+                                                            <i class="bi bi-calendar3"></i> Por meses
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                            @endif
                                         </div>
+                                        
                                         <div class="col-md-3">
                                             <strong>Estado:</strong><br>
-                                            <span class="fw-bold {{ $contratoActual->yaExpiro() ? 'text-danger' : ($contratoActual->estaProximoAVencer() ? 'text-warning' : 'text-success') }}">
-                                                {{ $contratoActual->info_estado }}
-                                            </span>
+                                            @if($contratoActual->tipo_contrato === 'indeterminado')
+                                                <span class="fw-bold text-success">Vigente Indefinidamente</span>
+                                            @else
+                                                <span class="fw-bold {{ $contratoActual->yaExpiro() ? 'text-danger' : ($contratoActual->estaProximoAVencer() ? 'text-warning' : 'text-success') }}">
+                                                    {{ $contratoActual->info_estado }}
+                                                </span>
+                                            @endif
                                         </div>
+                                        
                                         <div class="col-md-3">
                                             <strong>Acciones:</strong><br>
-                                            @if($contratoActual->puedeRenovarse())
+                                            @if($contratoActual->tipo_contrato === 'determinado' && $contratoActual->puedeRenovarse())
                                                 <button type="button" 
                                                         class="btn btn-warning btn-sm"
                                                         data-bs-toggle="modal" 
@@ -320,8 +393,10 @@
                                                         data-contrato-fin="{{ $contratoActual->fecha_fin_contrato->format('Y-m-d') }}">
                                                     <i class="bi bi-arrow-repeat"></i> Renovar
                                                 </button>
-                                            @elseif($contratoActual->yaExpiro())
+                                            @elseif($contratoActual->tipo_contrato === 'determinado' && $contratoActual->yaExpiro())
                                                 <span class="text-muted">Expirado - Renovar o eliminar</span>
+                                            @elseif($contratoActual->tipo_contrato === 'indeterminado')
+                                                <span class="text-success">Sin fecha de vencimiento</span>
                                             @else
                                                 <span class="text-success">En vigencia</span>
                                             @endif
@@ -384,7 +459,7 @@
 
 {{-- ✅ MODALES ACTUALIZADOS --}}
 
-{{-- ✅ ACTUALIZADO: Modal de detalles con tipo de contrato --}}
+{{-- ✅ ACTUALIZADO: Modal de detalles con soporte completo para indeterminados --}}
 <div class="modal fade" id="detalleContratoModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -414,10 +489,10 @@
     </div>
 </div>
 
-{{-- Modal crear contrato --}}
+{{-- Modal crear contrato (actualizado) --}}
 @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 
-{{-- Modal renovar contrato --}}
+{{-- Modal renovar contrato (solo para determinados) --}}
 <div class="modal fade" id="modalRenovarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">

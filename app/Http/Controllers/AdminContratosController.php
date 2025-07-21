@@ -55,6 +55,7 @@ class AdminContratosController extends Controller
 
         $estadisticas = $this->calcularEstadisticasContratos($contratos);
 
+
         Log::info('Contratos del trabajador consultados', [
             'trabajador_id' => $trabajador->id_trabajador,
             'total_contratos' => $contratos->count(),
@@ -68,43 +69,104 @@ class AdminContratosController extends Controller
         ));
     }
 
-    // AdminContratosController.php - Método store actualizado
+    /**
+     * ✅ MÉTODO STORE CORREGIDO - Permite fechas pasadas y maneja correctamente indeterminados
+     */
     public function store(Request $request, Trabajador $trabajador)
     {
-        $validated = $request->validate([
-            'fecha_inicio_contrato' => 'required|date',
-            'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
-            'tipo_duracion' => 'required|in:dias,meses', // ✅ Ahora viene del frontend
+        // ✅ VALIDACIÓN BASE (sin restricciones de fechas pasadas)
+        $baseRules = [
+            'tipo_contrato' => 'required|in:determinado,indeterminado',
+            'fecha_inicio_contrato' => 'required|date', // ✅ SIN after:today - permite fechas pasadas
             'observaciones' => 'nullable|string|max:500'
+        ];
+        
+        // ✅ VALIDACIÓN CONDICIONAL SEGÚN TIPO DE CONTRATO
+        $conditionalRules = [];
+        
+        if ($request->tipo_contrato === 'determinado') {
+            $conditionalRules = [
+                'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
+                'tipo_duracion' => 'nullable|in:dias,meses' // ✅ Nullable - se calcula automáticamente
+            ];
+        } elseif ($request->tipo_contrato === 'indeterminado') {
+            // ✅ Para indeterminados: campos opcionales que se forzarán a null
+            $conditionalRules = [
+                'fecha_fin_contrato' => 'nullable|date', // ✅ Nullable - se ignorará
+                'tipo_duracion' => 'nullable'            // ✅ Nullable - se ignorará
+            ];
+        }
+        
+        $allRules = array_merge($baseRules, $conditionalRules);
+        
+        $validated = $request->validate($allRules, [
+            'tipo_contrato.required' => 'El tipo de contrato es obligatorio',
+            'tipo_contrato.in' => 'Tipo de contrato no válido',
+            'fecha_inicio_contrato.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio_contrato.date' => 'Formato de fecha de inicio inválido',
+            'fecha_fin_contrato.required' => 'La fecha de fin es obligatoria para contratos determinados',
+            'fecha_fin_contrato.after' => 'La fecha de fin debe ser posterior a la fecha de inicio',
+            'tipo_duracion.in' => 'Tipo de duración no válido'
         ]);
+
+        // ✅ PROCESAMIENTO ESPECÍFICO SEGÚN TIPO DE CONTRATO
+        if ($validated['tipo_contrato'] === 'indeterminado') {
+            // ✅ Forzar campos a null para indeterminados
+            $validated['fecha_fin_contrato'] = null;
+            $validated['tipo_duracion'] = null;
+        } else {
+            // ✅ Para determinados: calcular tipo_duracion automáticamente si no se proporcionó
+            if (empty($validated['tipo_duracion'])) {
+                $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
+                $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
+                $diasTotales = $fechaInicio->diffInDays($fechaFin);
+                
+                // ✅ LÓGICA AUTOMÁTICA: > 30 días = meses, <= 30 días = días
+                $validated['tipo_duracion'] = $diasTotales > 30 ? 'meses' : 'dias';
+            }
+        }
 
         DB::beginTransaction();
         
         try {
-            // ✅ VERIFICAR QUE EL TIPO DE DURACIÓN SEA CONSISTENTE
             $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
-            $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
-            $diasTotales = $fechaInicio->diffInDays($fechaFin);
             
-            // ✅ MISMA LÓGICA: > 30 días = meses, <= 30 días = días
-            $tipoDuracionCalculado = $diasTotales > 30 ? 'meses' : 'dias';
-            
-            // ✅ USAR EL CALCULADO EN LUGAR DEL ENVIADO PARA CONSISTENCIA
-            $validated['tipo_duracion'] = $tipoDuracionCalculado;
-
             // ✅ DELEGAR generación a ContratoController
             $contrato = $this->contratoController->generarDefinitivo($trabajador, $validated);
 
+            // ✅ AGREGAR OBSERVACIONES SI EXISTEN
             if (!empty($validated['observaciones'])) {
                 $contrato->update(['observaciones' => $validated['observaciones']]);
             }
 
+            // ✅ GENERAR MENSAJE ESPECÍFICO SEGÚN TIPO
+            if ($validated['tipo_contrato'] === 'determinado') {
+                $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
+                $tipoDuracionCalculado = $validated['tipo_duracion'];
+                
+                $mensaje = "Contrato determinado creado exitosamente para {$trabajador->nombre_completo}. ";
+                $mensaje .= "Vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+                $mensaje .= "Duración: " . ($tipoDuracionCalculado === 'meses' ? 'Por meses' : 'Por días') . ". ";
+                $mensaje .= "Estado: ACTIVO.";
+            } else {
+                $mensaje = "Contrato indeterminado creado exitosamente para {$trabajador->nombre_completo}. ";
+                $mensaje .= "Fecha de inicio: {$fechaInicio->format('d/m/Y')}. ";
+                $mensaje .= "Sin fecha de terminación. Estado: ACTIVO.";
+            }
+
             DB::commit();
 
-            $mensaje = "Contrato creado exitosamente para {$trabajador->nombre_completo}. ";
-            $mensaje .= "Vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
-            $mensaje .= "Duración: " . ($tipoDuracionCalculado === 'meses' ? 'Por meses' : 'Por días') . ". ";
-            $mensaje .= "Estado: ACTIVO.";
+            Log::info('Contrato creado exitosamente', [
+                'contrato_id' => $contrato->id_contrato,
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $validated['tipo_contrato'],
+                'fecha_inicio' => $fechaInicio->format('Y-m-d'),
+                'fecha_fin' => $validated['tipo_contrato'] === 'determinado' 
+                    ? Carbon::parse($validated['fecha_fin_contrato'])->format('Y-m-d') 
+                    : null,
+                'permite_fechas_pasadas' => true,
+                'usuario' => Auth::user()->email ?? 'Sistema'
+            ]);
 
             return redirect()->route('trabajadores.perfil.show', $trabajador)
                         ->with('success', $mensaje)
@@ -112,8 +174,13 @@ class AdminContratosController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error al crear contrato', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Error al crear el contrato'])->withInput();
+            Log::error('Error al crear contrato', [
+                'error' => $e->getMessage(),
+                'tipo_contrato' => $validated['tipo_contrato'] ?? 'No especificado',
+                'trabajador_id' => $trabajador->id_trabajador,
+                'fecha_inicio' => $validated['fecha_inicio_contrato'] ?? 'No especificada'
+            ]);
+            return back()->withErrors(['error' => 'Error al crear el contrato: ' . $e->getMessage()])->withInput();
         }
     }
 
@@ -125,7 +192,6 @@ class AdminContratosController extends Controller
         if ($contrato->id_trabajador !== $trabajador->id_trabajador) {
             abort(403, 'No autorizado para renovar este contrato');
         }
-
         if (!$contrato->puedeRenovarse()) {
             return back()->withErrors([
                 'error' => 'Este contrato no puede renovarse. Debe estar en período vigente y próximo a vencer (30 días o menos).'
@@ -237,7 +303,9 @@ class AdminContratosController extends Controller
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'fecha_inicio' => $contrato->fecha_inicio_contrato->format('Y-m-d'),
-                'fecha_fin' => $contrato->fecha_fin_contrato->format('Y-m-d'),
+                'fecha_fin' => $contrato->fecha_fin_contrato
+                    ? $contrato->fecha_fin_contrato->format('Y-m-d')
+                    : 'Sin fecha de vencimiento',
                 'motivo_eliminacion' => $validated['motivo_eliminacion'],
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ];
@@ -257,6 +325,7 @@ class AdminContratosController extends Controller
             $mensaje = "✅ Contrato eliminado permanentemente. ";
             $mensaje .= "Se eliminó el contrato #{$contratoInfo['id_contrato']} ";
             $mensaje .= "del {$contratoInfo['fecha_inicio']} al {$contratoInfo['fecha_fin']}.";
+
 
             return redirect()->route('trabajadores.perfil.show', $trabajador)
                         ->with('success', $mensaje)
@@ -362,7 +431,7 @@ class AdminContratosController extends Controller
     /**
      * ✅ Calcular estadísticas de contratos
      */
-    private function calcularEstadisticasContratos($contratos): array
+   private function calcularEstadisticasContratos($contratos): array
     {
         $vigentes = $contratos->filter(fn($c) => $c->estaVigente())->count();
         $terminados = $contratos->filter(fn($c) => $c->estado_final === ContratoTrabajador::ESTADO_TERMINADO)->count();
@@ -372,6 +441,9 @@ class AdminContratosController extends Controller
         
         $contratoActual = $contratos->filter(fn($c) => $c->estaVigente())->first();
 
+        // ✅ Considerar contratos indeterminados como siempre vigentes
+        $tieneContratoVigente = $vigentes > 0 || $contratos->contains('tipo_contrato', 'indeterminado');
+
         return [
             'total' => $contratos->count(),
             'vigentes' => $vigentes,
@@ -380,7 +452,7 @@ class AdminContratosController extends Controller
             'proximos_vencer' => $proximosVencer,
             'expirados_pendientes' => $expirados,
             'contrato_actual' => $contratoActual,
-            'tiene_contrato_vigente' => $vigentes > 0,
+            'tiene_contrato_vigente' => $tieneContratoVigente,
             'renovables' => $contratos->filter(fn($c) => $c->puedeRenovarse())->count(),
             'contratos_renovacion' => $contratos->filter(fn($c) => $c->esRenovacion())->count(),
         ];
@@ -391,6 +463,12 @@ class AdminContratosController extends Controller
      */
     private function formatearDuracionCompleta(ContratoTrabajador $contrato): string
     {
+
+        if($contrato->tipo_contrato === 'indeterminado'){
+            return 'Tiempo Indeterminado (sin fecha fin)';  
+
+        }
+
         $inicio = $contrato->fecha_inicio_contrato->format('d/m/Y');
         $fin = $contrato->fecha_fin_contrato->format('d/m/Y');
         $duracion = $contrato->duracion_texto;
