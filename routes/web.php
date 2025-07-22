@@ -53,7 +53,15 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/areas-categorias/estadisticas', [AreaCategoriaController::class, 'estadisticas'])->name('areas.categorias.estadisticas');
         Route::delete('/categorias/multiple', [AreaCategoriaController::class, 'destroyMultipleCategories'])
             ->name('categorias.multiple.destroy');
+
+        Route::post('/departamentos', [AreaCategoriaController::class, 'storeDepartamento'])->name('departamentos.store');
+        Route::put('/departamentos/{departamento}', [AreaCategoriaController::class, 'updateDepartamento'])->name('departamentos.update');
+        Route::delete('/departamentos/{departamento}', [AreaCategoriaController::class, 'destroyDepartamento'])->name('departamentos.destroy');
+
+        // API para obtener áreas por departamento
+        Route::get('/api/departamentos/{departamento}/areas', [AreaCategoriaController::class, 'getAreasPorDepartamento'])->name('api.departamentos.areas');
     });
+    
 
     // Rutas para búsqueda de trabajadores
     Route::get('/trabajadores/buscar', [BusquedaTrabajadoresController::class, 'index'])
