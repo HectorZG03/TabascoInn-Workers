@@ -38,56 +38,30 @@
             font-weight: bold;
             text-decoration: underline;
         }
-        .datos-trabajador {
-            background-color: #f8f9fa;
-            padding: 8px;
-            border: 1px solid #000;
-            margin: 10px 0;
-            font-size: 11px;
-        }
-        .horario-table {
-            width: 100%;
-            border-collapse: collapse;
-            margin: 10px 0;
-            font-size: 11px;
-        }
-        .horario-table td, .horario-table th {
-            border: 1px solid #000;
-            padding: 5px;
-            text-align: center;
-        }
-        .horario-table th {
-            background-color: #e9ecef;
-            font-weight: bold;
-        }
         .firmas {
-                margin-top: 60px;
-                width: 100%;
-                display: table;
-                table-layout: fixed;
-            }
-            .firma-seccion {
-                width: 50%;
-                text-align: center;
-                vertical-align: top;
-                display: table-cell;
-                padding: 0 10px;
-            }
-            .linea-firma {
-                border-top: 1px solid black;
-                margin: 40px 20px 10px 20px;
-            }
-            
-            /* ✅ NUEVA: Contenedor general de todas las firmas */
-            .contenedor-firmas {
-                margin-top: 80px;
-                width: 100%;
-            }
-            
-            /* ✅ NUEVA: Separador entre filas de firmas */
-            .separador-firmas {
-                margin-top: 40px;
-            }
+            margin-top: 60px;
+            width: 100%;
+            display: table;
+            table-layout: fixed;
+        }
+        .firma-seccion {
+            width: 50%;
+            text-align: center;
+            vertical-align: top;
+            display: table-cell;
+            padding: 0 10px;
+        }
+        .linea-firma {
+            border-top: 1px solid black;
+            margin: 40px 20px 10px 20px;
+        }
+        .contenedor-firmas {
+            margin-top: 80px;
+            width: 100%;
+        }
+        .separador-firmas {
+            margin-top: 40px;
+        }
         .small-text {
             font-size: 10px;
             line-height: 1.3;
@@ -148,27 +122,6 @@
             Este trabajo será desempeñado con la intensidad, esmero y cuidado apropiado, así como con la eficiencia adecuada, manifestando EL TRABAJADOR tener todos los conocimientos, aptitudes y experiencias necesarias para el desempeño de su trabajo. 
             De igual manera está totalmente de acuerdo en acatar todas las órdenes, disposiciones y circulares que el patrón emita o su representante, acatar el Reglamento Interior de Trabajo del cual recibe copia en esta fecha, y acatar todas las disposiciones legales que sean aplicables.
         </p>
-
-        {{-- ✅ NUEVA: Información detallada de la ficha técnica --}}
-        @if($trabajador->fichaTecnica)
-        <div class="datos-trabajador">
-            <p><strong>DATOS LABORALES ESPECÍFICOS:</strong></p>
-            <table class="horario-table">
-                <tr>
-                    <th>Área de Trabajo</th>
-                    <th>Categoría</th>
-                    <th>Formación</th>
-                    <th>Grado de Estudios</th>
-                </tr>
-                <tr>
-                    <td>{{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Por Asignar' }}</td>
-                    <td>{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Por Asignar' }}</td>
-                    <td>{{ $trabajador->fichaTecnica->formacion ?? 'No Especificada' }}</td>
-                    <td>{{ $trabajador->fichaTecnica->grado_estudios ?? 'No Especificado' }}</td>
-                </tr>
-            </table>
-        </div>
-        @endif
 
         <p class="clausula">
             <span class="clausula-numero">CLÁUSULA IV:</span> Para hacer más racional el empleo de la mano de obra disponible, EL TRABAJADOR conviene en que el patrón podrá asignarle labores distintas a su categoría y especialidad básica, procurando que éste retorne a ella a la brevedad posible.
@@ -271,41 +224,6 @@
                 descontinua de trabajo será de 42 horas a la semana por tratarse de jornada Nocturna debiendo EL TRABAJADOR de entrar a sus labores a las 22:00 horas o diez de la noche, finalizando su jornada de trabajo a las 06:00 horas o a las 06:00 de la mañana, es decir, EL TRABAJADOR laborará 07 horas diarias de domingo a viernes de cada semana, disfrutando EL TRABAJADOR de media hora descanso comprendida de las 02:00 horas a las 02:30 horas, recibiendo el pago de su respectivo séptimo día a que tiene derecho, el tiempo que EL TRABAJADOR use como descanso y para comida no se computara como tiempo efectivo de trabajo, dado que el mismo lo utilizará fuera de las instalaciones del centro de trabajo, el presente horario y jornada de trabajo se pacta con fundamento en los artículos 58 y 59 de la Ley Federal del Trabajo, siendo el día de descanso semanal el día sábado de cada semana.
             @endif
         </p>
-
-        {{-- ✅ TABLA VISUAL DE HORARIOS --}}
-        @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
-        <div class="datos-trabajador">
-            <p><strong>HORARIO DETALLADO DE TRABAJO:</strong></p>
-            <table class="horario-table">
-                <tr>
-                    <th>Día</th>
-                    <th>Hora Entrada</th>
-                    <th>Hora Salida</th>
-                    <th>Horas por Día</th>
-                    <th>Status</th>
-                </tr>
-                @foreach(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'] as $dia)
-                    @php
-                        $esLaborable = in_array($dia, $trabajador->fichaTecnica->dias_laborables ?? []);
-                        $nombreDia = \App\Models\FichaTecnica::DIAS_SEMANA[$dia];
-                    @endphp
-                    <tr>
-                        <td><strong>{{ $nombreDia }}</strong></td>
-                        <td>{{ $esLaborable ? $horaEntrada : '-' }}</td>
-                        <td>{{ $esLaborable ? $horaSalida : '-' }}</td>
-                        <td>{{ $esLaborable ? $horasDiarias : '0' }}</td>
-                        <td>{{ $esLaborable ? 'Laborable' : 'Descanso' }}</td>
-                    </tr>
-                @endforeach
-                <tr style="background-color: #e9ecef;">
-                    <td><strong>TOTAL SEMANAL</strong></td>
-                    <td colspan="2"><strong>{{ count($trabajador->fichaTecnica->dias_laborables ?? []) }} días laborables</strong></td>
-                    <td><strong>{{ $horasSemanales }}h</strong></td>
-                    <td><strong>Turno {{ ucfirst($turno) }}</strong></td>
-                </tr>
-            </table>
-        </div>
-        @endif
 
         <p class="clausula">
             <span class="clausula-numero">CLÁUSULA XIV:</span> Se prohíbe a EL TRABAJADOR laborar tiempo extraordinario por su cuenta y sólo podrá hacerlo cuando exista autorización previa y por escrito del patrón debiendo estar dicha autorización firmado por el patrón y por el jefe inmediato de EL TRABAJADOR y/o jefe de personal, independientemente de estarse a lo dispuesto sobre dicho particular por los artículos 65, 66, 67 y 68 de la Ley Federal del Trabajo. Dicha prohibición se hace extensiva a lo referente a séptimos días, descansos obligatorios y días festivos, debiendo de estarse a lo señalado por los artículos 74 y 75 del citado Ordenamiento Legal. EL TRABAJADOR tiene la obligación de reportarse por escrito diariamente al patrón todas las actividades que realice, cualquier violación al presente Contrato o a la Ley por parte de EL TRABAJADOR, será causa de rescisión de la relación de trabajo, imputable al mismo y sin responsabilidad para el patrón.

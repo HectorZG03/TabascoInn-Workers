@@ -1,4 +1,4 @@
-{{-- resources/views/trabajadores/modales/crear_contrato.blade.php - CORREGIDO --}}
+{{-- resources/views/trabajadores/modales/crear_contrato.blade.php - CON FORMATO GLOBAL --}}
 
 <div class="modal fade" id="modalCrearContrato" tabindex="-1" aria-labelledby="modalCrearContratoLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -26,7 +26,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ Tipo de Contrato con mejor explicación --}}
+                    {{-- ✅ Tipo de Contrato --}}
                     <div class="row mb-3">
                         <div class="col-12">
                             <label for="tipo_contrato" class="form-label">
@@ -49,7 +49,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ Fecha de inicio (SIEMPRE VISIBLE - permite fechas pasadas) --}}
+                    {{-- ✅ FECHAS CON FORMATO GLOBAL --}}
                     <div class="row">
                         <div class="col-md-6">
                             <div class="mb-3">
@@ -57,16 +57,18 @@
                                     <i class="bi bi-calendar-event"></i>
                                     Fecha de Inicio <span class="text-danger">*</span>
                                 </label>
-                                <input type="date" 
-                                    name="fecha_inicio_contrato" 
-                                    id="fecha_inicio_contrato"
-                                    class="form-control"
-                                    value="{{ now()->format('Y-m-d') }}"
-                                    required>
+                                <input type="text" 
+                                       name="fecha_inicio_contrato" 
+                                       id="fecha_inicio_contrato"
+                                       class="form-control formato-fecha"
+                                       placeholder="DD/MM/YYYY"
+                                       maxlength="10"
+                                       required>
                                 <div class="form-text">
                                     <i class="bi bi-check-circle text-success"></i>
                                     Se permiten fechas pasadas, presentes y futuras
                                 </div>
+                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
                         
@@ -77,11 +79,14 @@
                                     <i class="bi bi-calendar-x"></i>
                                     Fecha de Fin <span class="text-danger" id="fecha_fin_required">*</span>
                                 </label>
-                                <input type="date" 
+                                <input type="text" 
                                        name="fecha_fin_contrato" 
                                        id="fecha_fin_contrato"
-                                       class="form-control">
+                                       class="form-control formato-fecha"
+                                       placeholder="DD/MM/YYYY"
+                                       maxlength="10">
                                 <div class="form-text">Fecha cuando terminará el contrato</div>
+                                <div class="invalid-feedback"></div>
                             </div>
                         </div>
                     </div>
@@ -143,7 +148,7 @@
                         </div>
                     </div>
 
-                    {{-- ✅ Resumen del Contrato (mejorado) --}}
+                    {{-- ✅ Resumen del Contrato --}}
                     <div id="resumen_contrato" class="row mb-3" style="display: none;">
                         <div class="col-12">
                             <div class="card border-success">
@@ -256,13 +261,19 @@
     </div>
 </div>
 
-{{-- ✅ JAVASCRIPT COMPLETAMENTE CORREGIDO --}}
+{{-- ✅ JAVASCRIPT COMPLETAMENTE ACTUALIZADO PARA FORMATO GLOBAL --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const modalCrearContrato = document.getElementById('modalCrearContrato');
     
     if (modalCrearContrato) {
-        console.log('🔧 Inicializando Modal Crear Contrato - V2.0 Corregido');
+        console.log('🔧 Inicializando Modal Crear Contrato - Con FormatoGlobal');
+        
+        // ✅ VERIFICAR QUE FORMATO GLOBAL ESTÉ DISPONIBLE
+        if (typeof FormatoGlobal === 'undefined') {
+            console.error('❌ FormatoGlobal no está disponible');
+            return;
+        }
         
         // ✅ ELEMENTOS DEL FORMULARIO
         const tipoContratoSelect = document.getElementById('tipo_contrato');
@@ -322,6 +333,9 @@ document.addEventListener('DOMContentLoaded', function() {
             fechaFinInput.removeAttribute('required');
             tipoDuracionHidden.value = '';
             
+            // Limpiar validaciones
+            FormatoGlobal.limpiarValidacion(fechaFinInput);
+            
             // Mostrar resumen
             mostrarResumenIndeterminado();
         }
@@ -340,11 +354,13 @@ document.addEventListener('DOMContentLoaded', function() {
             // Hacer fecha fin requerida
             fechaFinInput.setAttribute('required', 'required');
             
-            // Calcular fecha fin por defecto
-            calcularFechaFinPorDefecto();
+            // Calcular fecha fin por defecto si no hay fecha
+            if (!fechaFinInput.value && fechaInicioInput.value) {
+                calcularFechaFinPorDefecto();
+            }
             
             // Actualizar cálculos
-            calcularDuracionAutomatica();
+            setTimeout(() => calcularDuracionConFormatoGlobal(), 100);
         }
 
         // ✅ LIMPIAR FORMULARIO
@@ -361,6 +377,10 @@ document.addEventListener('DOMContentLoaded', function() {
             fechaFinInput.removeAttribute('required');
             tipoDuracionHidden.value = '';
             
+            // Limpiar validaciones
+            FormatoGlobal.limpiarValidacion(fechaInicioInput);
+            FormatoGlobal.limpiarValidacion(fechaFinInput);
+            
             // Resetear textos
             tipoDuracionTexto.textContent = 'Seleccione el tipo de contrato';
             tipoDuracionTexto.className = 'text-muted';
@@ -374,25 +394,18 @@ document.addEventListener('DOMContentLoaded', function() {
         // ✅ CALCULAR FECHA FIN POR DEFECTO (6 meses después)
         function calcularFechaFinPorDefecto() {
             const fechaInicio = fechaInicioInput.value;
-            if (fechaInicio && !fechaFinInput.value) {
-                const inicio = new Date(fechaInicio);
-                const fin = new Date(inicio);
-                fin.setMonth(fin.getMonth() + 6); // 6 meses por defecto
-                
-                fechaFinInput.value = fin.toISOString().split('T')[0];
-                console.log('📅 Fecha fin calculada por defecto:', fechaFinInput.value);
-            }
-            
-            // Establecer fecha mínima para fin
-            if (fechaInicio) {
-                const minDate = new Date(fechaInicio);
-                minDate.setDate(minDate.getDate() + 1); // Al menos 1 día después
-                fechaFinInput.min = minDate.toISOString().split('T')[0];
+            if (fechaInicio && FormatoGlobal.validarFormatoFecha(fechaInicio) && !fechaFinInput.value) {
+                // Usar función de FormatoGlobal para agregar meses
+                const fechaFin = FormatoGlobal.agregarMeses(fechaInicio, 6);
+                if (fechaFin) {
+                    fechaFinInput.value = fechaFin;
+                    console.log('📅 Fecha fin calculada por defecto:', fechaFin);
+                }
             }
         }
 
-        // ✅ CALCULAR DURACIÓN AUTOMÁTICA
-        function calcularDuracionAutomatica() {
+        // ✅ CALCULAR DURACIÓN CON FORMATO GLOBAL
+        function calcularDuracionConFormatoGlobal() {
             const tipoContrato = tipoContratoSelect.value;
             
             if (tipoContrato !== 'determinado') return;
@@ -404,17 +417,21 @@ document.addEventListener('DOMContentLoaded', function() {
                 resetearCalculos('Seleccione ambas fechas');
                 return;
             }
+
+            // ✅ VALIDAR FORMATOS CON FORMATO GLOBAL
+            if (!FormatoGlobal.validarFormatoFecha(fechaInicio) || !FormatoGlobal.validarFormatoFecha(fechaFin)) {
+                resetearCalculos('Formato de fecha inválido', 'danger');
+                return;
+            }
             
-            const inicio = new Date(fechaInicio);
-            const fin = new Date(fechaFin);
+            // ✅ CALCULAR DIFERENCIA DE DÍAS CON FORMATO GLOBAL
+            const diasTotales = FormatoGlobal.calcularDiferenciaDias(fechaInicio, fechaFin);
             
-            if (fin <= inicio) {
+            if (diasTotales === null || diasTotales <= 0) {
                 resetearCalculos('Fecha fin debe ser posterior al inicio', 'danger');
                 return;
             }
 
-            // ✅ CALCULAR DURACIÓN
-            const diasTotales = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
             console.log('📊 Días totales calculados:', diasTotales);
             
             let tipoDuracion, duracionMostrar, tipoTexto, colorClass;
@@ -424,11 +441,8 @@ document.addEventListener('DOMContentLoaded', function() {
                 tipoTexto = '📅 Por meses';
                 colorClass = 'text-info fw-bold';
                 
-                // Calcular meses exactos
-                let meses = (fin.getFullYear() - inicio.getFullYear()) * 12 + (fin.getMonth() - inicio.getMonth());
-                if (fin.getDate() < inicio.getDate()) meses--;
-                if (meses <= 0 && fin > inicio) meses = 1;
-                
+                // Calcular meses aproximados
+                const meses = Math.ceil(diasTotales / 30);
                 duracionMostrar = `${meses} ${meses === 1 ? 'mes' : 'meses'} (${diasTotales} días)`;
             } else {
                 tipoDuracion = 'dias';
@@ -447,7 +461,7 @@ document.addEventListener('DOMContentLoaded', function() {
             console.log('✅ Duración calculada:', { tipoDuracion, duracionMostrar });
             
             // ✅ Mostrar resumen
-            mostrarResumenDeterminado(fechaInicio, fechaFin, duracionMostrar, tipoTexto);
+            mostrarResumenDeterminado(fechaInicio, fechaFin, duracionMostrar);
         }
 
         // ✅ RESETEAR CÁLCULOS
@@ -461,11 +475,11 @@ document.addEventListener('DOMContentLoaded', function() {
         }
 
         // ✅ MOSTRAR RESUMEN PARA DETERMINADO
-        function mostrarResumenDeterminado(fechaInicio, fechaFin, duracion, tipo) {
+        function mostrarResumenDeterminado(fechaInicio, fechaFin, duracion) {
             resumenTitulo.textContent = '📅 Resumen - Contrato Determinado';
             resumenTipo.textContent = 'Por Tiempo Determinado';
-            resumenInicio.textContent = formatearFecha(fechaInicio);
-            resumenFin.textContent = formatearFecha(fechaFin);
+            resumenInicio.textContent = fechaInicio; // Ya está en formato DD/MM/YYYY
+            resumenFin.textContent = fechaFin; // Ya está en formato DD/MM/YYYY
             resumenDuracion.textContent = duracion;
             
             // Mostrar todas las columnas
@@ -480,7 +494,7 @@ document.addEventListener('DOMContentLoaded', function() {
         function mostrarResumenIndeterminado() {
             resumenTitulo.textContent = '♾️ Resumen - Contrato Indeterminado';
             resumenTipo.textContent = 'Por Tiempo Indeterminado';
-            resumenInicio.textContent = fechaInicioInput.value ? formatearFecha(fechaInicioInput.value) : 'Sin seleccionar';
+            resumenInicio.textContent = fechaInicioInput.value || 'Sin seleccionar';
             
             // Ocultar columnas no aplicables
             resumenFinCol.style.display = 'none';
@@ -497,39 +511,29 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         }
 
-        // ✅ FORMATEAR FECHA
-        function formatearFecha(fecha) {
-            const date = new Date(fecha);
-            return date.toLocaleDateString('es-ES', {
-                day: '2-digit',
-                month: '2-digit',
-                year: 'numeric'
-            });
-        }
-
-        // ✅ EVENT LISTENERS
-        fechaInicioInput.addEventListener('change', function() {
-            console.log('📅 Fecha inicio cambiada:', this.value);
+        // ✅ EVENT LISTENERS CON FORMATO GLOBAL
+        fechaInicioInput.addEventListener('blur', function() {
+            console.log('📅 Fecha inicio validada:', this.value);
             const tipoContrato = tipoContratoSelect.value;
             
             if (tipoContrato === 'determinado') {
                 calcularFechaFinPorDefecto();
-                calcularDuracionAutomatica();
+                setTimeout(() => calcularDuracionConFormatoGlobal(), 100);
             } else if (tipoContrato === 'indeterminado') {
                 mostrarResumenIndeterminado();
             }
         });
         
-        fechaFinInput.addEventListener('change', function() {
-            console.log('📅 Fecha fin cambiada:', this.value);
+        fechaFinInput.addEventListener('blur', function() {
+            console.log('📅 Fecha fin validada:', this.value);
             const tipoContrato = tipoContratoSelect.value;
             
             if (tipoContrato === 'determinado') {
-                calcularDuracionAutomatica();
+                setTimeout(() => calcularDuracionConFormatoGlobal(), 100);
             }
         });
 
-        // ✅ VALIDACIÓN MEJORADA DEL FORMULARIO
+        // ✅ VALIDACIÓN MEJORADA DEL FORMULARIO CON FORMATO GLOBAL
         formCrearContrato.addEventListener('submit', function(e) {
             console.log('📤 Enviando formulario...');
             
@@ -549,6 +553,14 @@ document.addEventListener('DOMContentLoaded', function() {
                 fechaInicioInput.focus();
                 return false;
             }
+
+            // ✅ VALIDAR FORMATO DE FECHA INICIO
+            if (!FormatoGlobal.validarFormatoFecha(fechaInicio)) {
+                e.preventDefault();
+                alert('❌ La fecha de inicio tiene formato inválido. Use DD/MM/YYYY');
+                fechaInicioInput.focus();
+                return false;
+            }
             
             // ✅ VALIDACIONES ESPECÍFICAS PARA DETERMINADO
             if (tipoContrato === 'determinado') {
@@ -560,18 +572,25 @@ document.addEventListener('DOMContentLoaded', function() {
                     fechaFinInput.focus();
                     return false;
                 }
+
+                // ✅ VALIDAR FORMATO DE FECHA FIN
+                if (!FormatoGlobal.validarFormatoFecha(fechaFin)) {
+                    e.preventDefault();
+                    alert('❌ La fecha de fin tiene formato inválido. Use DD/MM/YYYY');
+                    fechaFinInput.focus();
+                    return false;
+                }
                 
-                const inicio = new Date(fechaInicio);
-                const fin = new Date(fechaFin);
+                // ✅ VALIDAR QUE FECHA FIN SEA POSTERIOR CON FORMATO GLOBAL
+                const diferenciaDias = FormatoGlobal.calcularDiferenciaDias(fechaInicio, fechaFin);
                 
-                if (fin <= inicio) {
+                if (diferenciaDias === null || diferenciaDias <= 0) {
                     e.preventDefault();
                     alert('❌ La fecha de fin debe ser posterior a la fecha de inicio');
                     fechaFinInput.focus();
                     return false;
                 }
 
-                const diferenciaDias = Math.ceil((fin - inicio) / (1000 * 60 * 60 * 24));
                 if (diferenciaDias < 1) {
                     e.preventDefault();
                     alert('❌ El contrato debe tener al menos 1 día de duración');
@@ -609,23 +628,23 @@ document.addEventListener('DOMContentLoaded', function() {
             }, 10000);
         });
 
-        // ✅ INICIALIZAR AL ABRIR EL MODAL
+        // ✅ INICIALIZAR AL ABRIR EL MODAL CON FORMATO GLOBAL
         modalCrearContrato.addEventListener('show.bs.modal', function() {
-            console.log('🔓 Modal abierto - Inicializando...');
+            console.log('🔓 Modal abierto - Inicializando con FormatoGlobal...');
             
             // Resetear completamente
             formCrearContrato.reset();
             limpiarFormulario();
             
-            // Establecer fecha de inicio por defecto (hoy)
-            fechaInicioInput.value = new Date().toISOString().split('T')[0];
+            // ✅ ESTABLECER FECHA DE INICIO POR DEFECTO CON FORMATO DD/MM/YYYY
+            fechaInicioInput.value = FormatoGlobal.obtenerFechaHoy();
             
             // Enfocar primer campo después de un delay
             setTimeout(() => {
                 tipoContratoSelect.focus();
             }, 500);
             
-            console.log('✅ Modal inicializado correctamente');
+            console.log('✅ Modal inicializado con FormatoGlobal');
         });
 
         // ✅ LIMPIAR AL CERRAR
@@ -639,13 +658,13 @@ document.addEventListener('DOMContentLoaded', function() {
             btnCrearContrato.disabled = false;
             btnCrearContrato.innerHTML = '<i class="bi bi-file-earmark-plus"></i> Crear Contrato';
             
-            // Restaurar fecha de inicio
-            fechaInicioInput.value = new Date().toISOString().split('T')[0];
+            // Restaurar fecha de inicio con formato DD/MM/YYYY
+            fechaInicioInput.value = FormatoGlobal.obtenerFechaHoy();
             
             console.log('✅ Modal limpiado correctamente');
         });
 
-        console.log('✅ Modal Crear Contrato inicializado - V2.0 con soporte completo para indeterminados');
+        console.log('✅ Modal Crear Contrato inicializado con FormatoGlobal - V3.0');
     } else {
         console.error('❌ No se encontró el modal #modalCrearContrato');
     }

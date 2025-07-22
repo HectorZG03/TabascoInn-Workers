@@ -1,7 +1,7 @@
 /**
  * ✅ FUNCIONES GLOBALES PARA FORMATO DE FECHAS Y HORAS
  * Sistema reutilizable y simple para campos con formato controlado
- * formato-global.js
+ * formato-global.js - ACTUALIZADO PARA CONTRATOS
  */
 
 window.FormatoGlobal = {
@@ -117,8 +117,9 @@ window.FormatoGlobal = {
             return false;
         }
         
-        // Verificar fecha válida
-        return checkdate ? checkdate(mes, dia, año) : true;
+        // Verificar fecha válida usando Date
+        const fechaJS = new Date(año, mes - 1, dia);
+        return fechaJS.getFullYear() === año && fechaJS.getMonth() === (mes - 1) && fechaJS.getDate() === dia;
     },
 
     validarRestriccionesFecha(campo, fecha) {
@@ -144,10 +145,9 @@ window.FormatoGlobal = {
                 }
                 break;
                 
+            // ✅ ACTUALIZADO: Permitir fechas pasadas, presentes y futuras para contratos
             case 'fecha_inicio_contrato':
-                if (fechaObj < fechaHoy) {
-                    return 'No puede ser fecha pasada';
-                }
+                // No hay restricciones - permite cualquier fecha válida
                 break;
                 
             case 'fecha_fin_contrato':
@@ -155,6 +155,21 @@ window.FormatoGlobal = {
                 if (fechaInicio && this.validarFormatoFecha(fechaInicio)) {
                     const fechaInicioObj = this.convertirFechaADate(fechaInicio);
                     if (fechaInicioObj && fechaObj <= fechaInicioObj) {
+                        return 'Debe ser posterior a la fecha de inicio';
+                    }
+                }
+                break;
+
+            // ✅ NUEVOS: Para fechas de renovación de contratos
+            case 'fecha_inicio_renovar':
+                // No hay restricciones específicas
+                break;
+                
+            case 'fecha_fin_renovar':
+                const fechaInicioRenovar = document.getElementById('fecha_inicio_renovar')?.value;
+                if (fechaInicioRenovar && this.validarFormatoFecha(fechaInicioRenovar)) {
+                    const fechaInicioRenovarObj = this.convertirFechaADate(fechaInicioRenovar);
+                    if (fechaInicioRenovarObj && fechaObj <= fechaInicioRenovarObj) {
                         return 'Debe ser posterior a la fecha de inicio';
                     }
                 }
@@ -169,6 +184,31 @@ window.FormatoGlobal = {
         
         const [dia, mes, año] = fecha.split('/').map(Number);
         return new Date(año, mes - 1, dia);
+    },
+
+    // ✅ NUEVA FUNCIÓN: Convertir fecha DD/MM/YYYY a YYYY-MM-DD para comparaciones
+    convertirFechaAISO(fecha) {
+        if (!this.validarFormatoFecha(fecha)) return null;
+        
+        const [dia, mes, año] = fecha.split('/').map(Number);
+        return `${año}-${mes.toString().padStart(2, '0')}-${dia.toString().padStart(2, '0')}`;
+    },
+
+    // ✅ NUEVA FUNCIÓN: Convertir fecha YYYY-MM-DD a DD/MM/YYYY
+    convertirFechaDeISO(fechaISO) {
+        if (!fechaISO) return '';
+        
+        const [año, mes, dia] = fechaISO.split('-');
+        return `${dia}/${mes}/${año}`;
+    },
+
+    // ✅ NUEVA FUNCIÓN: Obtener fecha actual en formato DD/MM/YYYY
+    obtenerFechaHoy() {
+        const hoy = new Date();
+        const dia = hoy.getDate().toString().padStart(2, '0');
+        const mes = (hoy.getMonth() + 1).toString().padStart(2, '0');
+        const año = hoy.getFullYear();
+        return `${dia}/${mes}/${año}`;
     },
 
     // =================================
@@ -293,6 +333,37 @@ window.FormatoGlobal = {
         }
         
         return edad >= 0 ? edad : null;
+    },
+
+    // ✅ NUEVA FUNCIÓN: Calcular diferencia de días entre fechas DD/MM/YYYY
+    calcularDiferenciaDias(fechaInicio, fechaFin) {
+        if (!this.validarFormatoFecha(fechaInicio) || !this.validarFormatoFecha(fechaFin)) {
+            return null;
+        }
+        
+        const fechaInicioObj = this.convertirFechaADate(fechaInicio);
+        const fechaFinObj = this.convertirFechaADate(fechaFin);
+        
+        if (!fechaInicioObj || !fechaFinObj) return null;
+        
+        const diferencia = fechaFinObj.getTime() - fechaInicioObj.getTime();
+        return Math.ceil(diferencia / (1000 * 60 * 60 * 24));
+    },
+
+    // ✅ NUEVA FUNCIÓN: Agregar meses a una fecha DD/MM/YYYY
+    agregarMeses(fecha, meses) {
+        if (!this.validarFormatoFecha(fecha)) return null;
+        
+        const fechaObj = this.convertirFechaADate(fecha);
+        if (!fechaObj) return null;
+        
+        fechaObj.setMonth(fechaObj.getMonth() + meses);
+        
+        const dia = fechaObj.getDate().toString().padStart(2, '0');
+        const mes = (fechaObj.getMonth() + 1).toString().padStart(2, '0');
+        const año = fechaObj.getFullYear();
+        
+        return `${dia}/${mes}/${año}`;
     },
 
     calcularTurno(entrada, salida) {
@@ -422,3 +493,10 @@ window.validarFormatoHora = (hora) => FormatoGlobal.validarFormatoHora(hora);
 window.calcularHoras = (entrada, salida) => FormatoGlobal.calcularHoras(entrada, salida);
 window.calcularEdad = (fecha) => FormatoGlobal.calcularEdad(fecha);
 window.calcularTurno = (entrada, salida) => FormatoGlobal.calcularTurno(entrada, salida);
+
+// ✅ NUEVAS FUNCIONES GLOBALES PARA CONTRATOS
+window.calcularDiferenciaDias = (fechaInicio, fechaFin) => FormatoGlobal.calcularDiferenciaDias(fechaInicio, fechaFin);
+window.agregarMeses = (fecha, meses) => FormatoGlobal.agregarMeses(fecha, meses);
+window.convertirFechaAISO = (fecha) => FormatoGlobal.convertirFechaAISO(fecha);
+window.convertirFechaDeISO = (fechaISO) => FormatoGlobal.convertirFechaDeISO(fechaISO);
+window.obtenerFechaHoy = () => FormatoGlobal.obtenerFechaHoy();
