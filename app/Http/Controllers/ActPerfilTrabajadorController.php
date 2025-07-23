@@ -19,9 +19,6 @@ use Carbon\Carbon;
 
 class ActPerfilTrabajadorController extends Controller
 {
-/**
-     * Mostrar perfil completo del trabajador ✅ CORREGIDO + HORAS EXTRA
-     */
     public function show(Trabajador $trabajador)
     {
         // ✅ Una sola carga de relaciones optimizada + HORAS EXTRA
@@ -31,7 +28,7 @@ class ActPerfilTrabajadorController extends Controller
             'despido',
             'historialPromociones' => function($query) {
                 $query->with(['categoriaAnterior', 'categoriaNueva'])
-                      ->latest('fecha_cambio');
+                    ->latest('fecha_cambio');
             },
             // ✅ NUEVA: Cargar horas extra
             'horasExtra' => function($query) {
@@ -48,9 +45,13 @@ class ActPerfilTrabajadorController extends Controller
         
         if ($trabajador->fichaTecnica && $trabajador->fichaTecnica->categoria) {
             $categorias = Categoria::where('id_area', $trabajador->fichaTecnica->categoria->id_area)
-                                 ->orderBy('nombre_categoria')
-                                 ->get();
+                                ->orderBy('nombre_categoria')
+                                ->get();
         }
+
+        // ✅ NUEVO: Obtener historial completo para la pestaña de historial
+        $historialCompleto = HistorialPromocion::obtenerHistorialTrabajador($trabajador->id_trabajador);
+        $estadisticasHistorial = HistorialPromocion::obtenerEstadisticas($trabajador->id_trabajador);
 
         // ✅ Extraer datos específicos de las estadísticas
         $statsPromociones = $stats['promociones'];
@@ -69,10 +70,12 @@ class ActPerfilTrabajadorController extends Controller
             'historialReciente',
             // ✅ NUEVAS: Variables para horas extra
             'stats_horas',
-            'historial_horas'
+            'historial_horas',
+            // ✅ NUEVAS: Variables para historial completo
+            'historialCompleto',
+            'estadisticasHistorial'
         ));
     }
-
     
 /**
      * ✅ MÉTODO UNIFICADO - Reemplaza ambos métodos anteriores + HORAS EXTRA

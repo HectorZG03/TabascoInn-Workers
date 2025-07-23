@@ -156,7 +156,6 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <nav>
-                    {{-- En lugar de las pestañas que cargan contenido dinámico, usar enlaces directos --}}
                     <div class="nav nav-pills" id="nav-tab" role="tablist">
                         <button class="nav-link active" id="nav-datos-tab" data-bs-toggle="tab" data-bs-target="#nav-datos" type="button" role="tab">
                             <i class="bi bi-person"></i> Datos Personales
@@ -167,6 +166,15 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
+                        
+                        {{-- ✅ NUEVA PESTAÑA DE HISTORIAL --}}
+                        <button class="nav-link" id="nav-historial-tab" data-bs-toggle="tab" data-bs-target="#nav-historial" type="button" role="tab">
+                            <i class="bi bi-clock-history"></i> Historial
+                            @if(isset($historialCompleto) && $historialCompleto->count() > 0)
+                                <span class="badge bg-info text-dark ms-1">{{ $historialCompleto->count() }}</span>
+                            @endif
+                        </button>
+                        
                         <button class="nav-link" id="nav-horas-tab" data-bs-toggle="tab" data-bs-target="#nav-horas" type="button" role="tab">
                             <i class="bi bi-clock"></i> Horas Extra 
                             @if($trabajador->saldo_horas_extra > 0)
@@ -177,9 +185,9 @@
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
                         
-                        {{-- ✅ REEMPLAZAR ESTAS PESTAÑAS CON ENLACES DIRECTOS --}}
+                        {{-- ENLACES DIRECTOS (sin cambios) --}}
                         <a href="{{ route('trabajadores.perfil.permisos.historial', $trabajador) }}" class="nav-link">
-                            <i class="bi bi-calendar-check"></i> Permisos
+                            <i class="bi bi-calendar-check"></i>Permisos
                         </a>
                         
                         <a href="{{ route('trabajadores.perfil.bajas.historial', $trabajador) }}" class="nav-link">
@@ -202,7 +210,7 @@
     <!-- CONTENIDO DE LAS PESTAÑAS (SIN vacaciones) -->
     <div class="row">
         <div class="col-12">
-          <div class="tab-content" id="nav-tabContent">
+        <div class="tab-content" id="nav-tabContent">
             <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
                 @include('trabajadores.secciones_perfil.datos_personales')
             </div>
@@ -213,6 +221,11 @@
 
             <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
                 @include('trabajadores.secciones_perfil.documentos')
+            </div>
+
+            {{-- ✅ NUEVA PESTAÑA DE HISTORIAL --}}
+            <div class="tab-pane fade" id="nav-historial" role="tabpanel" aria-labelledby="nav-historial-tab">
+                @include('trabajadores.secciones_perfil.historial_cambios')
             </div>
 
             <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
@@ -229,8 +242,6 @@
                     </div>
                 </div>
             </div>
-
-            {{-- ✅ ELIMINAR LAS PESTAÑAS nav-permisos y nav-bajas --}}
         </div>
         </div>
     </div>

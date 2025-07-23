@@ -492,7 +492,7 @@
 {{-- Modal crear contrato (actualizado) --}}
 @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 
-{{-- Modal renovar contrato (solo para determinados) --}}
+{{-- ✅ MODAL RENOVAR CONTRATO CORREGIDO - Reemplazar solo esta sección --}}
 <div class="modal fade" id="modalRenovarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -510,21 +510,32 @@
                     </div>
                     
                     <div class="row">
+                        {{-- ✅ FECHA INICIO CORREGIDA: tipo text con formato global --}}
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Fecha de Inicio</label>
-                            <input type="date" 
+                            <label class="form-label">Fecha de Inicio *</label>
+                            <input type="text" 
                                    name="fecha_inicio" 
                                    id="fecha_inicio_renovar"
-                                   class="form-control" 
+                                   class="form-control formato-fecha" 
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   autocomplete="off"
                                    required>
+                            <div class="form-text">Formato: DD/MM/YYYY</div>
                         </div>
+                        
+                        {{-- ✅ FECHA FIN CORREGIDA: tipo text con formato global --}}
                         <div class="col-md-6 mb-3">
-                            <label class="form-label">Fecha de Fin</label>
-                            <input type="date" 
+                            <label class="form-label">Fecha de Fin *</label>
+                            <input type="text" 
                                    name="fecha_fin" 
                                    id="fecha_fin_renovar"
-                                   class="form-control" 
+                                   class="form-control formato-fecha" 
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   autocomplete="off"
                                    required>
+                            <div class="form-text">Formato: DD/MM/YYYY</div>
                         </div>
                     </div>
 
@@ -574,14 +585,18 @@
 
                     <div class="mb-3">
                         <label class="form-label">Observaciones de Renovación (Opcional)</label>
-                        <textarea name="observaciones_renovacion" class="form-control" rows="3" 
-                                  placeholder="Motivo o detalles de la renovación"></textarea>
+                        <textarea name="observaciones_renovacion" 
+                                  class="form-control" 
+                                  rows="3" 
+                                  placeholder="Motivo o detalles de la renovación"
+                                  maxlength="500"></textarea>
+                        <div class="form-text">Máximo 500 caracteres</div>
                     </div>
                 </div>
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-warning">
-                        <i class="bi bi-arrow-repeat"></i> Renovar
+                        <i class="bi bi-arrow-repeat"></i> Renovar Contrato
                     </button>
                 </div>
             </form>

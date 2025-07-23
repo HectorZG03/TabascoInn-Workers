@@ -19,7 +19,7 @@
                     </div>
                 </div>
                 <div class="card-body text-center py-4" style="background-color: #E6F2ED;">
-                    <h4 class="mb-3" style="color: #007A4D;">
+                    <h4 class="mb-3" style="color: #0b7b1c;">
                         <i class="bi bi-person-circle"></i> {{ $user->nombre }}
                     </h4>
                     <p class="lead mb-2" style="color: #5D3A1A;">
@@ -40,15 +40,16 @@
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">
                 <div class="card-body text-center" style="background-color: #FFFFFF;">
-                    <i class="bi bi-person-fill fs-1 mb-3" style="color: #007A4D;"></i>
-                    <h5 class="card-title" style="color: #2F2F2F;">Areas y Categorias</h5>
-                    <p class="card-text" style="color: #5D3A1A;">Administracion de Areas y Categorias</p>
+                    <i class="bi bi-folder-fill fs-1 mb-3" style="color: #007A4D;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Áreas y Categorías</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Administración de Áreas y Categorías</p>
                     <a href="{{ route('areas.categorias.index') }}" class="btn text-white" style="background-color: #007A4D;">
-                        <i class="bi bi-pencil-square"></i> Editar Perfil
+                        <i class="bi bi-pencil-square"></i> Editar
                     </a>
                 </div>
             </div>
         </div>
+
 
         <!-- Cerrar Sesión -->
         <div class="col-md-6 col-lg-4 mb-4">

@@ -180,7 +180,7 @@
         </div>
     </div>
     
-    <div class="table-title">Vacaciones Pendientes de Amortización</div>
+    <div class="table-title">Tabla de Amortización</div>
     
     <table class="vacation-table">
         <thead>
