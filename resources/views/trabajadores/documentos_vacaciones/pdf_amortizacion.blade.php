@@ -13,11 +13,12 @@
         }
         
         body {
-            font-family: Arial, Arial;
+            font-family: Arial, sans-serif;
+            font-size: 11px; /* Letra más pequeña */
             max-width: 800px;
             margin: 0 auto;
             padding: 40px 20px;
-            line-height: 1.4;
+            line-height: 1.5;
             background-color: #ffffff;
         }
         
@@ -45,7 +46,7 @@
         .underline {
             text-decoration: underline;
             font-weight: normal;
-            min-width: 200px;
+            min-width: 150px;
             display: inline-block;
         }
         
@@ -159,23 +160,23 @@
         </div>
         
         <div class="field">
-            <strong>CATEGORIA:</strong> <span class="underline">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}</span>, 
-            <strong>FECHA DE INGRESO:</strong> <span class="underline">{{ $trabajador->fecha_ingreso->format('d/m/Y') }}</span>
+            <strong>PUESTO:</strong> <span class="underline">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}</span> 
+            <strong>FECHA DE INGRESO:</strong> <span class="underline">{{ $trabajador->fecha_ingreso->format('d-\\DI\\CI\\E\\M\\B\\R\\E-Y') }}</span>
         </div>
         
         <div class="field">
-            <strong>ÁREA:</strong> <span class="underline">{{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}</span>, 
-            <strong>ANTIGÜEDAD:</strong> <span class="underline">{{ $trabajador->antiguedad }} años</span>
+            <strong>PERIODO SOLICITADO:</strong> <span class="underline">{{ $año_actual }}-{{ $año_actual + 1 }}</span>
+            <strong>ANTIGÜEDAD:</strong> <span class="underline">{{ $trabajador->antiguedad }} AÑOS</span>
         </div>
         
         <div class="field">
-            <strong>DIAS QUE CORRESPONDEN:</strong> <span class="underline">{{ $trabajador->dias_vacaciones_correspondientes }} días</span>, 
-            <strong>DIAS RESTANTES:</strong> <span class="underline">{{ $trabajador->dias_vacaciones_restantes_este_año }} días</span>
+            <strong>DIAS QUE CORRESPONDEN:</strong> <span class="underline">{{ $trabajador->dias_vacaciones_correspondientes }} DIAS</span>
+            <strong>DIAS DISFRUTADOS:</strong> <span class="underline">{{ $dias_disfrutados ?? $trabajador->total_dias_vacaciones_tomadas }} DIAS</span>
         </div>
         
         <div class="field">
-            <strong>TOTAL DIAS SOLICITADOS:</strong> <span class="underline">{{ $total_dias }} días</span>, 
-            <strong>AÑO CORRESPONDIENTE:</strong> <span class="underline">{{ $año_actual }}</span>
+            <strong>DIAS SOLICITADOS:</strong> <span class="underline">{{ $total_dias }} DIAS</span>
+            <strong>DIAS PENDIENTES DEL PERIODO {{ $año_actual }}-{{ $año_actual + 1 }}:</strong> <span class="underline">{{ $dias_pendientes ?? $trabajador->dias_vacaciones_restantes_este_año }} DIA</span>
         </div>
     </div>
     
@@ -210,14 +211,6 @@
             </tr>
         </tbody>
     </table>
-    
-    <div class="content">
-        <div class="field">
-            <strong>NOTA:</strong> Este documento lista las vacaciones pendientes que requieren amortización. 
-            Una vez firmado, debe ser devuelto a Recursos Humanos para su procesamiento.
-        </div>
-    </div>
-    
     <div class="signatures">
         <div class="signature-row">
             <div class="signature-box">

@@ -173,6 +173,9 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/estadisticas', [VacacionesController::class, 'estadisticas'])->name('estadisticas');
             Route::get('/calcular-dias', [VacacionesController::class, 'calcularDias'])->name('calcular-dias');
             
+            // ✅ NUEVA RUTA: Calcular fechas considerando días laborables
+            Route::post('/calcular-fechas', [VacacionesController::class, 'calcularFechasVacaciones'])->name('calcular-fechas');
+            
             // Gestión de vacaciones
             Route::post('/asignar', [VacacionesController::class, 'store'])->name('asignar');
             Route::patch('/{vacacion}/iniciar', [VacacionesController::class, 'iniciar'])->name('iniciar');

@@ -1,13 +1,13 @@
-{{-- resources/views/trabajadores/secciones_perfil/vacaciones.blade.php --}}
+{{-- resources/views/trabajadores/secciones_perfil/vacaciones.blade.php - SIMPLIFICADO --}}
 
 @extends('layouts.app')
 
-@section('title', 'Vacaciones de ' . $trabajador->nombre_completo . ' - Hotel')
+@section('title', 'Vacaciones de ' . $trabajador->nombre_completo)
 
 @section('content')
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     
-    <!-- Header con información del trabajador -->
+    <!-- ✅ HEADER SIMPLIFICADO -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="card shadow border-0">
@@ -25,7 +25,7 @@
                                 <i class="bi bi-person"></i> Ver Perfil
                             </a>
                             <a href="{{ route('trabajadores.index') }}" class="btn btn-outline-light btn-sm">
-                                <i class="bi bi-arrow-left"></i> Lista de Trabajadores
+                                <i class="bi bi-arrow-left"></i> Volver
                             </a>
                         </div>
                     </div>
@@ -34,7 +34,7 @@
                 <div class="card-body">
                     <div class="row align-items-center">
                         <!-- Avatar y datos básicos -->
-                        <div class="col-md-3">
+                        <div class="col-md-4">
                             <div class="d-flex align-items-center">
                                 <div class="avatar-lg bg-primary text-white d-flex align-items-center justify-content-center me-3"
                                     style="width: 60px; height: 60px; border-radius: 50%; font-size: 1.5rem;">
@@ -42,7 +42,7 @@
                                 </div>
                                 <div>
                                     <h6 class="mb-1">{{ $trabajador->nombre_completo }}</h6>
-                                    <p class="text-muted mb-0 small">
+                                    <p class="text-muted mb-1 small">
                                         {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
                                     </p>
                                     <span class="badge bg-{{ $trabajador->estatus_color }} trabajador-estatus-badge">
@@ -52,46 +52,24 @@
                             </div>
                         </div>
 
-                        <!-- Información laboral -->
-                        <div class="col-md-3">
-                            <div class="text-center">
-                                <div class="h5 text-primary mb-0">{{ $trabajador->antiguedad_texto }}</div>
-                                <small class="text-muted">Antigüedad</small>
-                            </div>
-                        </div>
-
-                        <!-- Estadísticas rápidas -->
-                        <div class="col-md-6">
+                        <!-- ✅ ESTADÍSTICAS SIMPLIFICADAS -->
+                        <div class="col-md-8">
                             <div class="row text-center">
                                 <div class="col-3">
-                                    <div class="h6 text-success mb-0" id="header-dias-correspondientes">
-                                        {{ $estadisticas['dias_correspondientes_año_actual'] ?? 0 }}
-                                    </div>
+                                    <div class="h5 text-success mb-0" id="header-dias-correspondientes">{{ $estadisticas['dias_correspondientes_año_actual'] ?? 0 }}</div>
                                     <small class="text-muted">Días LFT</small>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h6 text-info mb-0" id="header-dias-restantes">
-                                        {{ $estadisticas['dias_restantes_año_actual'] ?? 0 }}
-                                    </div>
+                                    <div class="h5 text-info mb-0" id="header-dias-restantes">{{ $estadisticas['dias_restantes_año_actual'] ?? 0 }}</div>
                                     <small class="text-muted">Disponibles</small>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h6 text-warning mb-0" id="header-vacaciones-activas">
-                                        {{ $estadisticas['vacaciones_activas'] ?? 0 }}
-                                    </div>
+                                    <div class="h5 text-warning mb-0" id="header-vacaciones-activas">{{ $estadisticas['vacaciones_activas'] ?? 0 }}</div>
                                     <small class="text-muted">Activas</small>
                                 </div>
                                 <div class="col-3">
-                                    <div class="h6 text-secondary mb-0" id="header-total-tomadas">
-                                        {{ $estadisticas['total_dias_tomados'] ?? 0 }}
-                                    </div>
+                                    <div class="h5 text-secondary mb-0" id="header-total-tomadas">{{ $estadisticas['total_dias_tomados'] ?? 0 }}</div>
                                     <small class="text-muted">Disfrutados</small>
-                                </div>
-                                <div class="col-3">
-                                    <div class="h6 text-success mb-0">
-                                        {{ $trabajador->documentosVacaciones->count() }}
-                                    </div>
-                                    <small class="text-muted">Documentos</small>
                                 </div>
                             </div>
                         </div>
@@ -101,7 +79,7 @@
         </div>
     </div>
 
-    <!-- Acciones principales -->
+    <!-- ✅ ACCIONES SIMPLIFICADAS -->
     <div class="row mb-4">
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
@@ -112,17 +90,17 @@
                         </button>
                     @endif
                     <a href="{{ route('trabajadores.documentos-vacaciones.index', $trabajador) }}" class="btn btn-outline-success">
-                        <i class="bi bi-file-earmark-pdf"></i> Documentos de Amortización
+                        <i class="bi bi-file-earmark-pdf"></i> Documentos
                     </a>
                     <button class="btn btn-outline-primary" id="refresh-vacaciones">
                         <i class="bi bi-arrow-clockwise"></i> Actualizar
                     </button>
                 </div>
                 
-                <!-- Filtros -->
+                <!-- Filtros simplificados -->
                 <div class="d-flex gap-2" id="vacaciones-filtros" style="display: none;">
                     <select class="form-select form-select-sm" id="filtro-estado" style="width: auto;">
-                        <option value="">Todos los estados</option>
+                        <option value="">Todos</option>
                         <option value="pendiente">Pendientes</option>
                         <option value="activa">Activas</option>
                         <option value="finalizada">Finalizadas</option>
@@ -136,72 +114,63 @@
         </div>
     </div>
 
+    <!-- ✅ ESTADOS DE UI SIMPLIFICADOS -->
+    <!-- Loading -->
+    <div id="vacaciones-loading" class="text-center py-5">
+        <div class="spinner-border text-primary mb-3" style="width: 3rem; height: 3rem;"></div>
+        <h5 class="text-muted">Cargando vacaciones...</h5>
+    </div>
+
     <!-- Estadísticas detalladas -->
     <div id="vacaciones-estadisticas" class="row mb-4" style="display: none;">
         <div class="col-md-3">
-            <div class="card bg-light border-0 h-100">
+            <div class="card bg-light h-100">
                 <div class="card-body text-center">
                     <i class="bi bi-calendar-check text-primary fs-1"></i>
                     <h3 class="text-primary mt-2 mb-1" id="stat-dias-correspondientes">0</h3>
                     <p class="text-muted mb-0">Días Correspondientes</p>
-                    <small class="text-muted">Según LFT México</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light border-0 h-100">
+            <div class="card bg-light h-100">
                 <div class="card-body text-center">
                     <i class="bi bi-calendar-plus text-success fs-1"></i>
                     <h3 class="text-success mt-2 mb-1" id="stat-dias-restantes">0</h3>
                     <p class="text-muted mb-0">Días Disponibles</p>
-                    <small class="text-muted">Este año</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light border-0 h-100">
+            <div class="card bg-light h-100">
                 <div class="card-body text-center">
                     <i class="bi bi-calendar-event text-info fs-1"></i>
                     <h3 class="text-info mt-2 mb-1" id="stat-total-tomados">0</h3>
                     <p class="text-muted mb-0">Días Disfrutados</p>
-                    <small class="text-muted">Total histórico</small>
                 </div>
             </div>
         </div>
         <div class="col-md-3">
-            <div class="card bg-light border-0 h-100">
+            <div class="card bg-light h-100">
                 <div class="card-body text-center">
                     <i class="bi bi-calendar-heart text-warning fs-1"></i>
                     <h3 class="text-warning mt-2 mb-1" id="stat-vacaciones-activas">0</h3>
                     <p class="text-muted mb-0">Vacaciones Activas</p>
-                    <small class="text-muted">En curso</small>
                 </div>
             </div>
         </div>
     </div>
 
-    <!-- Loading State -->
-    <div id="vacaciones-loading" class="text-center py-5">
-        <div class="spinner-border text-primary" role="status" style="width: 3rem; height: 3rem;">
-            <span class="visually-hidden">Cargando vacaciones...</span>
-        </div>
-        <h5 class="mt-3 text-muted">Cargando información de vacaciones...</h5>
-    </div>
-
     <!-- Lista de Vacaciones -->
-    <div id="vacaciones-lista" class="row">
-        <!-- Se llena dinámicamente -->
-    </div>
+    <div id="vacaciones-lista" class="row"></div>
 
     <!-- Estado Vacío -->
     <div id="vacaciones-vacio" class="text-center py-5" style="display: none;">
-        <div class="mb-4">
-            <i class="bi bi-calendar-heart text-muted" style="font-size: 4rem;"></i>
-        </div>
+        <i class="bi bi-calendar-heart text-muted mb-3" style="font-size: 4rem;"></i>
         <h4 class="text-muted">No hay vacaciones registradas</h4>
         <p class="text-muted mb-4">Este trabajador aún no tiene vacaciones asignadas.</p>
         @if(Auth::user()->esGerencia() || Auth::user()->esRecursosHumanos())
-            <button class="btn btn-primary btn-lg" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
+            <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
                 <i class="bi bi-plus-lg"></i> Asignar Primera Vacación
             </button>
         @endif
@@ -211,27 +180,27 @@
     <div id="vacaciones-error" class="alert alert-danger text-center" style="display: none;">
         <i class="bi bi-exclamation-triangle fs-1 mb-3"></i>
         <h5>Error al cargar las vacaciones</h5>
-        <p id="error-mensaje" class="mb-3">Ha ocurrido un error al cargar la información.</p>
+        <p id="error-mensaje" class="mb-3"></p>
         <button class="btn btn-outline-danger" id="retry-vacaciones">
             <i class="bi bi-arrow-clockwise"></i> Reintentar
         </button>
     </div>
 </div>
 
-<!-- Template para item de vacación -->
+<!-- ✅ TEMPLATE SIMPLIFICADO -->
 <template id="template-vacacion-item">
     <div class="col-12 mb-3">
-        <div class="card vacacion-item border-start border-4" data-vacacion-id="">
+        <div class="card vacacion-item border-start border-4">
             <div class="card-body">
                 <div class="row align-items-center">
                     <div class="col-md-8">
                         <div class="d-flex align-items-center mb-3">
-                            <span class="badge estado-badge me-3 fs-6"></span>
+                            <span class="badge estado-badge me-3"></span>
                             <h5 class="mb-0 periodo-texto"></h5>
                             <small class="text-muted ms-3 creado-por"></small>
                         </div>
                         
-                        <div class="row mb-3">
+                        <div class="row mb-2">
                             <div class="col-sm-6">
                                 <i class="bi bi-calendar2-range text-muted me-2"></i>
                                 <span class="fechas-texto"></span>
@@ -261,9 +230,7 @@
                             </div>
                         </div>
                         
-                        <div class="d-flex gap-2 justify-content-end acciones-vacacion">
-                            <!-- Botones de acción se añaden dinámicamente -->
-                        </div>
+                        <div class="d-flex gap-2 justify-content-end acciones-vacacion"></div>
                     </div>
                 </div>
             </div>
@@ -271,117 +238,52 @@
     </div>
 </template>
 
-<!-- Modal de Asignar Vacaciones -->
 @include('trabajadores.modales.asignar_vacaciones', ['trabajador' => $trabajador])
 
 {{-- ===================================== --}}
-{{-- ✅ SCRIPTS EN ORDEN CORRECTO CON RUTAS DINÁMICAS --}}
+{{-- ✅ SCRIPTS SIMPLIFICADOS --}}
 {{-- ===================================== --}}
 
-<!-- jQuery -->
 <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
-
-{{-- ✅ 1. PRIMERO: Script de rutas dinámicas globales --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
 
-{{-- ✅ 2. SEGUNDO: Variables globales de configuración --}}
 <script>
-// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+// ✅ CONFIGURACIÓN GLOBAL SIMPLIFICADA
 window.APP_DEBUG = @json(config('app.debug'));
-window.currentUser = @json([
-    'id' => Auth::id(),
-    'nombre' => Auth::user()->nombre,
-    'tipo' => Auth::user()->tipo
-]);
+window.currentUser = @json(['id' => Auth::id(), 'nombre' => Auth::user()->nombre, 'tipo' => Auth::user()->tipo]);
 
-// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+// Verificación básica
 if (typeof AppRoutes === 'undefined') {
-    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente para vacaciones');
-} else {
-    console.log('✅ AppRoutes disponible para vacaciones, base URL:', AppRoutes.getBaseUrl());
+    console.error('❌ AppRoutes no disponible');
 }
 </script>
 
-{{-- ✅ 3. TERCERO: FORMATO GLOBAL (Debe ir ANTES que otros scripts) --}}
 <script src="{{ asset('js/formato-global.js') }}"></script>
-
-{{-- ✅ 4. CUARTO: LISTA DE VACACIONES (Principal) --}}
 <script src="{{ asset('js/vacaciones.js') }}"></script>
-
-{{-- ✅ 5. QUINTO: MODAL DE ASIGNAR VACACIONES (Con formato global integrado) --}}
 <script src="{{ asset('js/modales/asignar_vacacion.js') }}"></script>
 
-{{-- ✅ 6. SEXTO: Script de verificación final --}}
 <script>
+// ✅ VERIFICACIÓN FINAL SIMPLIFICADA
 document.addEventListener('DOMContentLoaded', function() {
-    // ✅ VERIFICACIÓN FINAL DE CARGA
     setTimeout(() => {
         if (typeof AppRoutes !== 'undefined' && typeof window.vacacionesApp !== 'undefined') {
-            console.log('🎉 Sistema de vacaciones completamente inicializado con rutas dinámicas');
-            
-            // ✅ DEBUG EN DESARROLLO
-            if (window.APP_DEBUG) {
-                console.log('🎯 Sistema de vacaciones con rutas dinámicas:');
-                console.log('   📅 Formato Global: formato-global.js');
-                console.log('   📋 Lista: vacaciones.js');
-                console.log('   📝 Modal: modales/asignar_vacacion.js');
-                console.log('   👤 Usuario:', window.currentUser);
-                console.log('   🔧 Base URL:', AppRoutes.getBaseUrl());
-                console.log('   🔗 Rutas de ejemplo:');
-                console.log('       API vacaciones:', AppRoutes.trabajadores('1/vacaciones/api'));
-                console.log('       Asignar vacaciones:', AppRoutes.trabajadores('1/vacaciones/asignar'));
-                console.log('       Calcular días:', AppRoutes.trabajadores('1/vacaciones/calcular-dias'));
-            }
+            console.log('🎉 Sistema de vacaciones inicializado correctamente');
         } else {
-            console.error('❌ Error en la inicialización del sistema de vacaciones');
-            
-            if (typeof AppRoutes === 'undefined') {
-                console.error('   - AppRoutes no disponible');
-            }
-            if (typeof window.vacacionesApp === 'undefined') {
-                console.error('   - vacacionesApp no inicializada');
-            }
+            console.error('❌ Error en inicialización');
         }
     }, 500);
 });
 </script>
 
-<!-- Estilos -->
+<!-- ✅ ESTILOS SIMPLIFICADOS -->
 <style>
-.vacacion-item[data-estado="pendiente"] { 
-    border-left-color: #ffc107 !important; 
-}
-.vacacion-item[data-estado="activa"] { 
-    border-left-color: #198754 !important; 
-}
-.vacacion-item[data-estado="finalizada"] { 
-    border-left-color: #6c757d !important; 
-}
-.vacacion-item[data-estado="cancelada"] { 
-    border-left-color: #dc3545 !important; 
-}
+.vacacion-item[data-estado="pendiente"] { border-left-color: #ffc107 !important; }
+.vacacion-item[data-estado="activa"] { border-left-color: #198754 !important; }
+.vacacion-item[data-estado="finalizada"] { border-left-color: #6c757d !important; }
+.vacacion-item[data-estado="cancelada"] { border-left-color: #dc3545 !important; opacity: 0.8; }
 
-.avatar-lg {
-    box-shadow: 0 0 0 3px rgba(255,255,255,0.2);
-}
-
-.card {
-    transition: transform 0.2s ease, box-shadow 0.2s ease;
-}
-
-.card:hover {
-    transform: translateY(-2px);
-    box-shadow: 0 4px 25px rgba(0,0,0,0.1);
-}
-
-/* ✅ NUEVO: Estilo especial para vacaciones canceladas */
-.vacacion-item[data-estado="cancelada"] {
-    opacity: 0.8;
-}
-
-.vacacion-item[data-estado="cancelada"] .card-body {
-    background-color: rgba(220, 53, 69, 0.05);
-}
+.card { transition: transform 0.2s ease, box-shadow 0.2s ease; }
+.card:hover { transform: translateY(-2px); box-shadow: 0 4px 25px rgba(0,0,0,0.1); }
 </style>
 
 @endsection

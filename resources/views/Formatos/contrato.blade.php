@@ -7,8 +7,8 @@
         body {
             font-family: DejaVu Sans, sans-serif;
             font-size: 12px;
-            line-height: 1.5;
-            margin: 50px;
+            line-height: 1.4;
+            margin: 40px;
             color: #000;
         }
         h1 {
@@ -16,14 +16,14 @@
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
-            margin-bottom: 30px;
+            margin-bottom: 25px;
         }
         .section {
-            margin-top: 20px;
+            margin-top: 15px;
         }
         .clausula {
             text-align: justify;
-            margin-bottom: 15px;
+            margin-bottom: 12px;
         }
         .bold {
             font-weight: bold;
@@ -38,45 +38,53 @@
             font-weight: bold;
             text-decoration: underline;
         }
-        .firmas {
-            margin-top: 60px;
+        .clausula-final {
+            margin-top: 20px;
+            margin-bottom: 30px;
+        }
+        
+        /* ✅ FIRMAS OPTIMIZADAS PARA EVITAR SALTO DE PÁGINA */
+        .contenedor-firmas {
+            margin-top: 30px;
+            width: 100%;
+            page-break-inside: avoid;
+        }
+        .atentamente {
+            text-align: center;
+            font-weight: bold;
+            margin-bottom: 20px;
+        }
+        .firmas-row {
             width: 100%;
             display: table;
             table-layout: fixed;
+            margin-bottom: 25px;
         }
         .firma-seccion {
             width: 50%;
             text-align: center;
             vertical-align: top;
             display: table-cell;
-            padding: 0 10px;
+            padding: 0 15px;
         }
         .linea-firma {
             border-top: 1px solid black;
-            margin: 40px 20px 10px 20px;
-        }
-        .contenedor-firmas {
-            margin-top: 80px;
-            width: 100%;
-        }
-        .separador-firmas {
-            margin-top: 40px;
+            margin: 25px 10px 8px 10px;
         }
         .small-text {
             font-size: 10px;
-            line-height: 1.3;
+            line-height: 1.2;
         }
         ul {
-            margin: 10px 0;
-            padding-left: 20px;
+            margin: 8px 0;
+            padding-left: 18px;
         }
         li {
-            margin-bottom: 5px;
+            margin-bottom: 3px;
         }
     </style>
 </head>
 <body>
-    <img src="{{asset('img/images.png')}}" alt="Log">
     <h1>
         CONTRATO INDIVIDUAL DE TRABAJO<br>
         @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
@@ -316,31 +324,34 @@
             Leído que fue el presente Contrato Individual de Trabajo por el patrón y por EL TRABAJADOR, documento que va en siete fojas útiles escritas por una sola cara, quedando el original en poder del patrón y la copia en poder de EL TRABAJADOR, se firma por ambas partes y por los testigos que intervinieron en la celebración del mismo, en la Ciudad de Villahermosa, Tabasco el <span class="bold">{{ \Carbon\Carbon::parse($fecha_inicio)->format('d') }} de {{ \Carbon\Carbon::parse($fecha_inicio)->locale('es')->monthName }} del año {{ \Carbon\Carbon::parse($fecha_inicio)->format('Y') }}</span>.
         </p>
 
-        <p class="center bold" style="margin-top: 50px;">A T E N T A M E N T E</p>
+        {{-- ✅ SECCIÓN DE FIRMAS OPTIMIZADA --}}
         <div class="contenedor-firmas">
+            <p class="atentamente">A T E N T A M E N T E</p>
+            
             <!-- Primera fila: Patrón y Trabajador -->
-            <div class="firmas">
+            <div class="firmas-row">
                 <div class="firma-seccion">
                     <div class="linea-firma"></div>
-                    <p class="center"><strong>TABASCO INN, S.A. DE C.V.</strong><br>PATRÓN</p>
+                    <p><strong>TABASCO INN, S.A. DE C.V.</strong><br>PATRÓN</p>
                 </div>
                 <div class="firma-seccion">
                     <div class="linea-firma"></div>
-                    <p class="center"><strong>{{ strtoupper($trabajador->nombre_completo) }}</strong><br>TRABAJADOR</p>
+                    <p><strong>{{ strtoupper($trabajador->nombre_completo) }}</strong><br>TRABAJADOR</p>
                 </div>
             </div>
 
             <!-- Segunda fila: Testigos -->
-            <div class="firmas separador-firmas">
+            <div class="firmas-row">
                 <div class="firma-seccion">
                     <div class="linea-firma"></div>
-                    <p class="center"><strong>TESTIGO</strong></p>
+                    <p><strong>TESTIGO</strong></p>
                 </div>
                 <div class="firma-seccion">
                     <div class="linea-firma"></div>
-                    <p class="center"><strong>TESTIGO</strong></p>
+                    <p><strong>TESTIGO</strong></p>
                 </div>
             </div>
         </div>
+    </div>
 </body>
 </html>

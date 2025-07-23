@@ -1,5 +1,5 @@
 {{-- resources/views/trabajadores/modales/asignar_vacaciones.blade.php --}}
-{{-- Modal con FORMATO GLOBAL - Fechas DD/MM/YYYY automáticas --}}
+{{-- Modal con FORMATO GLOBAL - Fechas DD/MM/YYYY automáticas + Días Laborables --}}
 
 <div class="modal fade" id="asignarVacacionesModal" tabindex="-1" aria-labelledby="asignarVacacionesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -39,14 +39,65 @@
                     </div>
 
                     <!-- ===================================== -->
+                    <!-- ✅ NUEVA: INFORMACIÓN DE HORARIO LABORAL -->
+                    <!-- ===================================== -->
+                    @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                        <div class="alert alert-success">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6 class="alert-heading mb-1">
+                                        <i class="bi bi-calendar-week"></i> Horario Laboral Definido
+                                    </h6>
+                                    <small>
+                                        <strong>Días laborables:</strong> {{ $trabajador->fichaTecnica->dias_laborables_texto }}<br>
+                                        <strong>Horas semanales:</strong> {{ $trabajador->fichaTecnica->horas_semanales ?? 'No definido' }}h |
+                                        <strong>Turno:</strong> {{ $trabajador->fichaTecnica->turno_calculado ?? 'No definido' }}
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="badge bg-success fs-6 mb-1">
+                                        <i class="bi bi-check-circle"></i> Cálculo inteligente
+                                    </div>
+                                    <div class="small text-muted">Solo días laborables</div>
+                                </div>
+                            </div>
+                        </div>
+                    @else
+                        <div class="alert alert-warning">
+                            <div class="row align-items-center">
+                                <div class="col-md-8">
+                                    <h6 class="alert-heading mb-1">
+                                        <i class="bi bi-exclamation-triangle"></i> Sin horario laboral definido
+                                    </h6>
+                                    <small>
+                                        Se usará cálculo tradicional de días calendario consecutivos.<br>
+                                        <strong>Recomendación:</strong> Configure el horario laboral en la ficha técnica.
+                                    </small>
+                                </div>
+                                <div class="col-md-4 text-end">
+                                    <div class="badge bg-warning fs-6 mb-1">
+                                        <i class="bi bi-calendar"></i> Días calendario
+                                    </div>
+                                    <div class="small text-muted">Cálculo tradicional</div>
+                                </div>
+                            </div>
+                        </div>
+                    @endif
+
+                    <!-- ===================================== -->
                     <!-- FORMULARIO PRINCIPAL -->
                     <!-- ===================================== -->
                     <div class="row">
                         
-                        <!-- Días Solicitados -->
+                        <!-- ✅ ACTUALIZADO: Días Solicitados con contexto -->
                         <div class="col-md-6 mb-3">
                             <label for="dias_solicitados" class="form-label">
-                                <i class="bi bi-calendar2-date"></i> Días Solicitados
+                                <i class="bi bi-calendar2-date"></i> 
+                                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                                    Días Laborables Solicitados
+                                @else
+                                    Días Solicitados
+                                @endif
                                 <span class="text-danger">*</span>
                             </label>
                             <div class="input-group">
@@ -58,11 +109,25 @@
                                        max="30"
                                        required
                                        autocomplete="off">
-                                <span class="input-group-text">días</span>
+                                <span class="input-group-text">
+                                    @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                                        días lab.
+                                    @else
+                                        días
+                                    @endif
+                                </span>
                             </div>
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
-                                Máximo: <span id="max-dias-texto">0</span> días disponibles
+                                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                                    <i class="bi bi-info-circle text-success"></i> 
+                                    Se calculará considerando solo <strong>{{ $trabajador->fichaTecnica->dias_laborables_texto }}</strong>.
+                                    Máximo: <span id="max-dias-texto">0</span> días disponibles
+                                @else
+                                    <i class="bi bi-info-circle text-warning"></i> 
+                                    Cálculo tradicional (días calendario consecutivos).
+                                    Máximo: <span id="max-dias-texto">0</span> días disponibles
+                                @endif
                             </div>
                         </div>
 
@@ -96,6 +161,10 @@
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Formato: DD/MM/YYYY - No puede ser fecha pasada
+                                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                                    <br><i class="bi bi-lightbulb text-success"></i> 
+                                    <small>Si no es día laborable, se ajustará al siguiente día hábil</small>
+                                @endif
                             </div>
                         </div>
 
@@ -117,6 +186,10 @@
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Se calcula automáticamente según los días solicitados
+                                @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
+                                    <br><i class="bi bi-gear text-success"></i> 
+                                    <small>Calculado usando horario laboral definido</small>
+                                @endif
                             </div>
                         </div>
 
@@ -140,7 +213,7 @@
                     </div>
 
                     <!-- ===================================== -->
-                    <!-- RESUMEN DE VACACIONES -->
+                    <!-- ✅ ACTUALIZADO: RESUMEN DE VACACIONES CON DÍAS LABORABLES -->
                     <!-- ===================================== -->
                     <div class="card bg-light mt-3" id="resumen-vacacion" style="display: none;">
                         <div class="card-body">
@@ -157,8 +230,16 @@
                                 <div class="col-md-6">
                                     <ul class="list-unstyled mb-0">
                                         <li><strong>Estado inicial:</strong> <span class="badge bg-warning">Pendiente</span></li>
+                                        <li id="resumen-tipo-calculo" style="display: none;">
+                                            <strong>Tipo de cálculo:</strong> <span id="tipo-calculo-badge" class="badge">-</span>
+                                        </li>
                                     </ul>
                                 </div>
+                            </div>
+                            
+                            <!-- ✅ NUEVA: Información adicional dinámica -->
+                            <div id="resumen-info-adicional" class="mt-2" style="display: none;">
+                                <!-- Se llena dinámicamente desde JS -->
                             </div>
                         </div>
                     </div>
@@ -194,18 +275,3 @@
         </div>
     </div>
 </div>
-
-{{-- 
-====================================================================
-🎯 CAMBIOS IMPLEMENTADOS:
-====================================================================
-
-1. ✅ Inputs type="text" con clase "formato-fecha"
-2. ✅ Placeholder DD/MM/YYYY para guía visual
-3. ✅ maxlength="10" para limitar caracteres
-4. ✅ El formato global se aplica automáticamente
-5. ✅ readonly en fecha_fin (se calcula automáticamente)
-6. ✅ Textos de ayuda actualizados
-
-====================================================================
---}}

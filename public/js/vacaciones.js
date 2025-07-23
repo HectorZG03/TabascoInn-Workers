@@ -1,92 +1,52 @@
 /**
- * vacaciones.js - Gestión de Lista de Vacaciones con RUTAS DINÁMICAS
- * Maneja exclusivamente la lista de vacaciones y sus acciones
- * El modal está separado en asignar_vacacion.js
+ * vacaciones.js - Gestión Simplificada de Vacaciones
  */
 class VacacionesManager {
     constructor(trabajadorId) {
         this.trabajadorId = trabajadorId;
         this.vacaciones = [];
         this.estadisticas = {};
-        this.trabajadorData = {};
         
         console.log(`🏖️ VacacionesManager iniciado para trabajador: ${trabajadorId}`);
         this.init();
     }
 
     async init() {
-        // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
         if (typeof AppRoutes === 'undefined') {
-            console.error('❌ AppRoutes no está disponible para cargar vacaciones');
+            console.error('❌ AppRoutes no disponible');
             this.showError('Error de configuración: Sistema de rutas no disponible');
             return;
         }
 
         this.bindEvents();
         await this.loadVacaciones();
-        console.log('✅ VacacionesManager inicializado correctamente con rutas dinámicas');
+        console.log('✅ VacacionesManager inicializado');
     }
 
     bindEvents() {
-        // Eventos principales de la lista
         $('#refresh-vacaciones').on('click', () => this.loadVacaciones());
         $('#retry-vacaciones').on('click', () => this.loadVacaciones());
-        
-        // Filtros
-        $('#filtro-estado').on('change', () => this.filterVacaciones());
-        $('#filtro-periodo').on('change', () => this.filterVacaciones());
-        
-        // Escuchar evento del modal cuando se asigna una nueva vacación
+        $('#filtro-estado, #filtro-periodo').on('change', () => this.filterVacaciones());
         document.addEventListener('vacacionAsignada', (e) => this.handleVacacionAsignada(e.detail));
-        
-        console.log('🔗 Eventos de la lista vinculados correctamente');
     }
-
-    // =================================
-    // COMUNICACIÓN CON EL MODAL
-    // =================================
 
     async handleVacacionAsignada(detail) {
-        console.log('📥 Vacación asignada desde modal, recargando lista...', detail);
-        
-        // Recargar la lista de vacaciones
+        console.log('📥 Vacación asignada, recargando...', detail);
         await this.loadVacaciones();
-        
-        // Actualizar estado del trabajador si viene en la respuesta
-        if (detail.trabajador_estatus) {
-            this.updateTrabajadorStatus(detail.trabajador_estatus);
-        }
-        
-        console.log('✅ Lista actualizada después de asignar vacación');
+        if (detail.trabajador_estatus) this.updateTrabajadorStatus(detail.trabajador_estatus);
     }
 
-    // =================================
-    // CARGA Y GESTIÓN DE DATOS CON RUTAS DINÁMICAS
-    // =================================
-
+    // ✅ CARGA DE DATOS SIMPLIFICADA
     async loadVacaciones() {
         try {
             this.showLoading();
-            console.log(`🔄 Cargando vacaciones para trabajador: ${this.trabajadorId}`);
             
-            // ✅ USAR RUTAS DINÁMICAS EN LUGAR DE RUTAS ABSOLUTAS
-            // ❌ ANTES: const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/api`, {
-            // ✅ AHORA: Usar AppRoutes para construir la URL correcta
             const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/api`);
-            
-            console.log('🔄 Cargando desde URL:', url);
-            
             const response = await fetch(url, {
-                method: 'GET',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             
-            if (!response.ok) {
-                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            }
+            if (!response.ok) throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             
             const data = await response.json();
             
@@ -95,94 +55,55 @@ class VacacionesManager {
                 this.estadisticas = data.estadisticas || {};
                 this.trabajadorData = data.trabajador || {};
                 
-                this.renderVacaciones();
-                this.renderEstadisticas();
-                this.updateFilters();
-                this.showContent();
-                
+                this.renderAll();
                 console.log(`✅ ${this.vacaciones.length} vacaciones cargadas`);
             } else {
                 throw new Error(data.message || 'Error al cargar vacaciones');
             }
         } catch (error) {
             console.error('❌ Error loading vacaciones:', error);
-            this.showError(error.message || 'Error de conexión al cargar vacaciones');
+            this.showError(error.message || 'Error de conexión');
         }
     }
 
-    showLoading() {
-        $('#vacaciones-loading').show();
-        $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista, #vacaciones-vacio, #vacaciones-error').hide();
+    // ✅ RENDERIZADO CONSOLIDADO
+    renderAll() {
+        this.renderEstadisticas();
+        this.renderVacaciones();
+        this.updateFilters();
+        this.showContent();
     }
-
-    showContent() {
-        $('#vacaciones-loading').hide();
-        
-        if (this.vacaciones.length > 0) {
-            $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista').show();
-            $('#vacaciones-vacio').hide();
-        } else {
-            $('#vacaciones-vacio').show();
-            $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista').hide();
-        }
-        
-        $('#vacaciones-error').hide();
-    }
-
-    showError(message) {
-        $('#vacaciones-loading, #vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista, #vacaciones-vacio').hide();
-        $('#error-mensaje').text(message);
-        $('#vacaciones-error').show();
-    }
-
-    // =================================
-    // RENDERIZADO DE COMPONENTES
-    // =================================
 
     renderEstadisticas() {
-        // Estadísticas principales
-        $('#stat-dias-correspondientes').text(this.estadisticas.dias_correspondientes_año_actual || 0);
-        $('#stat-dias-restantes').text(this.estadisticas.dias_restantes_año_actual || 0);
-        $('#stat-total-tomados').text(this.estadisticas.total_dias_tomados || 0);
-        $('#stat-vacaciones-activas').text(this.estadisticas.vacaciones_activas || 0);
-        
-        // Header
-        $('#header-dias-correspondientes').text(this.estadisticas.dias_correspondientes_año_actual || 0);
-        $('#header-dias-restantes').text(this.estadisticas.dias_restantes_año_actual || 0);
-        $('#header-vacaciones-activas').text(this.estadisticas.vacaciones_activas || 0);
-        $('#header-total-tomadas').text(this.estadisticas.total_dias_tomados || 0);
+        const stats = this.estadisticas;
+        $('#stat-dias-correspondientes, #header-dias-correspondientes').text(stats.dias_correspondientes_año_actual || 0);
+        $('#stat-dias-restantes, #header-dias-restantes').text(stats.dias_restantes_año_actual || 0);
+        $('#stat-total-tomados, #header-total-tomadas').text(stats.total_dias_tomados || 0);
+        $('#stat-vacaciones-activas, #header-vacaciones-activas').text(stats.vacaciones_activas || 0);
     }
 
     renderVacaciones() {
         const $lista = $('#vacaciones-lista');
         $lista.empty();
-        
-        this.vacaciones.forEach(vacacion => {
-            const $item = this.createVacacionItem(vacacion);
-            $lista.append($item);
-        });
+        this.vacaciones.forEach(vacacion => $lista.append(this.createVacacionItem(vacacion)));
     }
 
+    // ✅ CREACIÓN DE ITEMS SIMPLIFICADA
     createVacacionItem(vacacion) {
         const $template = $('#template-vacacion-item').contents().clone();
+        const estadoInfo = this.getEstadoInfo(vacacion.estado);
         
-        // Configurar datos básicos
-        $template.find('.vacacion-item').attr('data-vacacion-id', vacacion.id_vacacion);
-        $template.find('.vacacion-item').attr('data-estado', vacacion.estado);
+        // Datos básicos
+        $template.find('.vacacion-item')
+            .attr('data-vacacion-id', vacacion.id_vacacion)
+            .attr('data-estado', vacacion.estado);
         
-        // Estado y período
-        $template.find('.estado-badge')
-            .addClass(`bg-${this.getEstadoColor(vacacion.estado)}`)
-            .text(this.getEstadoTexto(vacacion.estado));
-            
+        // Estado y fechas
+        $template.find('.estado-badge').addClass(`bg-${estadoInfo.color}`).text(estadoInfo.texto);
         $template.find('.periodo-texto').text(vacacion.periodo_vacacional);
         $template.find('.creado-por').text(`Creado por ${vacacion.creado_por?.nombre || 'Sistema'}`);
-        
-        // Fechas - USAR FECHAS YA FORMATEADAS DESDE EL BACKEND O FORMATEAR LOCALMENTE
-        const fechaInicio = vacacion.fecha_inicio_formatted || this.formatearFecha(vacacion.fecha_inicio);
-        const fechaFin = vacacion.fecha_fin_formatted || this.formatearFecha(vacacion.fecha_fin);
-        $template.find('.fechas-texto').text(`${fechaInicio} - ${fechaFin}`);
-        $template.find('.duracion-texto').text(`${vacacion.duracion_dias || 0} días de duración`);
+        $template.find('.fechas-texto').text(`${vacacion.fecha_inicio_formatted} - ${vacacion.fecha_fin_formatted}`);
+        $template.find('.duracion-texto').text(`${vacacion.duracion_dias || 0} días`);
         
         // Días
         $template.find('.dias-solicitados').text(vacacion.dias_solicitados);
@@ -191,9 +112,7 @@ class VacacionesManager {
         
         // Observaciones
         if (vacacion.observaciones) {
-            $template.find('.observaciones-texto')
-                .html(`<strong>Observaciones:</strong> ${vacacion.observaciones}`)
-                .show();
+            $template.find('.observaciones-texto').html(`<strong>Observaciones:</strong> ${vacacion.observaciones}`).show();
         }
         
         // Botones de acción
@@ -202,101 +121,145 @@ class VacacionesManager {
         return $template;
     }
 
-    // FORMATO DE FECHAS SIN CONVERSIÓN TIMEZONE
-    formatearFecha(fecha) {
-        if (!fecha) return '';
-        
-        try {
-            // Si viene en formato ISO (YYYY-MM-DD), convertir directamente a DD/MM/YYYY
-            if (typeof fecha === 'string' && fecha.match(/^\d{4}-\d{2}-\d{2}/)) {
-                const [year, month, day] = fecha.split('T')[0].split('-');
-                return `${day}/${month}/${year}`;
-            }
-            
-            // Para otros formatos, usar Date pero con UTC para evitar timezone issues
-            const date = new Date(fecha + 'T00:00:00Z');
-            return date.toLocaleDateString('es-ES', { timeZone: 'UTC' });
-        } catch (error) {
-            console.error('Error formatting date:', error);
-            return fecha;
-        }
-    }
-
+    // ✅ BOTONES DE ACCIÓN SIMPLIFICADOS
     addActionButtons($template, vacacion) {
         const $acciones = $template.find('.acciones-vacacion');
         $acciones.empty();
         
-        const currentUser = window.currentUser || {};
-        const canManage = currentUser.tipo === 'Gerencia' || currentUser.tipo === 'Recursos_Humanos';
+        const canManage = window.currentUser?.tipo === 'Gerencia' || window.currentUser?.tipo === 'Recursos_Humanos';
         
         if (canManage) {
             if (vacacion.estado === 'pendiente') {
-                // ✅ ACCIONES PARA VACACIONES PENDIENTES
                 $acciones.append(`
-                    <button class="btn btn-success btn-sm" onclick="vacacionesApp.iniciarVacacion(${vacacion.id_vacacion})" title="Iniciar vacaciones">
+                    <button class="btn btn-success btn-sm" onclick="vacacionesApp.iniciarVacacion(${vacacion.id_vacacion})">
                         <i class="bi bi-play"></i> Iniciar
                     </button>
-                    <button class="btn btn-danger btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})" title="Cancelar y devolver días">
+                    <button class="btn btn-danger btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </button>
                 `);
             } else if (vacacion.estado === 'activa') {
-                // ✅ ACCIONES PARA VACACIONES ACTIVAS
-                const hoy = new Date();
-                const fechaFin = new Date(vacacion.fecha_fin);
-                const puedeFinalizarse = hoy >= fechaFin;
+                const puedeFinalizarse = new Date() >= new Date(vacacion.fecha_fin);
                 
                 if (puedeFinalizarse) {
                     $acciones.append(`
-                        <button class="btn btn-primary btn-sm" onclick="vacacionesApp.finalizarVacacion(${vacacion.id_vacacion})" title="Finalizar vacaciones (fecha cumplida)">
+                        <button class="btn btn-primary btn-sm" onclick="vacacionesApp.finalizarVacacion(${vacacion.id_vacacion})">
                             <i class="bi bi-check-circle"></i> Finalizar
                         </button>
                     `);
                 }
                 
                 $acciones.append(`
-                    <button class="btn btn-warning btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})" title="Cancelar vacaciones activas">
+                    <button class="btn btn-warning btn-sm" onclick="vacacionesApp.cancelarVacacion(${vacacion.id_vacacion})">
                         <i class="bi bi-x-circle"></i> Cancelar
                     </button>
                 `);
             }
         }
         
-        // ✅ BOTÓN DE DETALLES PARA TODOS LOS ESTADOS
         $acciones.append(`
-            <button class="btn btn-outline-info btn-sm" onclick="vacacionesApp.verDetalles(${vacacion.id_vacacion})" title="Ver detalles">
+            <button class="btn btn-outline-info btn-sm" onclick="vacacionesApp.verDetalles(${vacacion.id_vacacion})">
                 <i class="bi bi-eye"></i> Detalles
             </button>
         `);
     }
 
-    getEstadoColor(estado) {
-        const colores = {
-            'pendiente': 'warning',
-            'activa': 'success',
-            'finalizada': 'secondary',
-            'cancelada': 'danger' // ✅ NUEVO
-        };
-        return colores[estado] || 'secondary';
+    // ✅ ACCIONES SIMPLIFICADAS
+    async iniciarVacacion(vacacionId) {
+        if (!confirm('¿Iniciar estas vacaciones?')) return;
+        await this.executeAction(`${this.trabajadorId}/vacaciones/${vacacionId}/iniciar`, 'PATCH', 'Vacaciones iniciadas');
     }
 
-    getEstadoTexto(estado) {
-        const textos = {
-            'pendiente': 'Pendiente',
-            'activa': 'Activa',
-            'finalizada': 'Finalizada',
-            'cancelada': 'Cancelada' // ✅ NUEVO
-        };
-        return textos[estado] || estado;
+    async finalizarVacacion(vacacionId) {
+        if (!confirm('¿Finalizar estas vacaciones?')) return;
+        const motivo = prompt('Motivo (opcional):') || 'Finalización normal';
+        await this.executeAction(`${this.trabajadorId}/vacaciones/${vacacionId}/finalizar`, 'PATCH', 'Vacaciones finalizadas', { motivo_finalizacion: motivo });
     }
+
+    async cancelarVacacion(vacacionId) {
+        const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
+        if (!vacacion) return;
+        
+        if (!confirm(`¿Cancelar vacaciones? Se devolverán ${vacacion.dias_solicitados} días.`)) return;
+        
+        let motivo = '';
+        while (!motivo || motivo.length < 10) {
+            motivo = prompt('Motivo de cancelación (mínimo 10 caracteres):');
+            if (motivo === null) return;
+            if (!motivo || motivo.length < 10) alert('El motivo debe tener al menos 10 caracteres.');
+        }
+        
+        await this.executeAction(`${this.trabajadorId}/vacaciones/${vacacionId}/cancelar`, 'DELETE', 'Vacaciones canceladas', { motivo_cancelacion: motivo });
+    }
+
+    // ✅ EJECUTOR DE ACCIONES UNIFICADO
+    async executeAction(endpoint, method, successMessage, body = null) {
+        try {
+            const url = AppRoutes.trabajadores(endpoint);
+            const response = await fetch(url, {
+                method,
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                ...(body && { body: JSON.stringify(body) })
+            });
+            
+            const result = await response.json();
+            
+            if (result.success) {
+                await this.loadVacaciones();
+                this.showNotification('success', successMessage);
+                if (result.trabajador_estatus) this.updateTrabajadorStatus(result.trabajador_estatus);
+            } else {
+                this.showNotification('error', result.message);
+            }
+        } catch (error) {
+            console.error('Error executing action:', error);
+            this.showNotification('error', 'Error de conexión');
+        }
+    }
+
+    verDetalles(vacacionId) {
+        const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
+        if (!vacacion) return;
+        
+        let mensaje = `=== DETALLES DE VACACIÓN ===\n\n` +
+                     `Estado: ${this.getEstadoInfo(vacacion.estado).texto}\n` +
+                     `Período: ${vacacion.periodo_vacacional}\n` +
+                     `Días solicitados: ${vacacion.dias_solicitados}\n` +
+                     `Fechas: ${vacacion.fecha_inicio_formatted} - ${vacacion.fecha_fin_formatted}\n` +
+                     `Creado por: ${vacacion.creado_por?.nombre || 'Sistema'}`;
+        
+        if (vacacion.observaciones) mensaje += `\nObservaciones: ${vacacion.observaciones}`;
+        
+        if (vacacion.estado === 'cancelada') {
+            mensaje += `\n\n=== CANCELACIÓN ===\n` +
+                      `Motivo: ${vacacion.motivo_cancelacion || 'No especificado'}\n` +
+                      `Días devueltos: ${vacacion.dias_restantes}`;
+        }
+        
+        alert(mensaje);
+    }
+
+    // ✅ UTILIDADES CONSOLIDADAS
+    getEstadoInfo(estado) {
+        const estados = {
+            'pendiente': { texto: 'Pendiente', color: 'warning' },
+            'activa': { texto: 'Activa', color: 'success' },
+            'finalizada': { texto: 'Finalizada', color: 'secondary' },
+            'cancelada': { texto: 'Cancelada', color: 'danger' }
+        };
+        return estados[estado] || estados['pendiente'];
+    }
+
     updateFilters() {
         const periodos = [...new Set(this.vacaciones.map(v => v.periodo_vacacional))];
         const $filtroPeriodo = $('#filtro-periodo');
-        
         $filtroPeriodo.find('option:not(:first)').remove();
-        periodos.forEach(periodo => {
-            $filtroPeriodo.append(`<option value="${periodo}">${periodo}</option>`);
-        });
+        periodos.forEach(periodo => $filtroPeriodo.append(`<option value="${periodo}">${periodo}</option>`));
     }
 
     filterVacaciones() {
@@ -308,261 +271,48 @@ class VacacionesManager {
             const estado = $item.attr('data-estado');
             const periodo = $item.find('.periodo-texto').text();
             
-            const mostrarEstado = !estadoFiltro || estado === estadoFiltro;
-            const mostrarPeriodo = !periodoFiltro || periodo === periodoFiltro;
-            
-            $item.closest('.col-12').toggle(mostrarEstado && mostrarPeriodo);
+            const mostrar = (!estadoFiltro || estado === estadoFiltro) && (!periodoFiltro || periodo === periodoFiltro);
+            $item.closest('.col-12').toggle(mostrar);
         });
     }
 
-    // =================================
-    // ACCIONES SOBRE VACACIONES EXISTENTES CON RUTAS DINÁMICAS
-    // =================================
-
-    async iniciarVacacion(vacacionId) {
-        if (!confirm('¿Está seguro de iniciar estas vacaciones?')) return;
-        
-        try {
-            // ✅ USAR RUTAS DINÁMICAS
-            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/iniciar`);
-            console.log('🔄 Iniciando vacación desde:', url);
-            
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                await this.loadVacaciones();
-                this.showNotification('success', 'Vacaciones iniciadas correctamente');
-                
-                if (result.trabajador_estatus) {
-                    this.updateTrabajadorStatus(result.trabajador_estatus);
-                }
-            } else {
-                this.showNotification('error', result.message);
-            }
-        } catch (error) {
-            console.error('Error starting vacation:', error);
-            this.showNotification('error', 'Error al iniciar vacaciones');
-        }
-    }
-
-     async finalizarVacacion(vacacionId) {
-        // Confirmar acción
-        const confirmacion = confirm(
-            '¿Está seguro de finalizar estas vacaciones?\n\n' +
-            'Esta acción solo debe realizarse cuando las vacaciones hayan llegado a su fecha fin natural.'
-        );
-        if (!confirmacion) return;
-        
-        // Solicitar motivo opcional
-        const motivo = prompt('Motivo de finalización (opcional):') || 'Vacaciones finalizadas por cumplimiento de fecha';
-        
-        try {
-            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/finalizar`);
-            console.log('🔄 Finalizando vacación desde:', url);
-            
-            const response = await fetch(url, {
-                method: 'PATCH',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ motivo_finalizacion: motivo })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                await this.loadVacaciones();
-                this.showNotification('success', 'Vacaciones finalizadas correctamente');
-                
-                if (result.trabajador_estatus) {
-                    this.updateTrabajadorStatus(result.trabajador_estatus);
-                }
-            } else {
-                this.showNotification('error', result.message);
-            }
-        } catch (error) {
-            console.error('Error finalizing vacation:', error);
-            this.showNotification('error', 'Error al finalizar vacaciones');
-        }
-    }
-
-    // ✅ MÉTODO DE CANCELAR COMPLETAMENTE NUEVO
-    async cancelarVacacion(vacacionId) {
-        // Obtener detalles de la vacación
-        const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
-        if (!vacacion) {
-            this.showNotification('error', 'Vacación no encontrada');
-            return;
-        }
-        
-        // Confirmar acción con información detallada
-        const esActiva = vacacion.estado === 'activa';
-        const mensaje = esActiva 
-            ? `¿Está seguro de CANCELAR estas vacaciones activas?\n\n` +
-              `• Se devolverán ${vacacion.dias_solicitados} días al trabajador\n` +
-              `• El trabajador volverá al estado "Activo"\n` +
-              `• Esta acción NO se puede deshacer`
-            : `¿Está seguro de CANCELAR estas vacaciones pendientes?\n\n` +
-              `• Se devolverán ${vacacion.dias_solicitados} días al trabajador\n` +
-              `• Esta acción NO se puede deshacer`;
-        
-        if (!confirm(mensaje)) return;
-        
-        // Solicitar motivo OBLIGATORIO
-        let motivo = '';
-        while (!motivo || motivo.trim().length < 10) {
-            motivo = prompt(
-                'Motivo de cancelación (OBLIGATORIO - mínimo 10 caracteres):\n\n' +
-                'Ejemplo: "Cambio en las fechas solicitadas por el trabajador"'
-            );
-            
-            if (motivo === null) return; // Usuario canceló
-            
-            if (!motivo || motivo.trim().length < 10) {
-                alert('El motivo debe tener al menos 10 caracteres. Intente nuevamente.');
-            }
-        }
-        
-        try {
-            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/${vacacionId}/cancelar`);
-            console.log('🔄 Cancelando vacación desde:', url);
-            
-            const response = await fetch(url, {
-                method: 'DELETE',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
-                    'X-Requested-With': 'XMLHttpRequest'
-                },
-                body: JSON.stringify({ motivo_cancelacion: motivo.trim() })
-            });
-            
-            const result = await response.json();
-            
-            if (result.success) {
-                await this.loadVacaciones();
-                
-                const mensajeExito = `Vacaciones canceladas correctamente. ` +
-                    `Se devolvieron ${result.dias_devueltos || vacacion.dias_solicitados} días al trabajador.`;
-                this.showNotification('success', mensajeExito);
-                
-                if (result.trabajador_estatus) {
-                    this.updateTrabajadorStatus(result.trabajador_estatus);
-                }
-            } else {
-                this.showNotification('error', result.message);
-            }
-        } catch (error) {
-            console.error('Error canceling vacation:', error);
-            this.showNotification('error', 'Error al cancelar vacaciones');
-        }
-    }
-
-    // ✅ MÉTODO VERDETALLES ACTUALIZADO CON NUEVA INFORMACIÓN
-    verDetalles(vacacionId) {
-        const vacacion = this.vacaciones.find(v => v.id_vacacion === vacacionId);
-        if (!vacacion) return;
-        
-        const fechaInicio = this.formatearFecha(vacacion.fecha_inicio);
-        const fechaFin = this.formatearFecha(vacacion.fecha_fin);
-        
-        let detallesExtra = '';
-        
-        // Información específica según el estado
-        if (vacacion.estado === 'cancelada') {
-            const fechaCancelacion = vacacion.fecha_cancelacion ? 
-                new Date(vacacion.fecha_cancelacion).toLocaleString('es-ES') : 'No disponible';
-            const canceladoPor = vacacion.cancelado_por?.nombre || 'Sistema';
-            
-            detallesExtra = `\n\n=== INFORMACIÓN DE CANCELACIÓN ===\n` +
-                          `Fecha de cancelación: ${fechaCancelacion}\n` +
-                          `Cancelado por: ${canceladoPor}\n` +
-                          `Motivo: ${vacacion.motivo_cancelacion || 'No especificado'}\n` +
-                          `Días devueltos: ${vacacion.dias_restantes}`;
-        } else if (vacacion.estado === 'finalizada') {
-            const fechaReintegro = vacacion.fecha_reintegro ? 
-                this.formatearFecha(vacacion.fecha_reintegro) : 'No disponible';
-            
-            detallesExtra = `\n\n=== INFORMACIÓN DE FINALIZACIÓN ===\n` +
-                          `Fecha de reintegro: ${fechaReintegro}\n` +
-                          `Días disfrutados: ${vacacion.dias_disfrutados}\n` +
-                          `Motivo: ${vacacion.motivo_finalizacion || 'Finalización normal'}`;
-        }
-        
-        const mensaje = `=== DETALLES DE VACACIÓN ===\n\n` +
-                       `Período: ${vacacion.periodo_vacacional}\n` +
-                       `Estado: ${this.getEstadoTexto(vacacion.estado)}\n` +
-                       `Días solicitados: ${vacacion.dias_solicitados}\n` +
-                       `Fechas: ${fechaInicio} - ${fechaFin}\n` +
-                       `Creado por: ${vacacion.creado_por?.nombre || 'Sistema'}\n` +
-                       `Observaciones: ${vacacion.observaciones || 'Sin observaciones'}` +
-                       detallesExtra;
-        
-        alert(mensaje);
-    }
-
-    // =================================
-    // UTILIDADES Y HELPERS
-    // =================================
-
     updateTrabajadorStatus(nuevoEstatus) {
-        const $estatusBadge = $('.trabajador-estatus-badge');
-        if ($estatusBadge.length) {
-            $estatusBadge.removeClass().addClass(`badge bg-${this.getEstatusColor(nuevoEstatus)}`);
-            $estatusBadge.html(`<i class="${this.getEstatusIcono(nuevoEstatus)}"></i> ${this.getEstatusTexto(nuevoEstatus)}`);
+        const $badge = $('.trabajador-estatus-badge');
+        if ($badge.length) {
+            const colores = { 'activo': 'success', 'vacaciones': 'primary', 'permiso': 'info', 'suspendido': 'danger', 'inactivo': 'secondary' };
+            const iconos = { 'activo': 'bi-person-check', 'vacaciones': 'bi-calendar-heart', 'permiso': 'bi-calendar-event', 'suspendido': 'bi-exclamation-triangle', 'inactivo': 'bi-person-x' };
+            const textos = { 'activo': 'Activo', 'vacaciones': 'En Vacaciones', 'permiso': 'Con Permiso', 'suspendido': 'Suspendido', 'inactivo': 'Inactivo' };
+            
+            $badge.removeClass().addClass(`badge bg-${colores[nuevoEstatus] || 'secondary'}`);
+            $badge.html(`<i class="${iconos[nuevoEstatus] || 'bi-person'}"></i> ${textos[nuevoEstatus] || nuevoEstatus}`);
         }
-        
-        console.log(`👤 Estado del trabajador actualizado: ${nuevoEstatus}`);
     }
 
-    getEstatusColor(estatus) {
-        const colores = {
-            'activo': 'success',
-            'vacaciones': 'primary',
-            'permiso': 'info',
-            'suspendido': 'danger',
-            'inactivo': 'secondary'
-        };
-        return colores[estatus] || 'secondary';
+    // ✅ ESTADOS DE UI SIMPLIFICADOS
+    showLoading() {
+        $('#vacaciones-loading').show();
+        $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista, #vacaciones-vacio, #vacaciones-error').hide();
     }
 
-    getEstatusTexto(estatus) {
-        const textos = {
-            'activo': 'Activo',
-            'vacaciones': 'En Vacaciones',
-            'permiso': 'Con Permiso',
-            'suspendido': 'Suspendido',
-            'inactivo': 'Inactivo'
-        };
-        return textos[estatus] || estatus;
+    showContent() {
+        $('#vacaciones-loading').hide();
+        if (this.vacaciones.length > 0) {
+            $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista').show();
+            $('#vacaciones-vacio').hide();
+        } else {
+            $('#vacaciones-vacio').show();
+            $('#vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista').hide();
+        }
+        $('#vacaciones-error').hide();
     }
 
-    getEstatusIcono(estatus) {
-        const iconos = {
-            'activo': 'bi-person-check',
-            'vacaciones': 'bi-calendar-heart',
-            'permiso': 'bi-calendar-event',
-            'suspendido': 'bi-exclamation-triangle',
-            'inactivo': 'bi-person-x'
-        };
-        return iconos[estatus] || 'bi-person';
+    showError(message) {
+        $('#vacaciones-loading, #vacaciones-estadisticas, #vacaciones-filtros, #vacaciones-lista, #vacaciones-vacio').hide();
+        $('#error-mensaje').text(message);
+        $('#vacaciones-error').show();
     }
 
     showNotification(type, message) {
-        // Toast simple
         const toast = $(`
             <div class="toast align-items-center text-bg-${type === 'success' ? 'success' : 'danger'} border-0" role="alert">
                 <div class="d-flex">
@@ -579,66 +329,30 @@ class VacacionesManager {
         }
         
         container.append(toast);
-        const bsToast = new bootstrap.Toast(toast[0]);
-        bsToast.show();
-        
+        new bootstrap.Toast(toast[0]).show();
         toast.on('hidden.bs.toast', () => toast.remove());
     }
 
-    // =================================
-    // MÉTODOS PÚBLICOS PARA INTEGRACIÓN
-    // =================================
-
-    /**
-     * Recargar la lista externamente
-     */
-    async reload() {
-        await this.loadVacaciones();
-    }
-
-    /**
-     * Obtener datos de vacaciones
-     */
-    getVacaciones() {
-        return this.vacaciones;
-    }
-
-    /**
-     * Obtener estadísticas
-     */
-    getEstadisticas() {
-        return this.estadisticas;
-    }
-
-    /**
-     * Obtener datos del trabajador
-     */
-    getTrabajadorData() {
-        return this.trabajadorData;
-    }
+    // ✅ MÉTODOS PÚBLICOS
+    async reload() { await this.loadVacaciones(); }
+    getVacaciones() { return this.vacaciones; }
+    getEstadisticas() { return this.estadisticas; }
 }
 
-// =================================
-// INICIALIZACIÓN AUTOMÁTICA
-// =================================
-
+// ✅ INICIALIZACIÓN SIMPLIFICADA
 $(document).ready(function() {
-    console.log('🚀 Iniciando aplicación de lista de vacaciones con rutas dinámicas...');
+    console.log('🚀 Iniciando vacaciones...');
     
-    // ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
     if (typeof AppRoutes === 'undefined') {
-        console.error('❌ CRÍTICO: AppRoutes no está disponible para vacaciones');
-        alert('Error: Sistema de rutas no configurado. Recarga la página.');
+        console.error('❌ AppRoutes no disponible');
         return;
     }
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
-    
     if (trabajadorId) {
         window.vacacionesApp = new VacacionesManager(trabajadorId);
-        console.log(`✅ Lista de vacaciones con rutas dinámicas iniciada para trabajador: ${trabajadorId}`);
-        console.log(`🔧 Base URL: ${AppRoutes.getBaseUrl()}`);
+        console.log(`✅ Vacaciones iniciado para trabajador: ${trabajadorId}`);
     } else {
-        console.error('❌ No se pudo obtener el ID del trabajador');
+        console.error('❌ ID trabajador no encontrado');
     }
 });
