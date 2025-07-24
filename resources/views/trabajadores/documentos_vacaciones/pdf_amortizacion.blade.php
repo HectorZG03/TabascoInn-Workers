@@ -211,6 +211,8 @@
             </tr>
         </tbody>
     </table>
+    
+    {{-- ✅ FIRMAS DINÁMICAS SIMPLIFICADAS --}}
     <div class="signatures">
         <div class="signature-row">
             <div class="signature-box">
@@ -219,21 +221,54 @@
             </div>
             <div class="signature-box">
                 <div class="signature-line"></div>
-                <div class="signature-name">Lic. Irma Yuliana Muñoz López</div>
-                <div class="signature-title">Subgerente Administrativo</div>
+                <div class="signature-name">
+                    {{-- ✅ PRIMERA FIRMA DINÁMICA (CUALQUIER GERENTE) --}}
+                    @if(isset($firmas['firma1']))
+                        {{ $firmas['firma1']->nombre_completo }}
+                    @else
+                        Lic. Irma Yuliana Muñoz López
+                    @endif
+                </div>
+                <div class="signature-title">
+                    @if(isset($firmas['firma1']))
+                        {{ $firmas['firma1']->cargo }}
+                    @else
+                        Subgerente Administrativo
+                    @endif
+                </div>
             </div>
         </div>
         
         <div class="signature-row">
             <div class="signature-box">
                 <div class="signature-line"></div>
-                <div class="signature-name">L.C. Cecilia del C. Velázquez del Valle</div>
+                <div class="signature-name">
+                    {{-- ✅ RECURSOS HUMANOS DINÁMICO (USUARIO ACTUAL) --}}
+                    @if(isset($firmas['recursos_humanos']))
+                        {{ $firmas['recursos_humanos']->nombre }}
+                    @else
+                        L.C. Cecilia del C. Velázquez del Valle
+                    @endif
+                </div>
                 <div class="signature-title">Recursos Humanos</div>
             </div>
             <div class="signature-box">
                 <div class="signature-line"></div>
-                <div class="signature-name">Lic. Justo Encalada González</div>
-                <div class="signature-title">Gerente General</div>
+                <div class="signature-name">
+                    {{-- ✅ SEGUNDA FIRMA DINÁMICA (CUALQUIER GERENTE) --}}
+                    @if(isset($firmas['firma2']))
+                        {{ $firmas['firma2']->nombre_completo }}
+                    @else
+                        Lic. Justo Encalada González
+                    @endif
+                </div>
+                <div class="signature-title">
+                    @if(isset($firmas['firma2']))
+                        {{ $firmas['firma2']->cargo }}
+                    @else
+                        Gerente General
+                    @endif
+                </div>
             </div>
         </div>
     </div>

@@ -29,7 +29,13 @@ class GerenteController extends Controller
             }
         }
         
-        $gerentes = $query->orderBy('apellido_paterno')
+        // ✅ NUEVO: Filtro por cargo
+        if ($request->filled('cargo')) {
+            $query->porCargo($request->cargo);
+        }
+        
+        $gerentes = $query->orderBy('cargo') // ✅ ORDENAR POR CARGO PRIMERO
+                         ->orderBy('apellido_paterno')
                          ->orderBy('apellido_materno')
                          ->orderBy('nombre')
                          ->paginate(15);
@@ -46,11 +52,13 @@ class GerenteController extends Controller
             'nombre' => 'required|string|max:100',
             'apellido_paterno' => 'required|string|max:100',
             'apellido_materno' => 'nullable|string|max:100',
+            'cargo' => 'required|string|max:150', // ✅ NUEVO CAMPO OBLIGATORIO
             'telefono' => 'nullable|string|max:15|regex:/^[0-9+\-\s()]*$/',
             'descripcion' => 'nullable|string|max:500'
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'apellido_paterno.required' => 'El apellido paterno es obligatorio',
+            'cargo.required' => 'El cargo es obligatorio', // ✅ NUEVO MENSAJE
             'telefono.regex' => 'El teléfono solo puede contener números, espacios, paréntesis, guiones y el símbolo +'
         ]);
 
@@ -66,6 +74,7 @@ class GerenteController extends Controller
                 'nombre' => $request->nombre,
                 'apellido_paterno' => $request->apellido_paterno,
                 'apellido_materno' => $request->apellido_materno,
+                'cargo' => $request->cargo, // ✅ NUEVO CAMPO
                 'telefono' => $request->telefono,
                 'descripcion' => $request->descripcion,
                 'activo' => true
@@ -90,11 +99,13 @@ class GerenteController extends Controller
             'nombre' => 'required|string|max:100',
             'apellido_paterno' => 'required|string|max:100',
             'apellido_materno' => 'nullable|string|max:100',
+            'cargo' => 'required|string|max:150', // ✅ NUEVO CAMPO OBLIGATORIO
             'telefono' => 'nullable|string|max:15|regex:/^[0-9+\-\s()]*$/',
             'descripcion' => 'nullable|string|max:500'
         ], [
             'nombre.required' => 'El nombre es obligatorio',
             'apellido_paterno.required' => 'El apellido paterno es obligatorio',
+            'cargo.required' => 'El cargo es obligatorio', // ✅ NUEVO MENSAJE
             'telefono.regex' => 'El teléfono solo puede contener números, espacios, paréntesis, guiones y el símbolo +'
         ]);
 
@@ -110,6 +121,7 @@ class GerenteController extends Controller
                 'nombre' => $request->nombre,
                 'apellido_paterno' => $request->apellido_paterno,
                 'apellido_materno' => $request->apellido_materno,
+                'cargo' => $request->cargo, // ✅ NUEVO CAMPO
                 'telefono' => $request->telefono,
                 'descripcion' => $request->descripcion
             ]);
@@ -167,16 +179,28 @@ class GerenteController extends Controller
     public function apiGerentes()
     {
         $gerentes = Gerente::activos()
-                          ->select('id', 'nombre', 'apellido_paterno', 'apellido_materno')
+                          ->select('id', 'nombre', 'apellido_paterno', 'apellido_materno', 'cargo')
+                          ->orderBy('cargo')
                           ->orderBy('apellido_paterno')
                           ->get()
                           ->map(function ($gerente) {
                               return [
                                   'id' => $gerente->id,
-                                  'nombre_completo' => $gerente->nombre_completo
+                                  'nombre_completo' => $gerente->nombre_completo,
+                                  'cargo' => $gerente->cargo,
+                                  'para_firma' => $gerente->nombre_completo_con_cargo
                               ];
                           });
         
         return response()->json($gerentes);
     }
+
+    /**
+     * ✅ NUEVA API: Obtener gerentes para firmas de documentos
+     */
+    public function apiGerentesParaFirmas()
+    {
+        return response()->json(Gerente::paraFirmasDocumentos());
+    }
+
 }

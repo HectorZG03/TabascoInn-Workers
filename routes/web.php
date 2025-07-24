@@ -196,9 +196,17 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [DocumentosVacacionesController::class, 'index'])
                 ->name('index');
             
-            // Descargar PDF de amortización (sin guardar en BD)
-            Route::get('/descargar-pdf', [DocumentosVacacionesController::class, 'descargarPDF'])
+            // ✅ NUEVA: Modal de selección de firmas
+            Route::get('/seleccion-firmas', [DocumentosVacacionesController::class, 'mostrarSeleccionFirmas'])
+                ->name('seleccion-firmas');
+            
+            // ✅ ACTUALIZADA: Generar PDF con firmas seleccionadas
+            Route::post('/descargar-pdf', [DocumentosVacacionesController::class, 'descargarPDF'])
                 ->name('descargar-pdf');
+            
+            // ✅ NUEVA: Descarga directa del PDF
+            Route::get('/descargar-pdf-directo', [DocumentosVacacionesController::class, 'descargarPDFDirecto'])
+                ->name('descargar-pdf-directo');
             
             // Subir documento firmado
             Route::post('/subir', [DocumentosVacacionesController::class, 'subirDocumento'])

@@ -14,6 +14,7 @@ class Gerente extends Model
         'nombre',
         'apellido_paterno', 
         'apellido_materno',
+        'cargo', // ✅ NUEVO CAMPO AGREGADO
         'telefono',
         'descripcion',
         'activo'
@@ -41,11 +42,27 @@ class Gerente extends Model
     }
 
     /**
+     * ✅ NUEVO: Accessor para obtener nombre completo con cargo
+     */
+    public function getNombreCompletoConCargoAttribute()
+    {
+        return $this->nombre_completo . ' - ' . $this->cargo;
+    }
+
+    /**
      * Scope para gerentes activos
      */
     public function scopeActivos($query)
     {
         return $query->where('activo', true);
+    }
+
+    /**
+     * ✅ NUEVO: Scope para gerentes por cargo
+     */
+    public function scopePorCargo($query, $cargo)
+    {
+        return $query->where('cargo', 'LIKE', "%{$cargo}%");
     }
 
     /**
@@ -56,7 +73,8 @@ class Gerente extends Model
         return $query->where(function ($q) use ($termino) {
             $q->where('nombre', 'LIKE', "%{$termino}%")
               ->orWhere('apellido_paterno', 'LIKE', "%{$termino}%")
-              ->orWhere('apellido_materno', 'LIKE', "%{$termino}%");
+              ->orWhere('apellido_materno', 'LIKE', "%{$termino}%")
+              ->orWhere('cargo', 'LIKE', "%{$termino}%"); // ✅ INCLUIR CARGO EN BÚSQUEDA
         });
     }
 
@@ -75,5 +93,25 @@ class Gerente extends Model
         }
         
         return $this->telefono;
+    }
+
+    /**
+     * ✅ NUEVO: Obtener gerentes para firmas de documentos
+     */
+    public static function paraFirmasDocumentos()
+    {
+        return self::activos()
+                   ->select('id', 'nombre', 'apellido_paterno', 'apellido_materno', 'cargo')
+                   ->orderBy('cargo')
+                   ->orderBy('apellido_paterno')
+                   ->get()
+                   ->map(function ($gerente) {
+                       return [
+                           'id' => $gerente->id,
+                           'nombre_completo' => $gerente->nombre_completo,
+                           'cargo' => $gerente->cargo,
+                           'para_firma' => $gerente->nombre_completo_con_cargo
+                       ];
+                   });
     }
 }

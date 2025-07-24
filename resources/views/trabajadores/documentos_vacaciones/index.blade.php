@@ -216,6 +216,9 @@
     @include('trabajadores.documentos_vacaciones.modal_subir_documento', ['trabajador' => $trabajador])
 @endif
 
+<!-- ✅ NUEVO: Modal para selección de firmas -->
+@include('trabajadores.documentos_vacaciones.modal_seleccion_firmas', ['trabajador' => $trabajador, 'gerentes' => $gerentes])
+
 {{-- ===================================== --}}
 {{-- ✅ SCRIPTS EN ORDEN CORRECTO CON RUTAS DINÁMICAS --}}
 {{-- ===================================== --}}
@@ -247,20 +250,24 @@ if (typeof AppRoutes === 'undefined') {
 {{-- ✅ 3. TERCERO: HELPER DE DESCARGA PDF --}}
 <script src="{{ asset('js/helpers/helper_pdf_download.js') }}"></script>
 
+{{-- ✅ 3.5. NUEVO: HELPER DE PDF CON FIRMAS --}}
+<script src="{{ asset('js/helpers/helper_pdf_firmas.js') }}"></script>
+
 {{-- ✅ 4. CUARTO: DOCUMENTOS DE VACACIONES (Principal) --}}
 <script src="{{ asset('js/documentos_vacaciones.js') }}"></script>
 
 {{-- ✅ 5. QUINTO: MODAL DE SUBIR DOCUMENTOS --}}
 <script src="{{ asset('js/modales/modal_subir_documento.js') }}"></script>
 
-{{-- ✅ 5. QUINTO: Script de verificación final --}}
+{{-- ✅ 6. SEXTO: Script de verificación final --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // ✅ VERIFICACIÓN FINAL DE CARGA
     setTimeout(() => {
         if (typeof AppRoutes !== 'undefined' && 
             typeof window.documentosVacacionesApp !== 'undefined' &&
-            typeof window.pdfDownloadHelper !== 'undefined') {
+            typeof window.pdfDownloadHelper !== 'undefined' &&
+            typeof window.pdfConFirmasHelper !== 'undefined') {
             console.log('🎉 Sistema de documentos de vacaciones completamente inicializado');
             
             // ✅ DEBUG EN DESARROLLO
@@ -269,11 +276,13 @@ document.addEventListener('DOMContentLoaded', function() {
                 console.log('   📋 Lista: documentos_vacaciones.js');
                 console.log('   📤 Modal: modales/modal_subir_documento.js');
                 console.log('   📄 Helper PDF: helpers/helper_pdf_download.js');
+                console.log('   🖋️ Helper PDF Firmas: helpers/helper_pdf_firmas.js');
                 console.log('   👤 Usuario:', window.currentUser);
                 console.log('   🔧 Base URL:', AppRoutes.getBaseUrl());
                 console.log('   🔗 Rutas de ejemplo:');
                 console.log('       API documentos:', AppRoutes.trabajadores('1/documentos-vacaciones/api/documentos'));
                 console.log('       Subir documento:', AppRoutes.trabajadores('1/documentos-vacaciones/subir'));
+                console.log('       Selección firmas:', AppRoutes.trabajadores('1/documentos-vacaciones/seleccion-firmas'));
                 console.log('       Descargar PDF:', AppRoutes.trabajadores('1/documentos-vacaciones/descargar-pdf'));
                 console.log('       Eliminar documento:', AppRoutes.trabajadores('1/documentos-vacaciones/1/eliminar'));
             }
@@ -288,6 +297,9 @@ document.addEventListener('DOMContentLoaded', function() {
             }
             if (typeof window.pdfDownloadHelper === 'undefined') {
                 console.error('   - pdfDownloadHelper no inicializado');
+            }
+            if (typeof window.pdfConFirmasHelper === 'undefined') {
+                console.error('   - pdfConFirmasHelper no inicializado');
             }
         }
     }, 500);

@@ -18,18 +18,6 @@
                         </a>
                     </div>
                 </div>
-                <div class="card-body text-center py-4" style="background-color: #E6F2ED;">
-                    <h4 class="mb-3" style="color: #0b7b1c;">
-                        <i class="bi bi-person-circle"></i> {{ $user->nombre }}
-                    </h4>
-                    <p class="lead mb-2" style="color: #5D3A1A;">
-                        Configuraciones del sistema
-                    </p>
-                    <div class="badge text-white fs-6 px-3 py-2" style="background-color: {{ $user->esGerencia() ? '#007A4D' : '#D2B48C' }};">
-                        <i class="bi bi-{{ $user->esGerencia() ? 'person-gear' : 'people' }}"></i>
-                        {{ $user->tipo ?? 'Usuario' }}
-                    </div>
-                </div>
             </div>
         </div>
     </div>

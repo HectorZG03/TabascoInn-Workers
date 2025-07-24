@@ -1,6 +1,6 @@
 /**
  * helper_pdf_download.js - Helper para descargas de PDF con RUTAS DINÁMICAS
- * Maneja la descarga de PDFs de amortización con loading states
+ * ✅ ACTUALIZADO: Ahora usa el modal de selección de firmas
  */
 class PDFDownloadHelper {
     constructor() {
@@ -9,7 +9,7 @@ class PDFDownloadHelper {
     }
 
     /**
-     * Descargar PDF de amortización con loading state
+     * ✅ ACTUALIZADO: Ahora abre el modal de selección de firmas en lugar de descargar directamente
      */
     async downloadAmortizacionPDF(trabajadorId, buttonSelector = null) {
         if (this.isDownloading) {
@@ -17,6 +17,34 @@ class PDFDownloadHelper {
             return;
         }
 
+        try {
+            // ✅ VERIFICAR SI HAY VACACIONES PENDIENTES PRIMERO
+            const tieneVacacionesPendientes = await this.checkVacacionesPendientes(trabajadorId);
+            
+            if (!tieneVacacionesPendientes) {
+                this.showNotification('warning', 'No hay vacaciones pendientes para generar documento');
+                return;
+            }
+
+            // ✅ USAR EL HELPER DE FIRMAS SI ESTÁ DISPONIBLE
+            if (window.pdfConFirmasHelper && window.pdfConFirmasHelper.isReady()) {
+                console.log('🖋️ Abriendo modal de selección de firmas...');
+                window.pdfConFirmasHelper.openModal();
+            } else {
+                console.warn('⚠️ Modal de firmas no disponible, usando descarga directa como fallback');
+                await this.downloadDirectFallback(trabajadorId, buttonSelector);
+            }
+
+        } catch (error) {
+            console.error('❌ Error iniciando descarga PDF:', error);
+            this.showNotification('error', 'Error al iniciar la descarga del PDF');
+        }
+    }
+
+    /**
+     * ✅ FALLBACK: Descarga directa si el modal no está disponible
+     */
+    async downloadDirectFallback(trabajadorId, buttonSelector = null) {
         try {
             this.isDownloading = true;
             
@@ -26,8 +54,8 @@ class PDFDownloadHelper {
             }
 
             // ✅ USAR RUTAS DINÁMICAS
-            const url = AppRoutes.trabajadores(`${trabajadorId}/documentos-vacaciones/descargar-pdf`);
-            console.log('📥 Descargando PDF desde:', url);
+            const url = AppRoutes.trabajadores(`${trabajadorId}/documentos-vacaciones/descargar-pdf-directo`);
+            console.log('📥 Descarga fallback desde:', url);
 
             // Crear elemento de descarga temporal
             const link = document.createElement('a');
@@ -43,10 +71,10 @@ class PDFDownloadHelper {
             // Mostrar notificación de éxito
             this.showNotification('success', 'PDF descargado correctamente');
             
-            console.log('✅ PDF descargado exitosamente');
+            console.log('✅ PDF descargado exitosamente (fallback)');
 
         } catch (error) {
-            console.error('❌ Error descargando PDF:', error);
+            console.error('❌ Error descargando PDF (fallback):', error);
             this.showNotification('error', 'Error al descargar el PDF');
         } finally {
             this.isDownloading = false;
@@ -136,13 +164,6 @@ class PDFDownloadHelper {
      * Descargar con verificación previa
      */
     async downloadWithCheck(trabajadorId, buttonSelector = null) {
-        const tieneVacacionesPendientes = await this.checkVacacionesPendientes(trabajadorId);
-        
-        if (!tieneVacacionesPendientes) {
-            this.showNotification('warning', 'No hay vacaciones pendientes para generar documento');
-            return;
-        }
-
         await this.downloadAmortizacionPDF(trabajadorId, buttonSelector);
     }
 
@@ -208,7 +229,7 @@ class PDFDownloadHelper {
 // =================================
 
 /**
- * Función global para descargar PDF de amortización
+ * ✅ ACTUALIZADA: Función global para descargar PDF de amortización (ahora usa modal)
  */
 window.downloadAmortizacionPDF = function(trabajadorId, buttonSelector = null) {
     if (!window.pdfDownloadHelper) {
