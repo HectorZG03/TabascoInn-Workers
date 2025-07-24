@@ -9,12 +9,13 @@ use App\Http\Controllers\PermisosLaboralesController;
 use App\Http\Controllers\HistorialesPerfilController;
 use App\Http\Controllers\HorasExtraController;
 use App\Http\Controllers\FormatoPermisosController;
+use App\Http\Controllers\GerenteController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
-use App\Http\Controllers\EstadisticasController; 
+use App\Http\Controllers\EstadisticasController;
 use App\Http\Controllers\VacacionesController;
 use App\Http\Controllers\DocumentosVacacionesController;
 use Illuminate\Support\Facades\Route;
@@ -49,17 +50,23 @@ Route::middleware(['auth'])->group(function () {
         Route::delete('/areas/{area}', [AreaCategoriaController::class, 'destroyArea'])->name('areas.destroy');
         Route::put('/categorias/{categoria}', [AreaCategoriaController::class, 'updateCategoria'])->name('categorias.update');
         Route::delete('/categorias/{categoria}', [AreaCategoriaController::class, 'destroyCategoria'])->name('categorias.destroy');
-        // En tu web.php, dentro del grupo de configuración:
         Route::get('/areas-categorias/estadisticas', [AreaCategoriaController::class, 'estadisticas'])->name('areas.categorias.estadisticas');
         Route::delete('/categorias/multiple', [AreaCategoriaController::class, 'destroyMultipleCategories'])
             ->name('categorias.multiple.destroy');
-
         Route::post('/departamentos', [AreaCategoriaController::class, 'storeDepartamento'])->name('departamentos.store');
         Route::put('/departamentos/{departamento}', [AreaCategoriaController::class, 'updateDepartamento'])->name('departamentos.update');
         Route::delete('/departamentos/{departamento}', [AreaCategoriaController::class, 'destroyDepartamento'])->name('departamentos.destroy');
-
-        // API para obtener áreas por departamento
         Route::get('/api/departamentos/{departamento}/areas', [AreaCategoriaController::class, 'getAreasPorDepartamento'])->name('api.departamentos.areas');
+           // ✅ NUEVAS RUTAS DE GERENTES
+        Route::prefix('gerentes')->name('gerentes.')->controller(GerenteController::class)->group(function () {
+            // Vista principal con listado
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{gerente}', 'update')->name('update');
+            Route::patch('/{gerente}/toggle-estatus', 'toggleEstatus')->name('toggle-estatus');
+            Route::delete('/{gerente}', 'destroy')->name('destroy');
+            Route::get('/api/lista', 'apiGerentes')->name('api.lista');
+        });
     });
     
 

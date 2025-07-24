@@ -50,6 +50,21 @@
             </div>
         </div>
 
+        <!-- Botón para vista de gerentes -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #0d6efd;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-person-badge-fill fs-1 mb-3" style="color: #0d6efd;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Gerentes</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Administración del personal gerencial</p>
+                    <a href="{{ route('gerentes.index') }}" class="btn text-white" style="background-color: #0d6efd;">
+                        <i class="bi bi-eye-fill"></i> Ver Gerentes
+                    </a>
+                </div>
+            </div>
+        </div>
+
+
 
         <!-- Cerrar Sesión -->
         <div class="col-md-6 col-lg-4 mb-4">
