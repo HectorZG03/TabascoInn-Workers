@@ -217,8 +217,11 @@
 @endif
 
 <!-- ✅ NUEVO: Modal para selección de firmas -->
-@include('trabajadores.documentos_vacaciones.modal_seleccion_firmas', ['trabajador' => $trabajador, 'gerentes' => $gerentes])
-
+@include('trabajadores.documentos_vacaciones.modal_seleccion_firmas', [
+    'trabajador' => $trabajador,
+    'gerentes' => $gerentes,
+    'gerenteGeneral' => $gerenteGeneral // ✅ PASAR GERENTE GENERAL AL MODAL
+])
 {{-- ===================================== --}}
 {{-- ✅ SCRIPTS EN ORDEN CORRECTO CON RUTAS DINÁMICAS --}}
 {{-- ===================================== --}}

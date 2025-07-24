@@ -4,7 +4,6 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Gerente extends Model
 {
@@ -14,7 +13,7 @@ class Gerente extends Model
         'nombre',
         'apellido_paterno', 
         'apellido_materno',
-        'cargo', // ✅ NUEVO CAMPO AGREGADO
+        'cargo',
         'telefono',
         'descripcion',
         'activo'
@@ -42,7 +41,7 @@ class Gerente extends Model
     }
 
     /**
-     * ✅ NUEVO: Accessor para obtener nombre completo con cargo
+     * Accessor para obtener nombre completo con cargo
      */
     public function getNombreCompletoConCargoAttribute()
     {
@@ -58,7 +57,7 @@ class Gerente extends Model
     }
 
     /**
-     * ✅ NUEVO: Scope para gerentes por cargo
+     * Scope para gerentes por cargo
      */
     public function scopePorCargo($query, $cargo)
     {
@@ -66,7 +65,7 @@ class Gerente extends Model
     }
 
     /**
-     * Buscar gerentes por nombre o apellidos
+     * Buscar gerentes por nombre, apellidos o cargo
      */
     public function scopeBuscar($query, $termino)
     {
@@ -74,7 +73,7 @@ class Gerente extends Model
             $q->where('nombre', 'LIKE', "%{$termino}%")
               ->orWhere('apellido_paterno', 'LIKE', "%{$termino}%")
               ->orWhere('apellido_materno', 'LIKE', "%{$termino}%")
-              ->orWhere('cargo', 'LIKE', "%{$termino}%"); // ✅ INCLUIR CARGO EN BÚSQUEDA
+              ->orWhere('cargo', 'LIKE', "%{$termino}%");
         });
     }
 
@@ -96,11 +95,12 @@ class Gerente extends Model
     }
 
     /**
-     * ✅ NUEVO: Obtener gerentes para firmas de documentos
+     * Obtener gerentes para firmas de documentos (excluyendo al Gerente General)
      */
     public static function paraFirmasDocumentos()
     {
         return self::activos()
+                   ->where('cargo', '<>', 'Gerente General')
                    ->select('id', 'nombre', 'apellido_paterno', 'apellido_materno', 'cargo')
                    ->orderBy('cargo')
                    ->orderBy('apellido_paterno')
@@ -113,5 +113,23 @@ class Gerente extends Model
                            'para_firma' => $gerente->nombre_completo_con_cargo
                        ];
                    });
+    }
+
+    /**
+     * Obtener el gerente general activo
+     */
+    public static function getGerenteGeneral()
+    {
+        return self::activos()
+            ->where('cargo', 'Gerente General')
+            ->first();
+    }
+
+    /**
+     * Verificar si es gerente general
+     */
+    public function esGerenteGeneral()
+    {
+        return $this->cargo === 'Gerente General';
     }
 }

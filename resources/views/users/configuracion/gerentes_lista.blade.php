@@ -41,14 +41,20 @@
     <div class="card mb-4">
         <div class="card-body">
             <form method="GET" action="{{ route('gerentes.index') }}" class="row g-3">
-                <div class="col-md-6">
+                <div class="col-md-4">
                     <label class="form-label">Buscar gerente</label>
                     <div class="input-group">
                         <span class="input-group-text"><i class="fas fa-search"></i></span>
                         <input type="text" class="form-control" name="buscar" 
                                value="{{ request('buscar') }}" 
-                               placeholder="Nombre o apellidos...">
+                               placeholder="Nombre, apellidos o cargo...">
                     </div>
+                </div>
+                <div class="col-md-3">
+                    <label class="form-label">Cargo</label>
+                    <input type="text" class="form-control" name="cargo" 
+                           value="{{ request('cargo') }}" 
+                           placeholder="Filtrar por cargo...">
                 </div>
                 <div class="col-md-3">
                     <label class="form-label">Estatus</label>
@@ -58,7 +64,7 @@
                         <option value="inactivos" {{ request('estatus') == 'inactivos' ? 'selected' : '' }}>Inactivos</option>
                     </select>
                 </div>
-                <div class="col-md-3 d-flex align-items-end gap-2">
+                <div class="col-md-2 d-flex align-items-end gap-2">
                     <button type="submit" class="btn btn-outline-primary">
                         <i class="fas fa-filter me-1"></i>Filtrar
                     </button>
@@ -85,6 +91,7 @@
                         <thead class="table-light">
                             <tr>
                                 <th>Nombre Completo</th>
+                                <th>Cargo</th>
                                 <th>Teléfono</th>
                                 <th>Descripción</th>
                                 <th>Estatus</th>
@@ -97,6 +104,12 @@
                             <tr>
                                 <td>
                                     <strong>{{ $gerente->nombre_completo }}</strong>
+                                </td>
+                                <td>
+                                    <span class="d-inline-block text-truncate" style="max-width: 150px;" 
+                                          title="{{ $gerente->cargo }}">
+                                        {{ $gerente->cargo }}
+                                    </span>
                                 </td>
                                 <td>
                                     @if($gerente->telefono)
@@ -138,7 +151,15 @@
                                         <!-- Botón Editar -->
                                         <button type="button" class="btn btn-sm btn-outline-primary" 
                                                 title="Editar gerente"
-                                                onclick="editarGerente({{ $gerente->id }}, '{{ $gerente->nombre }}', '{{ $gerente->apellido_paterno }}', '{{ $gerente->apellido_materno }}', '{{ $gerente->telefono }}', '{{ addslashes($gerente->descripcion) }}')">
+                                                onclick="editarGerente(
+                                                    {{ $gerente->id }}, 
+                                                    '{{ $gerente->nombre }}', 
+                                                    '{{ $gerente->apellido_paterno }}', 
+                                                    '{{ $gerente->apellido_materno }}', 
+                                                    '{{ $gerente->cargo }}', 
+                                                    '{{ $gerente->telefono }}', 
+                                                    '{{ addslashes($gerente->descripcion) }}'
+                                                )">
                                             <i class="bi bi-pencil-square"></i>
                                         </button>
                                         
@@ -222,6 +243,11 @@
                             <input type="text" name="apellido_materno" id="apellido_materno" class="form-control">
                         </div>
                         <div class="col-12">
+                            <label class="form-label">Cargo <span class="text-danger">*</span></label>
+                            <input type="text" name="cargo" id="cargo" class="form-control" 
+                                   placeholder="Ej: Gerente de Ventas" required>
+                        </div>
+                        <div class="col-12">
                             <label class="form-label">Teléfono</label>
                             <input type="tel" name="telefono" id="telefono" class="form-control" 
                                    placeholder="Ej: (999) 123-4567">
@@ -251,9 +277,8 @@
 </form>
 @endsection
 
-
 <script>
-function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, telefono, descripcion) {
+function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, cargo, telefono, descripcion) {
     // Cambiar título del modal
     document.getElementById('tituloModal').textContent = 'Editar Gerente';
     
@@ -274,6 +299,7 @@ function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, telefono, d
     document.getElementById('nombre').value = nombre;
     document.getElementById('apellido_paterno').value = apellidoPaterno;
     document.getElementById('apellido_materno').value = apellidoMaterno || '';
+    document.getElementById('cargo').value = cargo || '';
     document.getElementById('telefono').value = telefono || '';
     document.getElementById('descripcion').value = descripcion || '';
     

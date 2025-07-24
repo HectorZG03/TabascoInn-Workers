@@ -116,8 +116,20 @@ class ContratoController extends Controller
     /**
      * ✅ Generar PDF del contrato (método central)
      */
+/**
+     * ✅ ACTUALIZADO: Generar PDF del contrato con imagen logo
+     */
     private function generarPDF($trabajador, array $datosContrato)
     {
+        // ✅ NUEVO: CONVERTIR IMAGEN LOGO A BASE64 PARA DOMPDF
+        $imagenPath = public_path('image/estaticas/images.png');
+        $imagenBase64 = null;
+        
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
+        }
+
         return PDF::loadView('Formatos.contrato', [
             'trabajador' => $trabajador,
             'tipo_contrato' => $datosContrato['tipo_contrato'],
@@ -126,7 +138,8 @@ class ContratoController extends Controller
             'duracion' => $datosContrato['duracion'],
             'tipo_duracion' => $datosContrato['tipo_duracion'],
             'duracion_texto' => $datosContrato['duracion_texto'],
-            'salario_texto' => $datosContrato['salario_texto']
+            'salario_texto' => $datosContrato['salario_texto'],
+            'imagen_empresa' => $imagenBase64 // ✅ NUEVO: Pasar imagen como base64
         ]);
     }
 

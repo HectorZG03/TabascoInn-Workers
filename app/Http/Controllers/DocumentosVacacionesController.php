@@ -35,13 +35,17 @@ class DocumentosVacacionesController extends Controller
         $vacacionesPendientesSinDocumento = $trabajador->vacacionesPendientes
             ->whereNotIn('id_vacacion', $vacacionesConDocumento);
 
-        // ✅ OBTENER GERENTES PARA SELECCIÓN DE FIRMAS
+        // ✅ OBTENER GERENTES PARA SELECCIÓN DE FIRMAS (excluyendo Gerente General)
         $gerentes = Gerente::paraFirmasDocumentos();
+
+        // ✅ OBTENER GERENTE GENERAL
+        $gerenteGeneral = Gerente::getGerenteGeneral();
 
         return view('trabajadores.documentos_vacaciones.index', [
             'trabajador' => $trabajador,
             'vacacionesPendientesSinDocumento' => $vacacionesPendientesSinDocumento,
-            'gerentes' => $gerentes, // ✅ PASAR GERENTES A LA VISTA
+            'gerentes' => $gerentes,
+            'gerenteGeneral' => $gerenteGeneral // ✅ PASAR GERENTE GENERAL A LA VISTA
         ]);
     }
 
@@ -91,15 +95,12 @@ class DocumentosVacacionesController extends Controller
     public function descargarPDF(Request $request, Trabajador $trabajador)
     {
         try {
-            // ✅ VALIDAR SELECCIÓN DE FIRMAS (SIN RESTRICCIONES DE CARGO)
+            // ✅ VALIDAR SOLO UNA SELECCIÓN DE GERENTE ADICIONAL
             $validator = Validator::make($request->all(), [
-                'firma1_id' => 'required|exists:gerentes,id',
-                'firma2_id' => 'required|exists:gerentes,id',
+                'firma_gerente_id' => 'required|exists:gerentes,id',
             ], [
-                'firma1_id.required' => 'Debe seleccionar la primera firma',
-                'firma1_id.exists' => 'La primera firma seleccionada no es válida',
-                'firma2_id.required' => 'Debe seleccionar la segunda firma',
-                'firma2_id.exists' => 'La segunda firma seleccionada no es válida',
+                'firma_gerente_id.required' => 'Debe seleccionar un gerente para firmar',
+                'firma_gerente_id.exists' => 'El gerente seleccionado no es válido',
             ]);
 
             if ($validator->fails()) {
@@ -122,16 +123,27 @@ class DocumentosVacacionesController extends Controller
                 ], 422);
             }
 
-            // ✅ OBTENER DATOS DE FIRMAS (CUALQUIER GERENTE PUEDE FIRMAR EN CUALQUIER POSICIÓN)
-            $firma1 = Gerente::findOrFail($request->firma1_id);
-            $firma2 = Gerente::findOrFail($request->firma2_id);
+            // ✅ OBTENER GERENTE GENERAL FIJO
+            $gerenteGeneral = Gerente::where('cargo', 'Gerente General')
+                ->where('activo', true)
+                ->first();
+
+            if (!$gerenteGeneral) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No se encontró un Gerente General activo configurado en el sistema'
+                ], 422);
+            }
+
+            // ✅ OBTENER GERENTE ADICIONAL SELECCIONADO
+            $gerenteAdicional = Gerente::findOrFail($request->firma_gerente_id);
             $usuarioRecursosHumanos = Auth::user();
 
-            // ✅ GENERAR PDF CON FIRMAS DINÁMICAS
+            // ✅ GENERAR PDF CON NUEVA ESTRUCTURA DE FIRMAS
             $pdf = $this->generarPDFAmortizacion($trabajador, $vacacionesPendientes, [
-                'firma1' => $firma1,
-                'recursos_humanos' => $usuarioRecursosHumanos,
-                'firma2' => $firma2
+                'gerente_general' => $gerenteGeneral,
+                'gerente_adicional' => $gerenteAdicional,
+                'recursos_humanos' => $usuarioRecursosHumanos
             ]);
 
             // Nombre del archivo
@@ -143,8 +155,7 @@ class DocumentosVacacionesController extends Controller
                 'message' => 'PDF generado correctamente',
                 'download_url' => route('trabajadores.documentos-vacaciones.descargar-pdf-directo', [
                     'trabajador' => $trabajador->id_trabajador,
-                    'firma1_id' => $request->firma1_id,
-                    'firma2_id' => $request->firma2_id
+                    'firma_gerente_id' => $request->firma_gerente_id
                 ])
             ]);
 
@@ -162,18 +173,18 @@ class DocumentosVacacionesController extends Controller
         }
     }
 
-    /**
-     * ✅ NUEVA RUTA: Descarga directa del PDF (para el enlace generado)
-     */
     public function descargarPDFDirecto(Request $request, Trabajador $trabajador)
     {
         try {
-            // Validar parámetros
-            $firma1 = Gerente::findOrFail($request->firma1_id);
-            $firma2 = Gerente::findOrFail($request->firma2_id);
+            // Validar parámetro requerido
+            $request->validate([
+                'firma_gerente_id' => 'required|exists:gerentes,id',
+            ]);
+
+            $gerenteAdicional = Gerente::findOrFail($request->firma_gerente_id);
+            $gerenteGeneral = Gerente::where('cargo', 'Gerente General')->where('activo', true)->firstOrFail();
             $usuarioRecursosHumanos = Auth::user();
 
-            // Obtener vacaciones pendientes
             $vacacionesPendientes = $trabajador->vacacionesPendientes()
                 ->orderBy('fecha_inicio', 'asc')
                 ->get();
@@ -182,23 +193,21 @@ class DocumentosVacacionesController extends Controller
                 return redirect()->back()->with('error', 'No hay vacaciones pendientes para generar documento');
             }
 
-            // Generar PDF
             $pdf = $this->generarPDFAmortizacion($trabajador, $vacacionesPendientes, [
-                'firma1' => $firma1,
+                'gerente_general' => $gerenteGeneral,
+                'gerente_adicional' => $gerenteAdicional,
                 'recursos_humanos' => $usuarioRecursosHumanos,
-                'firma2' => $firma2
             ]);
 
-            // Nombre del archivo
             $nombreArchivo = $this->generarNombreArchivo($trabajador);
 
-            // Descargar directamente
             return $pdf->download($nombreArchivo);
 
         } catch (\Exception $e) {
             return redirect()->back()->with('error', 'Error al generar el documento: ' . $e->getMessage());
         }
     }
+
 
     /**
      * Subir documento firmado y asociar con vacaciones - CORREGIDO
@@ -429,18 +438,38 @@ class DocumentosVacacionesController extends Controller
     // MÉTODOS PRIVADOS
     // ===============================================
 
-    /**
-     * ✅ ACTUALIZADA: Generar PDF de amortización de vacaciones con firmas dinámicas
+/**
+     * ✅ ACTUALIZADA: Generar PDF de amortización de vacaciones con firmas dinámicas, imagen logo y marca de agua
      */
     private function generarPDFAmortizacion(Trabajador $trabajador, $vacacionesPendientes, $firmas = null)
     {
+        // ✅ CONVERTIR IMAGEN LOGO A BASE64 PARA DOMPDF
+        $imagenPath = public_path('image/estaticas/images.png');
+        $imagenBase64 = null;
+        
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
+        }
+
+        // ✅ NUEVO: CONVERTIR IMAGEN DE MARCA DE AGUA A BASE64
+        $watermarkPath = public_path('image/estaticas/watermark.jpg');
+        $watermarkBase64 = null;
+        
+        if (file_exists($watermarkPath)) {
+            $watermarkData = file_get_contents($watermarkPath);
+            $watermarkBase64 = 'data:image/jpeg;base64,' . base64_encode($watermarkData);
+        }
+
         $datos = [
             'trabajador' => $trabajador,
             'vacaciones' => $vacacionesPendientes,
             'fecha_generacion' => Carbon::now()->format('d/m/Y H:i'),
             'año_actual' => Carbon::now()->year,
             'total_dias' => $vacacionesPendientes->sum('dias_solicitados'),
-            'firmas' => $firmas // ✅ PASAR FIRMAS AL PDF
+            'firmas' => $firmas, // ✅ PASAR FIRMAS AL PDF
+            'imagen_empresa' => $imagenBase64, // ✅ Pasar imagen logo como base64
+            'watermark_empresa' => $watermarkBase64 // ✅ NUEVO: Pasar marca de agua como base64
         ];
 
         return Pdf::loadView('trabajadores.documentos_vacaciones.pdf_amortizacion', $datos)

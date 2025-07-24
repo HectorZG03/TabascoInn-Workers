@@ -10,14 +10,36 @@
             line-height: 1.4;
             margin: 40px;
             color: #000;
+            position: relative; /* ✅ NUEVO: Para posicionamiento relativo */
         }
+
+        /* ✅ NUEVO: Contenedor para el header con imagen */
+        .header-container {
+            position: relative;
+            margin-bottom: 30px;
+            min-height: 80px; /* Espacio mínimo para la imagen */
+        }
+
+        /* ✅ NUEVO: Imagen del logo en esquina superior izquierda */
+        .logo-empresa {
+            position: absolute;
+            top: 0;
+            left: 0;
+            max-width: 100px;
+            max-height: 70px;
+            z-index: 1;
+        }
+
+        /* ✅ MODIFICADO: Título con espacio para la imagen */
         h1 {
             text-align: center;
             font-size: 16px;
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 25px;
+            padding-left: 120px; /* ✅ NUEVO: Espacio para que no se superponga con la imagen */
         }
+
         .section {
             margin-top: 15px;
         }
@@ -82,21 +104,44 @@
         li {
             margin-bottom: 3px;
         }
+
+        /* ✅ NUEVO: Ajustes para impresión */
+        @media print {
+            .header-container {
+                margin-bottom: 20px;
+            }
+            
+            .logo-empresa {
+                max-width: 80px;
+                max-height: 60px;
+            }
+
+            h1 {
+                padding-left: 100px;
+            }
+        }
     </style>
 </head>
 <body>
-    <h1>
-        CONTRATO INDIVIDUAL DE TRABAJO<br>
-        @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
-            POR TIEMPO INDETERMINADO
-        @else
-            POR TIEMPO DETERMINADO
+    {{-- ✅ NUEVO: Contenedor con imagen en la esquina superior izquierda --}}
+    <div class="header-container">
+        @if(isset($imagen_empresa) && $imagen_empresa)
+            <img src="{{ $imagen_empresa }}" alt="Logo Empresa" class="logo-empresa">
         @endif
-    </h1>
+        
+        <h1>
+            CONTRATO INDIVIDUAL DE TRABAJO<br>
+            @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
+                POR TIEMPO INDETERMINADO
+            @else
+                POR TIEMPO DETERMINADO
+            @endif
+        </h1>
+    </div>
     
     <p class="clausula">
         CONTRATO INDIVIDUAL DE TRABAJO QUE CELEBRAN POR UNA PARTE LA EMPRESA <span class="bold uppercase">TABASCO INN, S.A. DE C.V.</span> REPRESENTADA POR EL LIC. GUSTAVO ENRIQUE ZURITA GONZÁLEZ, A LA CUAL EN LO SUCESIVO SE LE DENOMINARÁ "PATRÓN", 
-        Y POR LA OTRA EL C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, EN SU CALIDAD DE "TRABAJADOR", DENOMINACIÓN QUE RECIBIRÁ EN LO SUCESIVO AL TENOR DE LAS SIGUIENTES:
+        Y POR LA OTRA EL/LA C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, EN SU CALIDAD DE "TRABAJADOR", DENOMINACIÓN QUE RECIBIRÁ EN LO SUCESIVO AL TENOR DE LAS SIGUIENTES:
     </p>
     
     <div class="section">
