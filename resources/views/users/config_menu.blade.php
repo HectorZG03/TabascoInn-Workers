@@ -52,6 +52,20 @@
             </div>
         </div>
 
+        <!-- Botón para Plantillas de Contrato -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #6f42c1;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-file-earmark-text-fill fs-1 mb-3" style="color: #6f42c1;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Plantillas de Contrato</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Editor de plantillas de contratos laborales</p>
+                    <a href="{{ route('configuracion.plantillas.index') }}" class="btn text-white" style="background-color: #6f42c1;">
+                        <i class="bi bi-file-earmark-edit"></i> Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+
 
 
         <!-- Cerrar Sesión -->

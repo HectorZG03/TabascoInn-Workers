@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PlantillaContrato;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -18,6 +19,7 @@ class DatabaseSeeder extends Seeder
             DepartamentoSeeder::class,  // 1️⃣ NUEVO: Primero los departamentos
             AreaSeeder::class,          // 2️⃣ Segundo las áreas (necesitan departamentos)
             CategoriaSeeder::class,     // 3️⃣ Tercero las categorías (necesitan áreas)
+            VariablesContratoSeeder::class, // ✅ CUATRO: Variables de contrato
         ]);
 
         // ✅ DESPUÉS: Crear Usuarios de prueba
@@ -70,7 +72,6 @@ class DatabaseSeeder extends Seeder
         $this->command->line('• Gerencia: gerencia@hotel.com / password123');
         $this->command->line('• Admin: admin@hotel.com / password123');
         
-        // ✅ NUEVO: Mensaje final
         $this->command->info('');
         $this->command->info('✅ Sistema completo inicializado con estructura jerárquica:');
         $this->command->info('   Departamentos → Áreas → Categorías → Trabajadores');

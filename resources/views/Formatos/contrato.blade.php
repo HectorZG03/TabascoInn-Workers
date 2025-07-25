@@ -241,39 +241,16 @@
             en dicho pago el séptimo día, días festivos y descansos obligatorios que por Ley existan, con fundamento en los artículos 69, 70, 71, 72, 74, 88, 108 y 109 de la Ley Federal del Trabajo, debiendo EL TRABAJADOR firmar los comprobantes respectivos.
         </p>
 
-        {{-- ✅ CLÁUSULA XIII: DINÁMICA CON HORARIOS DE LA FICHA TÉCNICA --}}
+      {{-- ✅ CLÁUSULA XIII: ULTRA SIMPLIFICADA CON ACCESSORS --}}
         <p class="clausula">
             <span class="clausula-numero">CLÁUSULA XIII:</span> La duración de la jornada 
             @if($trabajador->fichaTecnica)
-                @php
-                    $fichaTecnica = $trabajador->fichaTecnica;
-                    $horasSemanales = $fichaTecnica->horas_semanales_calculadas ?? $fichaTecnica->horas_semanales ?? 0;
-                    $horasDiarias = $fichaTecnica->horas_trabajadas_calculadas ?? $fichaTecnica->horas_trabajo ?? 0;
-                    $turno = $fichaTecnica->turno_calculado ?? $fichaTecnica->turno ?? 'mixto';
-                    $horaEntrada = $fichaTecnica->hora_entrada ? \Carbon\Carbon::parse($fichaTecnica->hora_entrada)->format('H:i') : '08:00';
-                    $horaSalida = $fichaTecnica->hora_salida ? \Carbon\Carbon::parse($fichaTecnica->hora_salida)->format('H:i') : '17:00';
-                    $diasLaborables = $fichaTecnica->dias_laborables ?? ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-                    $diasDescanso = $fichaTecnica->dias_descanso ?? ['sabado', 'domingo'];
-                    
-                    // Convertir días a texto
-                    $diasLaborablesTexto = collect($diasLaborables)->map(function($dia) {
-                        return \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? ucfirst($dia);
-                    })->join(', ');
-                    
-                    $diasDescansoTexto = collect($diasDescanso)->map(function($dia) {
-                        return \App\Models\FichaTecnica::DIAS_SEMANA[$dia] ?? ucfirst($dia);
-                    })->join(', ');
-                    
-                    // Textos descriptivos
-                    $tipoJornada = $turno === 'nocturno' ? 'nocturna' : ($turno === 'diurno' ? 'diurna' : 'mixta');
-                    $descripcionTurno = match($turno) {
-                        'nocturno' => 'por tratarse de jornada Nocturna',
-                        'diurno' => 'por tratarse de jornada Diurna',
-                        default => 'por tratarse de jornada Mixta'
-                    };
-                @endphp
-                {{ $tipoJornada }} de trabajo será de <span class="bold">{{ $horasSemanales }} horas a la semana</span> {{ $descripcionTurno }} debiendo EL TRABAJADOR de entrar a sus labores a las <span class="bold">{{ $horaEntrada }} horas</span>, finalizando su jornada de trabajo a las <span class="bold">{{ $horaSalida }} horas</span>, es decir, EL TRABAJADOR laborará <span class="bold">{{ $horasDiarias }} horas diarias</span> los días <span class="bold">{{ $diasLaborablesTexto }}</span> de cada semana, disfrutando EL TRABAJADOR de media hora descanso comprendida de las {{ $turno === 'nocturno' ? '02:00 horas a las 02:30 horas' : '12:30 horas a las 13:00 horas' }}, recibiendo el pago de su respectivo séptimo día a que tiene derecho, el tiempo que EL TRABAJADOR use como descanso y para comida no se computara como tiempo efectivo de trabajo, dado que el mismo lo utilizará fuera de las instalaciones del centro de trabajo, el presente horario y jornada de trabajo se pacta con fundamento en los artículos 58 y 59 de la Ley Federal del Trabajo, siendo {{ count($diasDescanso) === 1 ? 'el día' : 'los días' }} de descanso semanal {{ count($diasDescanso) === 1 ? 'el' : 'los' }} <span class="bold">{{ $diasDescansoTexto }}</span> de cada semana.
+                {{ $trabajador->fichaTecnica->tipo_jornada_texto }} de trabajo será de <span class="bold">{{ $trabajador->fichaTecnica->horas_semanales_calculadas }} horas a la semana</span> {{ $trabajador->fichaTecnica->descripcion_turno }} debiendo EL TRABAJADOR de entrar a sus labores a las <span class="bold">{{ $trabajador->fichaTecnica->hora_entrada_formateada }} horas</span>, finalizando su jornada de trabajo a las <span class="bold">{{ $trabajador->fichaTecnica->hora_salida_formateada }} horas</span>, 
+                es decir, EL TRABAJADOR laborará <span class="bold">{{ $trabajador->fichaTecnica->horas_trabajadas_calculadas }} horas diarias</span> los días <span class="bold">{{ $trabajador->fichaTecnica->dias_laborables_texto }}</span> de cada semana, disfrutando EL TRABAJADOR de media hora descanso comprendida de las {{ $trabajador->fichaTecnica->horario_descanso }}, 
+                recibiendo el pago de su respectivo séptimo día a que tiene derecho, el tiempo que EL TRABAJADOR use como descanso y para comida no se computara como tiempo efectivo de trabajo, dado que el mismo lo utilizará fuera de las instalaciones del centro de trabajo, el presente horario y jornada de trabajo se pacta con fundamento en los artículos 58 y 59 de la Ley Federal del Trabajo, siendo {{ $trabajador->fichaTecnica->texto_descanso_plural1 }} de descanso semanal {{ $trabajador->fichaTecnica->texto_descanso_plural2 }} 
+                <span class="bold">{{ $trabajador->fichaTecnica->dias_descanso_texto }}</span> de cada semana.
             @else
+                {{-- Fallback para trabajadores sin ficha técnica --}}
                 descontinua de trabajo será de 42 horas a la semana por tratarse de jornada Nocturna debiendo EL TRABAJADOR de entrar a sus labores a las 22:00 horas o diez de la noche, finalizando su jornada de trabajo a las 06:00 horas o a las 06:00 de la mañana, es decir, EL TRABAJADOR laborará 07 horas diarias de domingo a viernes de cada semana, disfrutando EL TRABAJADOR de media hora descanso comprendida de las 02:00 horas a las 02:30 horas, recibiendo el pago de su respectivo séptimo día a que tiene derecho, el tiempo que EL TRABAJADOR use como descanso y para comida no se computara como tiempo efectivo de trabajo, dado que el mismo lo utilizará fuera de las instalaciones del centro de trabajo, el presente horario y jornada de trabajo se pacta con fundamento en los artículos 58 y 59 de la Ley Federal del Trabajo, siendo el día de descanso semanal el día sábado de cada semana.
             @endif
         </p>

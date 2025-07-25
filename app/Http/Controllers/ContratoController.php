@@ -4,6 +4,8 @@ namespace App\Http\Controllers;
 
 use App\Models\Trabajador;
 use App\Models\ContratoTrabajador;
+use App\Models\PlantillaContrato;
+use App\Models\VariableContrato;
 use App\Models\FichaTecnica;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
@@ -11,13 +13,12 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
 
 /**
- * ✅ SIMPLIFICADO: Solo se encarga de GENERAR contratos definitivos
- * Eliminada toda funcionalidad de preview temporal
+ * ✅ ACTUALIZADO: ContratoController con sistema de plantillas dinámicas
  */
 class ContratoController extends Controller
 {
     /**
-     * ✅ ACTUALIZADO: GENERAR CONTRATO DEFINITIVO (determinado e indeterminado)
+     * ✅ ACTUALIZADO: GENERAR CONTRATO DEFINITIVO usando plantillas dinámicas
      */
     public function generarDefinitivo(Trabajador $trabajador, array $datosContrato): ContratoTrabajador
     {
@@ -27,7 +28,9 @@ class ContratoController extends Controller
             $this->completarDatosFichaTecnica($trabajador);
 
             $datosContratoProcesados = $this->procesarDatosContrato((object) $datosContrato);
-            $pdf = $this->generarPDF($trabajador, $datosContratoProcesados);
+            
+            // ✅ NUEVO: Generar PDF usando plantilla dinámica
+            $pdf = $this->generarPDFConPlantilla($trabajador, $datosContratoProcesados);
             
             // Guardar archivo definitivo
             $nombreArchivo = 'contrato_' . $trabajador->id_trabajador . '_' . time() . '.pdf';
@@ -53,7 +56,7 @@ class ContratoController extends Controller
 
             $contrato = ContratoTrabajador::create($datosContratoDB);
 
-            Log::info('✅ Contrato definitivo creado', [
+            Log::info('✅ Contrato definitivo creado con plantilla dinámica', [
                 'contrato_id' => $contrato->id_contrato,
                 'trabajador_id' => $trabajador->id_trabajador,
                 'tipo_contrato' => $datosContratoProcesados['tipo_contrato']
@@ -72,7 +75,120 @@ class ContratoController extends Controller
     }
 
     // ========================================
-    // MÉTODOS PRIVADOS DE PROCESAMIENTO
+    // ✅ NUEVOS MÉTODOS PARA PLANTILLAS DINÁMICAS
+    // ========================================
+
+    /**
+     * ✅ NUEVO: Generar PDF usando plantilla dinámica
+     */
+    private function generarPDFConPlantilla($trabajador, array $datosContrato)
+    {
+        // Obtener plantilla activa para el tipo de contrato
+        $tipoContrato = $datosContrato['tipo_contrato'];
+        $plantilla = PlantillaContrato::obtenerActiva($tipoContrato);
+        
+        if (!$plantilla) {
+            Log::warning('⚠️ No se encontró plantilla activa, usando plantilla por defecto', [
+                'tipo_contrato' => $tipoContrato
+            ]);
+            
+            // Fallback a la plantilla blade original
+            return $this->generarPDFOriginal($trabajador, $datosContrato);
+        }
+
+        // Obtener valores de todas las variables
+        $valoresVariables = $this->obtenerValoresVariables($trabajador, $datosContrato);
+        
+        // Reemplazar variables en la plantilla
+        $contenidoFinal = $plantilla->reemplazarVariables($valoresVariables);
+        
+        // Agregar imagen de empresa si existe
+        $contenidoFinal = $this->procesarImagenEmpresa($contenidoFinal);
+        
+        Log::info('📄 Generando PDF con plantilla dinámica', [
+            'plantilla_id' => $plantilla->id_plantilla,
+            'plantilla_version' => $plantilla->version,
+            'variables_utilizadas' => count($valoresVariables)
+        ]);
+
+        return PDF::loadHTML($contenidoFinal);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener valores de todas las variables
+     */
+    private function obtenerValoresVariables($trabajador, array $datosContrato): array
+    {
+        $variables = VariableContrato::activas()->get();
+        $valores = [];
+        
+        foreach ($variables as $variable) {
+            try {
+                $valor = $variable->obtenerValor($trabajador, $datosContrato);
+                $valores[$variable->nombre_variable] = $valor;
+                
+            } catch (\Exception $e) {
+                Log::warning('⚠️ Error obteniendo valor de variable', [
+                    'variable' => $variable->nombre_variable,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Usar valor de ejemplo en caso de error
+                $valores[$variable->nombre_variable] = $variable->formato_ejemplo ?? '';
+            }
+        }
+        
+        return $valores;
+    }
+
+    /**
+     * ✅ NUEVO: Procesar imagen de empresa en el contenido HTML
+     */
+    private function procesarImagenEmpresa(string $contenidoHtml): string
+    {
+        $imagenPath = public_path('image/estaticas/images.png');
+        
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
+            
+            // Reemplazar placeholders de imagen si existen
+            $contenidoHtml = str_replace('{{imagen_empresa}}', $imagenBase64, $contenidoHtml);
+            $contenidoHtml = str_replace('{{logo_empresa}}', $imagenBase64, $contenidoHtml);
+        }
+        
+        return $contenidoHtml;
+    }
+
+    /**
+     * ✅ FALLBACK: Generar PDF con plantilla original (por compatibilidad)
+     */
+    private function generarPDFOriginal($trabajador, array $datosContrato)
+    {
+        // ✅ CONVERTIR IMAGEN LOGO A BASE64 PARA DOMPDF
+        $imagenPath = public_path('image/estaticas/images.png');
+        $imagenBase64 = null;
+        
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
+        }
+
+        return PDF::loadView('Formatos.contrato', [
+            'trabajador' => $trabajador,
+            'tipo_contrato' => $datosContrato['tipo_contrato'],
+            'fecha_inicio' => $datosContrato['fecha_inicio'],
+            'fecha_fin' => $datosContrato['fecha_fin'], // Puede ser null para indeterminados
+            'duracion' => $datosContrato['duracion'],
+            'tipo_duracion' => $datosContrato['tipo_duracion'],
+            'duracion_texto' => $datosContrato['duracion_texto'],
+            'salario_texto' => $datosContrato['salario_texto'],
+            'imagen_empresa' => $imagenBase64 // ✅ NUEVO: Pasar imagen como base64
+        ]);
+    }
+
+    // ========================================
+    // MÉTODOS PRIVADOS DE PROCESAMIENTO (SIN CAMBIOS)
     // ========================================
 
     /**
@@ -110,37 +226,6 @@ class ContratoController extends Controller
         }
 
         return $datos;
-    }
-
-
-    /**
-     * ✅ Generar PDF del contrato (método central)
-     */
-/**
-     * ✅ ACTUALIZADO: Generar PDF del contrato con imagen logo
-     */
-    private function generarPDF($trabajador, array $datosContrato)
-    {
-        // ✅ NUEVO: CONVERTIR IMAGEN LOGO A BASE64 PARA DOMPDF
-        $imagenPath = public_path('image/estaticas/images.png');
-        $imagenBase64 = null;
-        
-        if (file_exists($imagenPath)) {
-            $imagenData = file_get_contents($imagenPath);
-            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
-        }
-
-        return PDF::loadView('Formatos.contrato', [
-            'trabajador' => $trabajador,
-            'tipo_contrato' => $datosContrato['tipo_contrato'],
-            'fecha_inicio' => $datosContrato['fecha_inicio'],
-            'fecha_fin' => $datosContrato['fecha_fin'], // Puede ser null para indeterminados
-            'duracion' => $datosContrato['duracion'],
-            'tipo_duracion' => $datosContrato['tipo_duracion'],
-            'duracion_texto' => $datosContrato['duracion_texto'],
-            'salario_texto' => $datosContrato['salario_texto'],
-            'imagen_empresa' => $imagenBase64 // ✅ NUEVO: Pasar imagen como base64
-        ]);
     }
 
     /**

@@ -466,5 +466,75 @@ class FichaTecnica extends Model
         ];
     }
 
+
+    public function getTipoJornadaTextoAttribute()
+    {
+        return match($this->turno_calculado) {
+            'nocturno' => 'nocturna',
+            'diurno' => 'diurna',
+            default => 'mixta'
+        };
+    }
+
+    /**
+     * ✅ NUEVO: Obtener descripción completa del turno para contratos
+     */
+    public function getDescripcionTurnoAttribute()
+    {
+        return match ($this->turno) {
+            'diurno' => 'por tratarse de jornada Diurna',
+            'nocturno' => 'por tratarse de jornada Nocturna',
+            'mixto' => 'por tratarse de jornada Mixta',
+            default => 'por tratarse de jornada indefinida',
+        };
+    }
+
+
+    /**
+     * ✅ NUEVO: Obtener horario de descanso según el turno
+     */
+    public function getHorarioDescansoAttribute()
+    {
+        return $this->turno_calculado === 'nocturno' 
+            ? '02:00 horas a las 02:30 horas' 
+            : '12:30 horas a las 13:00 horas';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener hora de entrada formateada
+     */
+    public function getHoraEntradaFormateadaAttribute()
+    {
+        return $this->hora_entrada 
+            ? \Carbon\Carbon::parse($this->hora_entrada)->format('H:i') 
+            : '08:00';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener hora de salida formateada
+     */
+    public function getHoraSalidaFormateadaAttribute()
+    {
+        return $this->hora_salida 
+            ? \Carbon\Carbon::parse($this->hora_salida)->format('H:i') 
+            : '17:00';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto plural para días de descanso
+     */
+    public function getTextoDescansoPlural1Attribute()
+    {
+        return count($this->dias_descanso ?? []) === 1 ? 'el día' : 'los días';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto plural para días de descanso (segunda parte)
+     */
+    public function getTextoDescansoPlural2Attribute()
+    {
+        return count($this->dias_descanso ?? []) === 1 ? 'el' : 'los';
+    }
+
     
 }
