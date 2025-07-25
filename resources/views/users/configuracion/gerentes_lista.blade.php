@@ -277,15 +277,14 @@
 </form>
 @endsection
 
+<script src="{{ asset('js/app-routes.js') }}"></script> <!-- incluir antes -->
+
 <script>
 function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, cargo, telefono, descripcion) {
-    // Cambiar título del modal
     document.getElementById('tituloModal').textContent = 'Editar Gerente';
     
-    // Cambiar acción del formulario
-    document.getElementById('formGerente').action = `/configuracion/gerentes/${id}`;
+    document.getElementById('formGerente').action = configuracionUrl(`gerentes/${id}`);
     
-    // Agregar método PUT
     let methodInput = document.getElementById('formGerente').querySelector('input[name="_method"]');
     if (!methodInput) {
         methodInput = document.createElement('input');
@@ -295,7 +294,6 @@ function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, cargo, tele
     }
     methodInput.value = 'PUT';
     
-    // Llenar campos
     document.getElementById('nombre').value = nombre;
     document.getElementById('apellido_paterno').value = apellidoPaterno;
     document.getElementById('apellido_materno').value = apellidoMaterno || '';
@@ -303,30 +301,22 @@ function editarGerente(id, nombre, apellidoPaterno, apellidoMaterno, cargo, tele
     document.getElementById('telefono').value = telefono || '';
     document.getElementById('descripcion').value = descripcion || '';
     
-    // Mostrar modal
     new bootstrap.Modal(document.getElementById('modalGerente')).show();
 }
 
 function confirmarEliminacion(id, nombreCompleto) {
     if (confirm(`¿Estás seguro de que deseas eliminar al gerente "${nombreCompleto}"?\n\nEsta acción no se puede deshacer.`)) {
         const form = document.getElementById('formEliminar');
-        form.action = `/configuracion/gerentes/${id}`;
+        form.action = configuracionUrl(`gerentes/${id}`);
         form.submit();
     }
 }
 
-// Limpiar modal al cerrarse
 document.getElementById('modalGerente').addEventListener('hidden.bs.modal', function () {
-    // Resetear formulario
     document.getElementById('formGerente').reset();
-    
-    // Resetear título
     document.getElementById('tituloModal').textContent = 'Nuevo Gerente';
+    document.getElementById('formGerente').action = configuracionUrl('gerentes');
     
-    // Resetear acción
-    document.getElementById('formGerente').action = '{{ route("gerentes.store") }}';
-    
-    // Remover método PUT si existe
     const methodInput = document.getElementById('formGerente').querySelector('input[name="_method"]');
     if (methodInput) {
         methodInput.remove();

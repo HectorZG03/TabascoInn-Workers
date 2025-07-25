@@ -35,19 +35,26 @@ class DocumentosVacacionesController extends Controller
         $vacacionesPendientesSinDocumento = $trabajador->vacacionesPendientes
             ->whereNotIn('id_vacacion', $vacacionesConDocumento);
 
-        // ✅ OBTENER GERENTES PARA SELECCIÓN DE FIRMAS (excluyendo Gerente General)
+        // Obtener gerentes para firmas (excluyendo Gerente General)
         $gerentes = Gerente::paraFirmasDocumentos();
 
-        // ✅ OBTENER GERENTE GENERAL
+        // Obtener Gerente General
         $gerenteGeneral = Gerente::getGerenteGeneral();
+
+        if (!$gerenteGeneral) { 
+            // Redirigir con mensaje flash
+            return redirect()->route('gerentes.index') // Cambia por la ruta real de administración de gerentes
+                ->with('error', 'Por favor ingrese registros en la administración de gerentes antes de continuar.');
+        }
 
         return view('trabajadores.documentos_vacaciones.index', [
             'trabajador' => $trabajador,
             'vacacionesPendientesSinDocumento' => $vacacionesPendientesSinDocumento,
             'gerentes' => $gerentes,
-            'gerenteGeneral' => $gerenteGeneral // ✅ PASAR GERENTE GENERAL A LA VISTA
+            'gerenteGeneral' => $gerenteGeneral
         ]);
     }
+
 
     /**
      * ✅ NUEVA RUTA: Mostrar modal de selección de firmas

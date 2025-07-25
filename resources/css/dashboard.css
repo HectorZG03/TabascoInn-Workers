@@ -1,11 +1,14 @@
+/* Efecto hover en tarjetas */
 .card-hover:hover {
     transform: translateY(-2px);
     transition: transform 0.2s ease;
 }
 
+/* Vista previa de avatar responsiva */
 .avatar-preview {
-    width: 80px;
-    height: 80px;
+    width: 20vw;                 /* Se adapta al ancho de pantalla */
+    max-width: 80px;             /* Límite máximo en pantallas grandes */
+    aspect-ratio: 1 / 1;         /* Siempre cuadrado */
     margin: 0 auto;
     border-radius: 50%;
     background: #f8f9fa;
@@ -14,10 +17,30 @@
     justify-content: center;
 }
 
+/* Sticky solo en pantallas grandes */
 .sticky-top {
     top: 1rem;
+    position: sticky;
+    z-index: 100;
 }
 
+/* Contenedor de funcionalidades adaptativo */
+.functions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); /* Rejilla responsiva */
+    gap: 1rem;
+    padding: 1rem;
+}
+
+/* Contenedor principal fluido */
+.dashboard-container {
+    width: 100%;
+    max-width: 1200px;
+    margin: auto;
+    padding: 1rem;
+}
+
+/* Media Queries: ajustes en pantallas medianas y pequeñas */
 @media (max-width: 992px) {
     .sticky-top {
         position: relative !important;
@@ -25,3 +48,16 @@
     }
 }
 
+@media (max-width: 768px) {
+    .avatar-preview {
+        width: 60px;
+    }
+
+    .card-title {
+        font-size: 1rem;
+    }
+
+    .card-description {
+        font-size: 0.85rem;
+    }
+}

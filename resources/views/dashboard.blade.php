@@ -3,6 +3,7 @@
 @section('title', 'Dashboard - Hotel')
 
 @section('content')
+
 <div class="dashboard-container">
     <!-- Grid de funcionalidades -->
     <div class="functions-grid">
