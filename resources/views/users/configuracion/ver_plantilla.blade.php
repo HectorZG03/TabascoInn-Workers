@@ -247,7 +247,6 @@
     </div>
 </div>
 
-@push('scripts')
 {{-- Prism.js para syntax highlighting --}}
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/components/prism-core.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/plugins/autoloader/prism-autoloader.min.js"></script>
@@ -334,9 +333,6 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Vista de plantilla inicializada');
 });
 </script>
-@endpush
-
-@push('styles')
 {{-- Prism.js CSS --}}
 <link href="https://cdnjs.cloudflare.com/ajax/libs/prism/1.29.0/themes/prism.min.css" rel="stylesheet">
 
@@ -374,5 +370,5 @@ dl.row dd {
     color: #6c757d;
 }
 </style>
-@endpush
+
 @endsection

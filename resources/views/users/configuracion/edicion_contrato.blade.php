@@ -273,7 +273,6 @@
     </div>
 </div>
 
-@push('scripts')
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Inicializando editor de plantillas de contrato');
@@ -366,9 +365,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('✅ Editor de plantillas inicializado correctamente');
 });
 </script>
-@endpush
 
-@push('styles')
+
 <style>
 .variable-codigo:hover {
     background-color: #f8f9fa !important;
@@ -388,5 +386,4 @@ document.addEventListener('DOMContentLoaded', function() {
     background-color: #f8f9fa;
 }
 </style>
-@endpush
 @endsection
