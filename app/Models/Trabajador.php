@@ -35,10 +35,11 @@ class Trabajador extends Model
         'ape_pat',
         'ape_mat',
         'fecha_nacimiento',
+        'estado_civil',       // ✅ NUEVO CAMPO
         'lugar_nacimiento',
         'estado_actual',
         'ciudad_actual',
-        'codigo_postal',  // ✅ CAMPO AÑADIDO
+        'codigo_postal',
         'curp',
         'rfc',
         'no_nss',
@@ -68,38 +69,16 @@ class Trabajador extends Model
         'inactivo' => 'Inactivo'
     ];
 
-    public const ESTADOS_MEXICO = [
-        'Aguascalientes' => 'Aguascalientes',
-        'Baja California' => 'Baja California',
-        'Baja California Sur' => 'Baja California Sur',
-        'Campeche' => 'Campeche',
-        'Chiapas' => 'Chiapas',
-        'Chihuahua' => 'Chihuahua',
-        'Ciudad de México' => 'Ciudad de México',
-        'Coahuila' => 'Coahuila',
-        'Colima' => 'Colima',
-        'Durango' => 'Durango',
-        'Estado de México' => 'Estado de México',
-        'Guanajuato' => 'Guanajuato',
-        'Guerrero' => 'Guerrero',
-        'Hidalgo' => 'Hidalgo',
-        'Jalisco' => 'Jalisco',
-        'Michoacán' => 'Michoacán',
-        'Morelos' => 'Morelos',
-        'Nayarit' => 'Nayarit',
-        'Nuevo León' => 'Nuevo León',
-        'Oaxaca' => 'Oaxaca',
-        'Puebla' => 'Puebla',
-        'Querétaro' => 'Querétaro',
-        'Quintana Roo' => 'Quintana Roo',
-        'San Luis Potosí' => 'San Luis Potosí',
-        'Sinaloa' => 'Sinaloa',
-        'Sonora' => 'Sonora',
-        'Tabasco' => 'Tabasco',
-        'Tamaulipas' => 'Tamaulipas',
-        'Tlaxcala' => 'Tlaxcala',
-        'Veracruz' => 'Veracruz',
-        'Yucatán' => 'Yucatán',
-        'Zacatecas' => 'Zacatecas',
+    // ✅ NUEVA CONSTANTE: Estados civiles
+    public const ESTADOS_CIVILES = [
+        'soltero' => 'Soltero(a)',
+        'casado' => 'Casado(a)',
+        'union_libre' => 'Unión Libre',
+        'divorciado' => 'Divorciado(a)',
+        'viudo' => 'Viudo(a)',
+        'separado' => 'Separado(a)'
     ];
-}   
+
+    // ✅ CONSTANTE ELIMINADA: Ya no necesitamos ESTADOS_MEXICO
+    // porque estado_actual ahora es texto libre
+}

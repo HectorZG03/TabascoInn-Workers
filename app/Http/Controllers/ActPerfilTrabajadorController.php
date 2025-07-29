@@ -257,6 +257,8 @@ class ActPerfilTrabajadorController extends Controller
         'ape_pat' => 'required|string|max:50',
         'ape_mat' => 'nullable|string|max:50',
         'fecha_nacimiento' => 'required|date|before:-18 years',
+
+        'estado_civil' => 'required|in:' . implode(',', array_keys(\App\Models\Trabajador::ESTADOS_CIVILES)),
         
         // ✅ CAMPOS DE UBICACIÓN
         'lugar_nacimiento' => 'nullable|string|max:100',
@@ -279,16 +281,17 @@ class ActPerfilTrabajadorController extends Controller
         'nombre_trabajador.required' => 'El nombre es obligatorio',
         'ape_pat.required' => 'El apellido paterno es obligatorio',
         'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
+
+        'estado_civil.required' => 'El estado civil es obligatorio',
+        'estado_civil.in' => 'El estado civil seleccionado no es válido',
         
-        // ✅ MENSAJES PARA NUEVOS CAMPOS
         'lugar_nacimiento.max' => 'El lugar de nacimiento no puede exceder 100 caracteres',
         'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
         'ciudad_actual.max' => 'La ciudad no puede exceder 50 caracteres',
-        // ✅ NUEVO: Mensaje para código postal
         'codigo_postal.required' => 'El código postal es obligatorio',
         'codigo_postal.regex' => 'El código postal debe contener exactamente 5 dígitos',
         'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
-        
+            
         'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
         'curp.unique' => 'Este CURP ya está registrado',
         'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
@@ -311,11 +314,13 @@ class ActPerfilTrabajadorController extends Controller
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $validated['fecha_nacimiento'],
                 
-                // ✅ INCLUIR NUEVOS CAMPOS
+                // ✅ INCLUIR ESTADO CIVIL
+                'estado_civil' => $validated['estado_civil'],
+                
+                // ✅ INCLUIR CAMPOS DE UBICACIÓN
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
-                // ✅ NUEVO: Incluir código postal
                 'codigo_postal' => $validated['codigo_postal'],
                 
                 'curp' => strtoupper($validated['curp']),
@@ -337,8 +342,9 @@ class ActPerfilTrabajadorController extends Controller
                 'fecha_nacimiento_procesada' => $validated['fecha_nacimiento'],
                 'fecha_ingreso_original' => $fechaIngresoOriginal,
                 'fecha_ingreso_procesada' => $validated['fecha_ingreso'],
+                'estado_civil' => $validated['estado_civil'], // ✅ LOG DEL NUEVO CAMPO
             ]);
-
+            
             return back()->with('success', 'Datos personales actualizados exitosamente');
 
         } catch (\Exception $e) {

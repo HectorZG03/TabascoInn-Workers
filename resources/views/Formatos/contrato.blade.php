@@ -145,12 +145,11 @@
         <p class="clausula">
             Y que tiene establecido su domicilio social en la Avenida José Pagues Llergo Número 150, de la Colonia Arboledas, de esta Ciudad de Villahermosa, Tabasco; con C.P. 86079 y con su RFC TIN080522-A59.
         </p>
-
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA II:</span> EL TRABAJADOR manifiesta llamarse C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, tener una edad de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age }} años</span>, 
-            haber nacido el día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('d') }}</span> del mes de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->locale('es')->monthName }}</span> del año <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('Y') }}</span> 
-            en {{ $trabajador->lugar_nacimiento ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'Villahermosa, Centro, Tabasco') }}; y que su CURP es <span class="bold">{{ $trabajador->curp ?? 'NO ESPECIFICADO' }}</span> 
-            y su RFC es <span class="bold">{{ $trabajador->rfc ?? 'NO ESPECIFICADO' }}</span>, y que su domicilio actual es: {{ $trabajador->direccion ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}, {{$trabajador->ciudad_actual}}, {{$trabajador->estado_actual}}, C.P. {{ $trabajador->codigo_postal ?? 'NO ESPECIFICADO' }}.
+            <span class="clausula-numero">CLÁUSULA II:</span> EL TRABAJADOR manifiesta llamarse C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, tener una edad de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age }} años</span>,
+            haber nacido el día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('d') }}</span> del mes de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->locale('es')->monthName }}</span> del año <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('Y') }}</span>
+            en <span class="bold">{{ $trabajador->lugar_nacimiento ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}</span>; y que su estado civil es <span class="bold">{{ $trabajador->estado_civil ? strtolower(\App\Models\Trabajador::ESTADOS_CIVILES[$trabajador->estado_civil]) : 'NO ESPECIFICADO' }}</span> y que su CURP es <span class="bold">{{ $trabajador->curp ?? 'NO ESPECIFICADO' }}</span>
+            y su RFC es <span class="bold">{{ $trabajador->rfc ?? 'NO ESPECIFICADO' }}</span>, y que su domicilio actual es: <span class="bold">{{ $trabajador->direccion ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}, {{ $trabajador->ciudad_actual }}, {{ $trabajador->estado_actual }}, C.P. {{ $trabajador->codigo_postal ?? 'NO ESPECIFICADO' }}</span>.
         </p>
 
         <p class="clausula">

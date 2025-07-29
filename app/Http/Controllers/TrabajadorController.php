@@ -78,6 +78,7 @@ class TrabajadorController extends Controller
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
             'fecha_nacimiento' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', fn($attr, $val, $fail) => $this->validarFechaNacimiento($val, $fail)],
+            'estado_civil' => 'required|in:' . implode(',', array_keys(\App\Models\Trabajador::ESTADOS_CIVILES)),
             'lugar_nacimiento' => 'nullable|string|max:100',
             'estado_actual' => 'nullable|string|max:50',
             'ciudad_actual' => 'nullable|string|max:50',
@@ -137,12 +138,16 @@ class TrabajadorController extends Controller
             'contacto_direccion' => 'nullable|string|max:500',
         ], [
             // ✅ NUEVOS MENSAJES DE VALIDACIÓN
+            'estado_civil.required' => 'El estado civil es obligatorio',
+            'estado_civil.in' => 'El estado civil seleccionado no es válido',
+            'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
             'codigo_postal.required' => 'El código postal es obligatorio',
             'codigo_postal.regex' => 'El código postal debe tener exactamente 5 dígitos',
             'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
             'horario_descanso.required' => 'El horario de descanso es obligatorio',
             'horario_descanso.max' => 'El horario de descanso no puede exceder 100 caracteres',
         ]);
+
 
         // Validar relación área-categoría
         if (!Categoria::where('id_categoria', $validated['id_categoria'])->where('id_area', $validated['id_area'])->exists()) {
@@ -173,16 +178,15 @@ class TrabajadorController extends Controller
 
         DB::beginTransaction();
         try {
-            // ✅ CREAR TRABAJADOR (INCLUIR CÓDIGO POSTAL)
             $trabajador = Trabajador::create([
                 'nombre_trabajador' => $validated['nombre_trabajador'],
                 'ape_pat' => $validated['ape_pat'],
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $fechaNacimiento->format('Y-m-d'),
+                'estado_civil' => $validated['estado_civil'], 
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
-                // ✅ NUEVO: Incluir código postal
                 'codigo_postal' => $validated['codigo_postal'],
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),

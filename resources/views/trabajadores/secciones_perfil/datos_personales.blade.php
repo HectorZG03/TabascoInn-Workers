@@ -1,5 +1,5 @@
 {{-- resources/views/trabajadores/secciones_perfil/datos_personales.blade.php --}}
-{{-- ✅ CON CÓDIGO POSTAL --}}
+{{-- ✅ CON ESTADO CIVIL Y ESTADO ACTUAL COMO TEXTO LIBRE --}}
 
 <div class="card shadow">
     <div class="card-header bg-primary text-white">
@@ -62,8 +62,8 @@
             </div>
 
             <div class="row">
-                <!-- ✅ FECHA DE NACIMIENTO - CAMBIO DE date A text CON FORMATO GLOBAL -->
-                <div class="col-md-4 mb-3">
+                <!-- ✅ FECHA DE NACIMIENTO CON FORMATO GLOBAL -->
+                <div class="col-md-3 mb-3">
                     <label for="fecha_nacimiento" class="form-label">
                         <i class="bi bi-calendar"></i> Fecha de Nacimiento *
                     </label>
@@ -81,8 +81,30 @@
                     @enderror
                 </div>
 
-                <!-- ✅ LUGAR DE NACIMIENTO - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <!-- ✅ NUEVO: Estado Civil -->
+                <div class="col-md-3 mb-3">
+                    <label for="estado_civil" class="form-label">
+                        <i class="bi bi-heart"></i> Estado Civil *
+                    </label>
+                    <select class="form-select @error('estado_civil') is-invalid @enderror" 
+                            id="estado_civil" 
+                            name="estado_civil" 
+                            required>
+                        <option value="">Seleccionar...</option>
+                        @foreach(\App\Models\Trabajador::ESTADOS_CIVILES as $key => $valor)
+                            <option value="{{ $key }}" 
+                                    {{ old('estado_civil', $trabajador->estado_civil) == $key ? 'selected' : '' }}>
+                                {{ $valor }}
+                            </option>
+                        @endforeach
+                    </select>
+                    @error('estado_civil')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- ✅ LUGAR DE NACIMIENTO -->
+                <div class="col-md-3 mb-3">
                     <label for="lugar_nacimiento" class="form-label">
                         <i class="bi bi-geo"></i> Lugar de Nacimiento
                     </label>
@@ -98,8 +120,8 @@
                     @enderror
                 </div>
 
-                <!-- CURP - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <!-- CURP -->
+                <div class="col-md-3 mb-3">
                     <label for="curp" class="form-label">
                         <i class="bi bi-card-text"></i> CURP *
                     </label>
@@ -117,8 +139,8 @@
             </div>
 
             <div class="row">
-                <!-- RFC - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <!-- RFC -->
+                <div class="col-md-3 mb-3">
                     <label for="rfc" class="form-label">
                         <i class="bi bi-card-text"></i> RFC *
                     </label>
@@ -134,8 +156,8 @@
                     @enderror
                 </div>
 
-                <!-- NSS - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <!-- NSS -->
+                <div class="col-md-3 mb-3">
                     <label for="no_nss" class="form-label">
                         <i class="bi bi-shield-check"></i> NSS
                     </label>
@@ -150,8 +172,8 @@
                     @enderror
                 </div>
 
-                <!-- Teléfono - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <!-- Teléfono -->
+                <div class="col-md-3 mb-3">
                     <label for="telefono" class="form-label">
                         <i class="bi bi-telephone"></i> Teléfono *
                     </label>
@@ -166,10 +188,8 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-            </div>
 
-            <div class="row">
-                <!-- Correo - SIN CAMBIOS -->
+                <!-- Correo -->
                 <div class="col-md-3 mb-3">
                     <label for="correo" class="form-label">
                         <i class="bi bi-envelope"></i> Correo Electrónico
@@ -183,66 +203,29 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
+            </div>
 
-                <!-- Estado Actual - SIN CAMBIOS (mantener como estaba) -->
-                <div class="col-md-3 mb-3">
+            <div class="row">
+                <!-- ✅ MODIFICADO: Estado Actual (texto libre, no select) -->
+                <div class="col-md-2 mb-3">
                     <label for="estado_actual" class="form-label">
                         <i class="bi bi-map"></i> Estado Actual
                     </label>
-                    <select class="form-select @error('estado_actual') is-invalid @enderror" 
-                            id="estado_actual" 
-                            name="estado_actual">
-                        <option value="">Seleccionar estado...</option>
-                        @php
-                            $estados = \App\Models\Trabajador::ESTADOS_MEXICO ?? [
-                                'Aguascalientes' => 'Aguascalientes',
-                                'Baja California' => 'Baja California',
-                                'Baja California Sur' => 'Baja California Sur',
-                                'Campeche' => 'Campeche',
-                                'Chiapas' => 'Chiapas',
-                                'Chihuahua' => 'Chihuahua',
-                                'Ciudad de México' => 'Ciudad de México',
-                                'Coahuila' => 'Coahuila',
-                                'Colima' => 'Colima',
-                                'Durango' => 'Durango',
-                                'Estado de México' => 'Estado de México',
-                                'Guanajuato' => 'Guanajuato',
-                                'Guerrero' => 'Guerrero',
-                                'Hidalgo' => 'Hidalgo',
-                                'Jalisco' => 'Jalisco',
-                                'Michoacán' => 'Michoacán',
-                                'Morelos' => 'Morelos',
-                                'Nayarit' => 'Nayarit',
-                                'Nuevo León' => 'Nuevo León',
-                                'Oaxaca' => 'Oaxaca',
-                                'Puebla' => 'Puebla',
-                                'Querétaro' => 'Querétaro',
-                                'Quintana Roo' => 'Quintana Roo',
-                                'San Luis Potosí' => 'San Luis Potosí',
-                                'Sinaloa' => 'Sinaloa',
-                                'Sonora' => 'Sonora',
-                                'Tabasco' => 'Tabasco',
-                                'Tamaulipas' => 'Tamaulipas',
-                                'Tlaxcala' => 'Tlaxcala',
-                                'Veracruz' => 'Veracruz',
-                                'Yucatán' => 'Yucatán',
-                                'Zacatecas' => 'Zacatecas',
-                            ];
-                        @endphp
-                        @foreach($estados as $clave => $nombre)
-                            <option value="{{ $clave }}" 
-                                    {{ old('estado_actual', $trabajador->estado_actual) == $clave ? 'selected' : '' }}>
-                                {{ $nombre }}
-                            </option>
-                        @endforeach
-                    </select>
+                    <input type="text" 
+                           class="form-control @error('estado_actual') is-invalid @enderror" 
+                           id="estado_actual" 
+                           name="estado_actual" 
+                           value="{{ old('estado_actual', $trabajador->estado_actual) }}"
+                           placeholder="Ej: Tabasco"
+                           maxlength="50">
+                    <div class="form-text">Estado donde vive</div>
                     @error('estado_actual')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
 
-                <!-- Ciudad Actual - SIN CAMBIOS -->
-                <div class="col-md-3 mb-3">
+                <!-- Ciudad Actual -->
+                <div class="col-md-2 mb-3">
                     <label for="ciudad_actual" class="form-label">
                         <i class="bi bi-building"></i> Ciudad Actual
                     </label>
@@ -258,8 +241,8 @@
                     @enderror
                 </div>
 
-                <!-- ✅ NUEVO: Código Postal -->
-                <div class="col-md-3 mb-3">
+                <!-- Código Postal -->
+                <div class="col-md-2 mb-3">
                     <label for="codigo_postal" class="form-label">
                         <i class="bi bi-mailbox"></i> Código Postal *
                     </label>
@@ -277,11 +260,9 @@
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>
-            </div>
 
-            <div class="row">
-                <!-- Dirección - SIN CAMBIOS -->
-                <div class="col-md-8 mb-3">
+                <!-- Dirección -->
+                <div class="col-md-4 mb-3">
                     <label for="direccion" class="form-label">
                         <i class="bi bi-geo-alt"></i> Dirección Completa
                     </label>
@@ -296,8 +277,8 @@
                     @enderror
                 </div>
                 
-                <!-- ✅ FECHA DE INGRESO - CAMBIO DE date A text CON FORMATO GLOBAL -->
-                <div class="col-md-4 mb-3">
+                <!-- ✅ FECHA DE INGRESO CON FORMATO GLOBAL -->
+                <div class="col-md-2 mb-3">
                     <label for="fecha_ingreso" class="form-label">
                         <i class="bi bi-calendar-check"></i> Fecha de Ingreso *
                     </label>

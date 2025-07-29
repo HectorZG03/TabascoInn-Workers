@@ -20,11 +20,21 @@ return new class extends Migration
             $table->string('ape_mat', 50)->nullable();
             $table->date('fecha_nacimiento')->nullable();
             
+            // ✅ NUEVO: Estado civil
+            $table->enum('estado_civil', [
+                'soltero', 
+                'casado', 
+                'union_libre', 
+                'divorciado', 
+                'viudo', 
+                'separado'
+            ])->nullable()->comment('Estado civil del trabajador');
+            
             // ✅ DATOS DE NACIMIENTO Y UBICACIÓN ACTUAL
             $table->string('lugar_nacimiento', 100)->nullable()->comment('Ciudad y estado de nacimiento');
-            $table->string('estado_actual', 50)->nullable()->comment('Estado donde vive actualmente');
+            $table->string('estado_actual', 50)->nullable()->comment('Estado donde vive actualmente (texto libre)');
             $table->string('ciudad_actual', 50)->nullable()->comment('Ciudad donde vive actualmente');
-            // ✅ NUEVO: Código postal
+            // ✅ CÓDIGO POSTAL
             $table->string('codigo_postal', 5)->nullable()->comment('Código postal del domicilio actual');
             
             // ✅ IDENTIFICADORES OFICIALES
@@ -63,12 +73,13 @@ return new class extends Migration
             $table->index('rfc', 'idx_rfc');
             $table->index('correo', 'idx_correo');
             $table->index(['estado_actual', 'ciudad_actual'], 'idx_ubicacion_actual');
-            // ✅ NUEVO: Índice para código postal
             $table->index('codigo_postal', 'idx_codigo_postal');
+            // ✅ NUEVO: Índice para estado civil
+            $table->index('estado_civil', 'idx_estado_civil');
         });
         
         // ✅ COMENTARIO DE LA TABLA
-        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos, datos de ubicación y código postal'");
+        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con estado civil, ubicación de texto libre y código postal'");
     }
 
     public function down()
