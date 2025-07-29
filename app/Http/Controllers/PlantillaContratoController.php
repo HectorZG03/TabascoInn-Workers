@@ -191,9 +191,8 @@ class PlantillaContratoController extends Controller
         
         try {
             if (!$plantilla->activa) {
-                // Activar esta plantilla y desactivar otras del mismo tipo
+                // ✅ SIMPLIFICADO: Solo desactivar plantillas del mismo tipo
                 PlantillaContrato::where('tipo_contrato', $plantilla->tipo_contrato)
-                                ->orWhere('tipo_contrato', 'ambos')
                                 ->where('id_plantilla', '!=', $plantilla->id_plantilla)
                                 ->update(['activa' => false]);
                 
@@ -342,7 +341,8 @@ class PlantillaContratoController extends Controller
      */
     private function obtenerTrabajadorEjemplo()
     {
-        return (object) [
+        // Crear objeto trabajador de ejemplo
+        $trabajador = (object) [
             'nombre_completo' => 'JUAN PÉREZ GARCÍA',
             'fecha_nacimiento' => '1985-03-15',
             'curp' => 'PEGJ850315HTCRNS01',
@@ -350,18 +350,46 @@ class PlantillaContratoController extends Controller
             'direccion' => 'Av. Siempre Viva 123, Col. Centro, Villahermosa, Tabasco',
             'lugar_nacimiento' => 'Villahermosa, Tabasco',
             'fecha_ingreso' => '2020-01-15',
-            'fichaTecnica' => (object) [
-                'categoria' => (object) ['nombre_categoria' => 'RECEPCIONISTA'],
-                'sueldo_diarios' => 450.00,
-                'hora_entrada' => '08:00:00',
-                'hora_salida' => '17:00:00',
-                'horas_semanales' => 40,
-                'horas_trabajo' => 8,
-                'turno' => 'diurno',
-                'beneficiario_nombre' => 'MARÍA GONZÁLEZ LÓPEZ',
-                'beneficiario_parentesco' => 'esposa'
-            ]
+            'ciudad_actual' => 'Villahermosa',
+            'estado_actual' => 'Tabasco'
         ];
+
+        // ✅ CREAR FICHA TÉCNICA CON DÍAS LABORALES
+        $fichaTecnica = (object) [
+            'sueldo_diarios' => 450.00,
+            'hora_entrada' => '08:00:00',
+            'hora_salida' => '17:00:00',
+            'horas_semanales' => 40,
+            'horas_trabajo' => 8,
+            'turno' => 'diurno',
+            'beneficiario_nombre' => 'MARÍA GONZÁLEZ LÓPEZ',
+            'beneficiario_parentesco' => 'esposa',
+            
+            // ✅ DÍAS LABORALES Y DESCANSO (NUEVOS)
+            'dias_laborables' => ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'],
+            'dias_descanso' => ['sabado', 'domingo'],
+            
+            // ✅ PROPIEDADES CALCULADAS
+            'horas_semanales_calculadas' => 40,
+            'horas_trabajadas_calculadas' => 8,
+            'turno_calculado' => 'diurno'
+        ];
+
+        // ✅ CREAR CATEGORÍA DE EJEMPLO
+        $categoria = (object) [
+            'nombre_categoria' => 'RECEPCIONISTA'
+        ];
+        
+        // Asignar relaciones
+        $fichaTecnica->categoria = $categoria;
+        $trabajador->fichaTecnica = $fichaTecnica;
+        
+        // ✅ SIMULAR relationLoaded para evitar errores
+        $trabajador->relationLoaded = function($relation) {
+            return in_array($relation, ['fichaTecnica', 'fichaTecnica.categoria']);
+        };
+        
+        return $trabajador;
     }
 
     /**
@@ -373,7 +401,19 @@ class PlantillaContratoController extends Controller
         $valores = [];
         
         foreach ($variables as $variable) {
-            $valores[$variable->nombre_variable] = $variable->obtenerValor($trabajador, $datosContrato);
+            try {
+                $valor = $variable->obtenerValor($trabajador, $datosContrato);
+                $valores[$variable->nombre_variable] = $valor;
+                
+            } catch (\Exception $e) {
+                Log::warning('⚠️ Error obteniendo valor de variable', [
+                    'variable' => $variable->nombre_variable,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Usar valor de ejemplo en caso de error
+                $valores[$variable->nombre_variable] = $variable->formato_ejemplo ?? '';
+            }
         }
         
         return $valores;

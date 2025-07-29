@@ -72,7 +72,7 @@
                             <div class="col">
                                 <h5 class="mb-0">
                                     <i class="bi bi-file-earmark-text text-primary"></i>
-                                    Editor de Contenido
+                                    Editor de Contenido HTML
                                 </h5>
                             </div>
                             <div class="col-auto">
@@ -80,18 +80,28 @@
                                     <button type="button" class="btn btn-sm btn-outline-info" id="btnPreview">
                                         <i class="bi bi-eye"></i> Vista Previa
                                     </button>
-                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnInsertarVariable">
-                                        <i class="bi bi-braces"></i> Variables
+                                    <button type="button" class="btn btn-sm btn-outline-secondary" id="btnFormatear">
+                                        <i class="bi bi-code"></i> Formatear
                                     </button>
                                 </div>
                             </div>
                         </div>
                     </div>
                     <div class="card-body p-0">
-                        {{-- Editor TinyMCE --}}
-                        <textarea name="contenido_html" 
-                                  id="editorContenido" 
-                                  class="form-control @error('contenido_html') is-invalid @enderror">{{ old('contenido_html', $plantilla->contenido_html) }}</textarea>
+                        {{-- Editor HTML básico más grande --}}
+                        <div class="position-relative">
+                            <textarea name="contenido_html" 
+                                      id="editorContenido" 
+                                      class="form-control editor-html @error('contenido_html') is-invalid @enderror"
+                                      rows="25"
+                                      placeholder="Escribe el contenido HTML de la plantilla aquí. Usa variables como @{{trabajador_nombre_completo}}, @{{empresa_nombre}}, etc.">{{ old('contenido_html', $plantilla->contenido_html) }}</textarea>
+                            <div class="editor-toolbar">
+                                <small class="text-muted">
+                                    <i class="bi bi-info-circle"></i>
+                                    Escribe HTML. Usa las variables del panel derecho insertándolas como @{{variable_nombre}}
+                                </small>
+                            </div>
+                        </div>
                         @error('contenido_html')
                             <div class="invalid-feedback">{{ $message }}</div>
                         @enderror
@@ -134,9 +144,6 @@
                                     <option value="indeterminado" {{ old('tipo_contrato', $plantilla->tipo_contrato) == 'indeterminado' ? 'selected' : '' }}>
                                         Solo Contratos Indeterminados
                                     </option>
-                                    <option value="ambos" {{ old('tipo_contrato', $plantilla->tipo_contrato) == 'ambos' ? 'selected' : '' }}>
-                                        Ambos Tipos de Contrato
-                                    </option>
                                 </select>
                                 @error('tipo_contrato')
                                     <div class="invalid-feedback">{{ $message }}</div>
@@ -145,10 +152,10 @@
                         </div>
                         <div class="mb-3">
                             <label for="descripcion" class="form-label">Descripción de Cambios *</label>
-                            <textarea class="form-control @error('descripcion') is-invalid @enderror" 
+                            <textarea class="form-control textarea-large @error('descripcion') is-invalid @enderror" 
                                       id="descripcion" 
                                       name="descripcion" 
-                                      rows="3" 
+                                      rows="4" 
                                       placeholder="Describe qué cambios incluye esta nueva versión..."
                                       required>{{ old('descripcion') }}</textarea>
                             <div class="form-text">Explica qué modificaste en esta versión para el historial</div>
@@ -286,7 +293,8 @@
                                                             <div class="fw-bold text-dark small">{{ $variable->etiqueta }}</div>
                                                             <code class="text-primary small variable-codigo" 
                                                                   data-variable="{{ $variable->variable_formateada }}" 
-                                                                  style="cursor: pointer;">
+                                                                  style="cursor: pointer;"
+                                                                  title="Click para copiar">
                                                                 {{ $variable->variable_formateada }}
                                                             </code>
                                                             @if($variable->formato_ejemplo)
@@ -325,6 +333,10 @@
                         <ul class="list-unstyled small mb-0">
                             <li class="mb-2">
                                 <i class="bi bi-check-circle text-success"></i>
+                                Click en <span class="badge bg-primary">+</span> para insertar variables
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
                                 Usa <strong>Vista Previa</strong> frecuentemente
                             </li>
                             <li class="mb-2">
@@ -334,6 +346,10 @@
                             <li class="mb-2">
                                 <i class="bi bi-check-circle text-success"></i>
                                 La nueva versión se activa automáticamente
+                            </li>
+                            <li class="mb-2">
+                                <i class="bi bi-check-circle text-success"></i>
+                                Click en el código para copiarlo al portapapeles
                             </li>
                             <li>
                                 <i class="bi bi-check-circle text-success"></i>
@@ -374,93 +390,79 @@
                         </select>
                     </div>
                 </div>
+                <div class="alert alert-info d-none" id="alertaPreview">
+                    <i class="bi bi-info-circle"></i>
+                    <span id="mensajePreview"></span>
+                </div>
                 <hr>
-                <div id="contenidoPreview" style="height: 600px; overflow-y: auto; border: 1px solid #dee2e6; padding: 20px;">
-                    <div class="text-center text-muted">
-                        <i class="bi bi-hourglass-split"></i>
-                        Generando vista previa...
+                <div id="contenidoPreview" 
+                     style="height: 600px; overflow-y: auto; border: 1px solid #dee2e6; padding: 20px; background: white;">
+                    <div class="text-center text-muted py-5">
+                        <i class="bi bi-eye-slash" style="font-size: 3rem;"></i>
+                        <h5 class="mt-3">Vista Previa</h5>
+                        <p>Haz clic en "Actualizar Vista Previa" para generar la vista previa</p>
                     </div>
                 </div>
             </div>
             <div class="modal-footer">
-                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                    <i class="bi bi-x"></i> Cerrar
+                </button>
                 <button type="button" class="btn btn-primary" id="btnActualizarPreview">
-                    <i class="bi bi-arrow-clockwise"></i> Actualizar
+                    <i class="bi bi-arrow-clockwise"></i> Actualizar Vista Previa
                 </button>
             </div>
         </div>
     </div>
 </div>
 
-@push('scripts')
-{{-- TinyMCE --}}
-<script src="https://cdn.tiny.cloud/1/no-api-key/tinymce/6/tinymce.min.js" referrerpolicy="origin"></script>
-
 <script>
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('🚀 Inicializando editor de plantillas (EDICIÓN)');
+    console.log('🚀 Inicializando editor básico de plantillas (EDICIÓN)');
 
-    let editorInstance = null;
-
-    // ===== CONFIGURAR TINYMCE =====
-    tinymce.init({
-        selector: '#editorContenido',
-        height: 600,
-        menubar: true,
-        plugins: [
-            'advlist', 'autolink', 'lists', 'link', 'image', 'charmap', 'preview',
-            'anchor', 'searchreplace', 'visualblocks', 'code', 'fullscreen',
-            'insertdatetime', 'media', 'table', 'code', 'help', 'wordcount',
-            'pagebreak', 'nonbreaking'
-        ],
-        toolbar: 'undo redo | blocks | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | bullist numlist outdent indent | removeformat | help | code | fullscreen',
-        content_style: `
-            body { 
-                font-family: DejaVu Sans, sans-serif; 
-                font-size: 12px; 
-                line-height: 1.4; 
-                margin: 40px; 
-                color: #000; 
-            }
-            .clausula-numero { font-weight: bold; text-decoration: underline; }
-            .bold { font-weight: bold; }
-            .center { text-align: center; }
-            .uppercase { text-transform: uppercase; }
-        `,
-        setup: function(editor) {
-            editor.on('init', function() {
-                editorInstance = editor;
-                console.log('✅ TinyMCE inicializado para edición');
-            });
-        },
-        language: 'es'
-    });
+    const editorContenido = document.getElementById('editorContenido');
 
     // ===== INSERTAR VARIABLES EN EL EDITOR =====
     document.addEventListener('click', function(e) {
-        if (e.target.classList.contains('btn-insertar-variable') || 
-            e.target.closest('.btn-insertar-variable')) {
-            
-            const btn = e.target.classList.contains('btn-insertar-variable') ? 
-                        e.target : e.target.closest('.btn-insertar-variable');
-            
+        let btn = null;
+        if (e.target.classList.contains('btn-insertar-variable')) {
+            btn = e.target;
+        } else if (e.target.closest('.btn-insertar-variable')) {
+            btn = e.target.closest('.btn-insertar-variable');
+        }
+        
+        if (btn) {
+            e.preventDefault();
             const variable = btn.dataset.variable;
             
-            if (editorInstance && variable) {
-                editorInstance.insertContent(variable + ' ');
-                console.log('📝 Variable insertada:', variable);
-                
-                // Feedback visual
-                btn.innerHTML = '<i class="bi bi-check"></i>';
-                btn.classList.remove('btn-outline-primary');
-                btn.classList.add('btn-success');
-                
-                setTimeout(() => {
-                    btn.innerHTML = '<i class="bi bi-plus"></i>';
-                    btn.classList.remove('btn-success');
-                    btn.classList.add('btn-outline-primary');
-                }, 1000);
+            if (!variable || !editorContenido) {
+                mostrarMensaje('Error al insertar variable', 'error');
+                return;
             }
+            
+            // Insertar variable en la posición del cursor
+            const cursorPos = editorContenido.selectionStart;
+            const textBefore = editorContenido.value.substring(0, cursorPos);
+            const textAfter = editorContenido.value.substring(cursorPos);
+            
+            editorContenido.value = textBefore + variable + ' ' + textAfter;
+            editorContenido.focus();
+            editorContenido.setSelectionRange(cursorPos + variable.length + 1, cursorPos + variable.length + 1);
+            
+            // Feedback visual
+            const originalHTML = btn.innerHTML;
+            const originalClasses = btn.className;
+            
+            btn.innerHTML = '<i class="bi bi-check"></i>';
+            btn.className = btn.className.replace('btn-outline-primary', 'btn-success');
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHTML;
+                btn.className = originalClasses;
+            }, 1000);
+            
+            mostrarMensaje(`Variable ${variable} insertada`, 'success');
+            console.log('📝 Variable insertada:', variable);
         }
     });
 
@@ -469,12 +471,21 @@ document.addEventListener('DOMContentLoaded', function() {
         if (e.target.classList.contains('variable-codigo')) {
             const variable = e.target.dataset.variable;
             
+            if (!variable) return;
+            
             navigator.clipboard.writeText(variable).then(() => {
+                const originalBg = e.target.style.backgroundColor;
                 e.target.style.backgroundColor = '#d4edda';
+                
                 setTimeout(() => {
-                    e.target.style.backgroundColor = '';
-                }, 500);
+                    e.target.style.backgroundColor = originalBg;
+                }, 1000);
+                
+                mostrarMensaje(`Variable ${variable} copiada al portapapeles`, 'success');
                 console.log('📋 Variable copiada:', variable);
+            }).catch(err => {
+                console.error('❌ Error copiando variable:', err);
+                mostrarMensaje('Error al copiar la variable', 'error');
             });
         }
     });
@@ -487,9 +498,9 @@ document.addEventListener('DOMContentLoaded', function() {
             const variables = document.querySelectorAll('.variable-item');
             
             variables.forEach(variable => {
-                const etiqueta = variable.dataset.etiqueta.toLowerCase();
-                const nombre = variable.dataset.variable.toLowerCase();
-                const ejemplo = variable.dataset.ejemplo ? variable.dataset.ejemplo.toLowerCase() : '';
+                const etiqueta = variable.dataset.etiqueta?.toLowerCase() || '';
+                const nombre = variable.dataset.variable?.toLowerCase() || '';
+                const ejemplo = variable.dataset.ejemplo?.toLowerCase() || '';
                 
                 if (etiqueta.includes(busqueda) || nombre.includes(busqueda) || ejemplo.includes(busqueda)) {
                     variable.style.display = 'block';
@@ -502,12 +513,18 @@ document.addEventListener('DOMContentLoaded', function() {
 
     // ===== VISTA PREVIA =====
     const btnPreview = document.getElementById('btnPreview');
-    const modalPreview = new bootstrap.Modal(document.getElementById('modalPreview'));
+    const modalPreview = document.getElementById('modalPreview');
+    let bsModalPreview = null;
+    
+    if (modalPreview) {
+        bsModalPreview = new bootstrap.Modal(modalPreview);
+    }
     
     if (btnPreview) {
         btnPreview.addEventListener('click', function() {
-            generarVistaPrevia();
-            modalPreview.show();
+            if (bsModalPreview) {
+                bsModalPreview.show();
+            }
         });
     }
 
@@ -517,32 +534,37 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 
     function generarVistaPrevia() {
-        if (!editorInstance) {
-            console.warn('⚠️ Editor no disponible para vista previa');
-            return;
-        }
-
-        const contenidoHtml = editorInstance.getContent();
-        const trabajadorId = document.getElementById('trabajadorPreview').value;
-        const tipoContrato = document.getElementById('tipoContratoPreview').value;
+        const contenidoHtml = editorContenido.value;
+        const trabajadorId = document.getElementById('trabajadorPreview')?.value || '';
+        const tipoContrato = document.getElementById('tipoContratoPreview')?.value || 'determinado';
         const contenidoPreview = document.getElementById('contenidoPreview');
         
-        // Mostrar loading
-        contenidoPreview.innerHTML = `
-            <div class="text-center">
-                <div class="spinner-border text-primary" role="status">
-                    <span class="visually-hidden">Cargando...</span>
+        if (!contenidoHtml.trim()) {
+            contenidoPreview.innerHTML = `
+                <div class="alert alert-warning text-center py-4">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    <h5 class="mt-3">Contenido Vacío</h5>
+                    <p>Añade contenido en el editor antes de generar la vista previa.</p>
                 </div>
-                <div class="mt-2">Generando vista previa...</div>
+            `;
+            return;
+        }
+        
+        contenidoPreview.innerHTML = `
+            <div class="text-center py-4">
+                <div class="spinner-border text-primary"></div>
+                <div class="mt-3">Generando vista previa...</div>
             </div>
         `;
 
-        // Hacer petición AJAX
+        const csrfToken = document.querySelector('meta[name="csrf-token"]')?.getAttribute('content');
+        
         fetch('{{ route("configuracion.plantillas.preview") }}', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json',
-                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                'X-CSRF-TOKEN': csrfToken,
+                'Accept': 'application/json'
             },
             body: JSON.stringify({
                 contenido_html: contenidoHtml,
@@ -554,48 +576,105 @@ document.addEventListener('DOMContentLoaded', function() {
         .then(data => {
             if (data.success) {
                 contenidoPreview.innerHTML = data.contenido_html;
-                console.log('👀 Vista previa generada exitosamente');
+                mostrarMensaje('Vista previa generada correctamente', 'success');
             } else {
-                contenidoPreview.innerHTML = `
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i>
-                        Error: ${data.error || 'No se pudo generar la vista previa'}
-                    </div>
-                `;
+                throw new Error(data.error || 'Error desconocido');
             }
         })
         .catch(error => {
-            console.error('❌ Error en vista previa:', error);
             contenidoPreview.innerHTML = `
-                <div class="alert alert-danger">
-                    <i class="bi bi-exclamation-triangle"></i>
-                    Error de conexión al generar la vista previa
+                <div class="alert alert-danger text-center py-4">
+                    <i class="bi bi-exclamation-triangle" style="font-size: 2rem;"></i>
+                    <h5 class="mt-3">Error</h5>
+                    <p>${error.message}</p>
                 </div>
             `;
+            mostrarMensaje('Error al generar vista previa', 'error');
         });
+    }
+
+    // ===== BOTÓN FORMATEAR HTML =====
+    const btnFormatear = document.getElementById('btnFormatear');
+    if (btnFormatear) {
+        btnFormatear.addEventListener('click', function() {
+            const contenido = editorContenido.value;
+            if (contenido.trim()) {
+                // Formato básico del HTML
+                const formateado = contenido
+                    .replace(/></g, '>\n<')
+                    .replace(/^\s+|\s+$/gm, '')
+                    .split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0)
+                    .join('\n');
+                
+                editorContenido.value = formateado;
+                mostrarMensaje('HTML formateado', 'success');
+            }
+        });
+    }
+
+    // ===== FUNCIÓN PARA MOSTRAR MENSAJES =====
+    function mostrarMensaje(mensaje, tipo = 'info') {
+        const alertDiv = document.createElement('div');
+        alertDiv.className = `alert alert-${tipo === 'error' ? 'danger' : tipo} alert-dismissible fade show position-fixed`;
+        alertDiv.style.cssText = 'top: 20px; right: 20px; z-index: 9999; min-width: 300px;';
+        
+        const iconos = {
+            'success': 'check-circle',
+            'warning': 'exclamation-triangle',
+            'error': 'x-circle',
+            'info': 'info-circle'
+        };
+        
+        alertDiv.innerHTML = `
+            <i class="bi bi-${iconos[tipo] || 'info-circle'}"></i>
+            ${mensaje}
+            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+        `;
+        
+        document.body.appendChild(alertDiv);
+        
+        setTimeout(() => {
+            if (alertDiv.parentNode) {
+                alertDiv.remove();
+            }
+        }, 5000);
     }
 
     // ===== VALIDACIÓN DEL FORMULARIO =====
     const formEditarPlantilla = document.getElementById('formEditarPlantilla');
     if (formEditarPlantilla) {
         formEditarPlantilla.addEventListener('submit', function(e) {
-            if (editorInstance) {
-                // Asegurar que el contenido del editor se guarde en el textarea
-                editorInstance.save();
+            const contenido = editorContenido.value;
+            const descripcion = document.getElementById('descripcion').value;
+            const nombre = document.getElementById('nombre_plantilla').value;
+            const tipo = document.getElementById('tipo_contrato').value;
+            
+            if (!nombre.trim()) {
+                e.preventDefault();
+                mostrarMensaje('El nombre de la plantilla es obligatorio', 'error');
+                document.getElementById('nombre_plantilla').focus();
+                return false;
             }
             
-            const contenido = document.getElementById('editorContenido').value;
-            const descripcion = document.getElementById('descripcion').value;
+            if (!tipo) {
+                e.preventDefault();
+                mostrarMensaje('Debes seleccionar un tipo de contrato', 'error');
+                document.getElementById('tipo_contrato').focus();
+                return false;
+            }
             
             if (!contenido.trim()) {
                 e.preventDefault();
-                alert('El contenido de la plantilla no puede estar vacío');
+                mostrarMensaje('El contenido de la plantilla no puede estar vacío', 'error');
+                editorContenido.focus();
                 return false;
             }
             
             if (!descripcion.trim()) {
                 e.preventDefault();
-                alert('Debes describir qué cambios hiciste en esta versión');
+                mostrarMensaje('Debes describir qué cambios hiciste en esta versión', 'error');
                 document.getElementById('descripcion').focus();
                 return false;
             }
@@ -605,30 +684,56 @@ document.addEventListener('DOMContentLoaded', function() {
                 return false;
             }
             
+            mostrarMensaje('Actualizando plantilla...', 'info');
             console.log('💾 Actualizando plantilla...');
         });
     }
 
-    console.log('✅ Editor de plantillas (EDICIÓN) inicializado correctamente');
+    console.log('✅ Editor básico de plantillas (EDICIÓN) inicializado correctamente');
 });
 </script>
-@endpush
 
-@push('styles')
 <style>
+/* Editor HTML básico más grande */
+.editor-html {
+    min-height: 500px !important;
+    font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+    font-size: 14px;
+    line-height: 1.5;
+    resize: vertical;
+}
+
+.textarea-large {
+    min-height: 120px !important;
+    resize: vertical;
+}
+
+.editor-toolbar {
+    position: absolute;
+    bottom: 10px;
+    right: 15px;
+    background: rgba(255, 255, 255, 0.9);
+    padding: 5px 10px;
+    border-radius: 4px;
+    border: 1px solid #dee2e6;
+}
+
+/* Variables mejoradas */
 .variable-codigo:hover {
     background-color: #e3f2fd !important;
     border-radius: 3px;
-    padding: 1px 3px;
+    padding: 2px 4px;
+    cursor: pointer;
+    transition: background-color 0.2s;
 }
 
 .variable-item:hover {
     background-color: #f8f9fa;
 }
 
-.accordion-button:not(.collapsed) {
-    background-color: #e7f1ff;
-    color: #0d6efd;
+/* Modal más grande */
+.modal-xl .modal-dialog {
+    max-width: 95%;
 }
 
 #contenidoPreview {
@@ -637,8 +742,34 @@ document.addEventListener('DOMContentLoaded', function() {
     line-height: 1.4;
 }
 
-.tox-tinymce {
-    border-radius: 0 0 0.375rem 0.375rem;
+/* Alertas flotantes */
+.alert.position-fixed {
+    animation: slideInRight 0.3s ease-out;
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+}
+
+@keyframes slideInRight {
+    from {
+        transform: translateX(100%);
+        opacity: 0;
+    }
+    to {
+        transform: translateX(0);
+        opacity: 1;
+    }
+}
+
+.accordion-button:not(.collapsed) {
+    background-color: #e7f1ff;
+    color: #0d6efd;
+}
+
+.btn-insertar-variable {
+    transition: all 0.2s ease;
+}
+
+.btn-insertar-variable:hover {
+    transform: scale(1.05);
 }
 
 dl.row dt {
@@ -650,5 +781,4 @@ dl.row dd {
     color: #6c757d;
 }
 </style>
-@endpush
 @endsection

@@ -9,7 +9,10 @@ class VariablesContratoSeeder extends Seeder
 {
     public function run()
     {
-        // ✅ SOLO LAS VARIABLES QUE REALMENTE USA EL CONTRATO
+        // ✅ LIMPIAR VARIABLES EXISTENTES PARA EVITAR DUPLICADOS
+        DB::table('variables_contrato')->truncate();
+        
+        // ✅ VARIABLES ACTUALIZADAS CON DÍAS LABORALES INCLUIDOS
         $variables = [
             // ===== TRABAJADOR =====
             [
@@ -58,6 +61,28 @@ class VariablesContratoSeeder extends Seeder
                 'tipo_dato' => 'numero',
                 'formato_ejemplo' => '1985',
                 'origen_codigo' => '\Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format("Y")'
+            ],
+            // ✅ NUEVA VARIABLE - FECHA DE NACIMIENTO COMPLETA FORMATEADA
+            [
+                'nombre_variable' => 'trabajador_fecha_nacimiento_completa',
+                'etiqueta' => 'Fecha de Nacimiento Completa',
+                'descripcion' => 'Fecha de nacimiento en formato legal: "nacido el día XX del mes de XXX del año XXXX"',
+                'categoria' => 'fechas',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'nacido el día 07 del mes de mayo del año 2002',
+                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); "nacido el día " . $fechaNac->format("d") . " del mes de " . $fechaNac->locale("es")->monthName . " del año " . $fechaNac->format("Y")',
+                'obligatoria' => false
+            ],
+            // ✅ VERSIÓN ALTERNATIVA - SOLO LA FECHA (SIN "NACIDO EL DÍA")
+            [
+                'nombre_variable' => 'fecha_nacimiento_legal',
+                'etiqueta' => 'Fecha Nacimiento Formato Legal',
+                'descripcion' => 'Fecha en formato legal sin prefijo: "07 del mes de mayo del año 2002"',
+                'categoria' => 'fechas',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => '07 del mes de mayo del año 2002',
+                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); $fechaNac->format("d") . " del mes de " . $fechaNac->locale("es")->monthName . " del año " . $fechaNac->format("Y")',
+                'obligatoria' => false
             ],
             [
                 'nombre_variable' => 'trabajador_lugar_nacimiento',
@@ -130,7 +155,7 @@ class VariablesContratoSeeder extends Seeder
                 'obligatoria' => true
             ],
 
-            // ===== HORARIOS =====
+            // ===== HORARIOS Y DÍAS LABORALES ===== ✅ SECCIÓN AMPLIADA
             [
                 'nombre_variable' => 'horas_semanales',
                 'etiqueta' => 'Horas Semanales',
@@ -166,6 +191,73 @@ class VariablesContratoSeeder extends Seeder
                 'tipo_dato' => 'hora',
                 'formato_ejemplo' => '17:00',
                 'origen_codigo' => '$trabajador->fichaTecnica->hora_salida ? \Carbon\Carbon::parse($trabajador->fichaTecnica->hora_salida)->format("H:i") : "06:00"'
+            ],
+            
+            // ✅ NUEVAS VARIABLES DE DÍAS LABORALES Y DESCANSO
+            [
+                'nombre_variable' => 'dias_laborables',
+                'etiqueta' => 'Días Laborables',
+                'descripcion' => 'Días de la semana que trabaja (formato texto)',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'Lunes, Martes, Miércoles, Jueves, Viernes',
+                'origen_codigo' => '$trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables ? collect($trabajador->fichaTecnica->dias_laborables)->map(fn($dia) => ucfirst($dia))->join(", ") : "Lunes, Martes, Miércoles, Jueves, Viernes"',
+                'obligatoria' => true
+            ],
+            [
+                'nombre_variable' => 'dias_descanso',
+                'etiqueta' => 'Días de Descanso',
+                'descripcion' => 'Días de la semana de descanso (formato texto)',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'Sábado, Domingo',
+                'origen_codigo' => '$trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_descanso ? collect($trabajador->fichaTecnica->dias_descanso)->map(fn($dia) => ucfirst($dia))->join(", ") : "Sábado, Domingo"',
+                'obligatoria' => true
+            ],
+            [
+                'nombre_variable' => 'texto_descanso_plural',
+                'etiqueta' => 'Texto Descanso (Artículo)',
+                'descripcion' => 'Artículo para días de descanso (el día/los días)',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'los días',
+                'origen_codigo' => '($trabajador->fichaTecnica && count($trabajador->fichaTecnica->dias_descanso ?? []) === 1) ? "el día" : "los días"'
+            ],
+            [
+                'nombre_variable' => 'dias_descanso_minuscula',
+                'etiqueta' => 'Días de Descanso (minúsculas)',
+                'descripcion' => 'Días de descanso en minúsculas para textos legales',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'sábado, domingo',
+                'origen_codigo' => '$trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_descanso ? collect($trabajador->fichaTecnica->dias_descanso)->join(", ") : "sábado, domingo"'
+            ],
+            [
+                'nombre_variable' => 'turno_trabajador',
+                'etiqueta' => 'Turno del Trabajador',
+                'descripcion' => 'Tipo de turno (diurno, nocturno, mixto)',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'diurno',
+                'origen_codigo' => '$trabajador->fichaTecnica->turno_calculado ?? $trabajador->fichaTecnica->turno ?? "diurno"'
+            ],
+            [
+                'nombre_variable' => 'descripcion_turno',
+                'etiqueta' => 'Descripción del Turno',
+                'descripcion' => 'Descripción del turno para texto legal',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'por tratarse de jornada Diurna',
+                'origen_codigo' => 'match($trabajador->fichaTecnica->turno_calculado ?? $trabajador->fichaTecnica->turno ?? "diurno") { "diurno" => "por tratarse de jornada Diurna", "nocturno" => "por tratarse de jornada Nocturna", "mixto" => "por tratarse de jornada Mixta", default => "por tratarse de jornada indefinida" }'
+            ],
+            [
+                'nombre_variable' => 'horario_descanso',
+                'etiqueta' => 'Horario de Descanso',
+                'descripcion' => 'Horario de descanso según el turno',
+                'categoria' => 'horarios',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => '12:30 horas a las 13:00 horas',
+                'origen_codigo' => '($trabajador->fichaTecnica->turno_calculado ?? $trabajador->fichaTecnica->turno ?? "diurno") === "nocturno" ? "02:00 horas a las 02:30 horas" : "12:30 horas a las 13:00 horas"'
             ],
 
             // ===== FECHAS DE INGRESO =====
@@ -206,6 +298,15 @@ class VariablesContratoSeeder extends Seeder
                 'tipo_dato' => 'texto',
                 'formato_ejemplo' => 'MARÍA GONZÁLEZ LÓPEZ',
                 'origen_codigo' => '$trabajador->fichaTecnica->beneficiario_nombre ?? "BENEFICIARIO POR ESPECIFICAR"'
+            ],
+            [
+                'nombre_variable' => 'beneficiario_parentesco',
+                'etiqueta' => 'Parentesco del Beneficiario',
+                'descripcion' => 'Relación familiar con el trabajador',
+                'categoria' => 'beneficiario',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'esposa',
+                'origen_codigo' => '$trabajador->fichaTecnica->beneficiario_parentesco ?? "parentesco por especificar"'
             ],
 
             // ===== CONTRATO =====
@@ -249,13 +350,22 @@ class VariablesContratoSeeder extends Seeder
             ]
         ];
 
-        // Insertar variables
+        // ✅ INSERTAR VARIABLES CON MANEJO DE ERRORES
         foreach ($variables as $variable) {
-            DB::table('variables_contrato')->insert(array_merge($variable, [
-                'activa' => true,
-                'created_at' => now(),
-                'updated_at' => now()
-            ]));
+            try {
+                DB::table('variables_contrato')->insert(array_merge($variable, [
+                    'activa' => true,
+                    'created_at' => now(),
+                    'updated_at' => now()
+                ]));
+            } catch (\Exception $e) {
+                echo "❌ Error insertando variable {$variable['nombre_variable']}: " . $e->getMessage() . "\n";
+            }
         }
+
+        echo "✅ " . count($variables) . " variables de contrato insertadas correctamente\n";
+        echo "🎯 Nuevas variables de fecha de nacimiento agregadas:\n";
+        echo "   • {{trabajador_fecha_nacimiento_completa}} - Formato completo con 'nacido el día'\n";
+        echo "   • {{fecha_nacimiento_legal}} - Solo la fecha sin prefijo\n";
     }
 }

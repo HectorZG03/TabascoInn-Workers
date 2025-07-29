@@ -50,8 +50,7 @@ class PlantillaContrato extends Model
 
     public function scopePorTipo($query, string $tipo)
     {
-        return $query->where('tipo_contrato', $tipo)
-                    ->orWhere('tipo_contrato', 'ambos');
+        return $query->where('tipo_contrato', $tipo);
     }
 
     public function scopeUltimaVersion($query)
@@ -80,7 +79,7 @@ class PlantillaContrato extends Model
         // Desactivar versión anterior si existe
         if (isset($datos['tipo_contrato'])) {
             self::where('tipo_contrato', $datos['tipo_contrato'])
-                ->orWhere('tipo_contrato', 'ambos')
+                ->where('activa', true)
                 ->update(['activa' => false]);
         }
 

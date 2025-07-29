@@ -135,9 +135,6 @@
                                     <option value="indeterminado" {{ old('tipo_contrato', $plantillaBase->tipo_contrato ?? '') == 'indeterminado' ? 'selected' : '' }}>
                                         Solo Contratos Indeterminados
                                     </option>
-                                    <option value="ambos" {{ old('tipo_contrato', $plantillaBase->tipo_contrato ?? 'ambos') == 'ambos' ? 'selected' : '' }}>
-                                        Ambos Tipos de Contrato
-                                    </option>
                                 </select>
                                 @error('tipo_contrato')
                                     <div class="invalid-feedback">{{ $message }}</div>

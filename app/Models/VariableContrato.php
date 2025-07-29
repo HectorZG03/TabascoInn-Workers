@@ -17,9 +17,7 @@ class VariableContrato extends Model
         'categoria',
         'tipo_dato',
         'formato_ejemplo',
-        'origen_modelo',
-        'origen_campo',
-        'origen_codigo',
+        'origen_codigo',          // ✅ USANDO origen_codigo en lugar de origen_modelo/campo
         'activa',
         'obligatoria'
     ];
@@ -29,17 +27,15 @@ class VariableContrato extends Model
         'obligatoria' => 'boolean'
     ];
 
-    // ===== CONSTANTES =====
+    // ===== CONSTANTES ACTUALIZADAS =====
     
     public const CATEGORIAS = [
         'trabajador' => 'Datos del Trabajador',
-        'empresa' => 'Datos de la Empresa',
         'contrato' => 'Información del Contrato',
         'fechas' => 'Fechas',
         'horarios' => 'Horarios y Jornada',
         'salariales' => 'Información Salarial',
-        'beneficiario' => 'Beneficiario',
-        'legal' => 'Aspectos Legales'
+        'beneficiario' => 'Beneficiario'
     ];
 
     public const TIPOS_DATO = [
@@ -93,45 +89,87 @@ class VariableContrato extends Model
     }
 
     /**
-     * Obtener valor de una variable para un trabajador y contrato específico
+     * ✅ ACTUALIZADO: Obtener valor de una variable ejecutando codigo PHP directamente
      */
     public function obtenerValor($trabajador, $datosContrato = []): string
     {
         try {
-            // Si tiene código personalizado, ejecutarlo
-            if ($this->origen_codigo) {
-                $codigo = $this->origen_codigo;
-                
-                // Variables disponibles en el scope
-                $fecha_inicio = $datosContrato['fecha_inicio'] ?? null;
-                $fecha_fin = $datosContrato['fecha_fin'] ?? null;
-                $duracion_texto = $datosContrato['duracion_texto'] ?? null;
-                $salario_texto = $datosContrato['salario_texto'] ?? null;
-                
-                // Ejecutar el código
-                return eval("return $codigo;") ?: '';
+            // Si no tiene código, devolver ejemplo
+            if (!$this->origen_codigo) {
+                return $this->formato_ejemplo ?? '';
+            }
+
+            // ✅ PREPARAR VARIABLES DISPONIBLES EN EL SCOPE
+            $fecha_inicio = $datosContrato['fecha_inicio'] ?? null;
+            $fecha_fin = $datosContrato['fecha_fin'] ?? null;
+            $duracion_texto = $datosContrato['duracion_texto'] ?? null;
+            $salario_texto = $datosContrato['salario_texto'] ?? null;
+            
+            // ✅ ASEGURAR QUE EL TRABAJADOR TENGA LAS RELACIONES CARGADAS
+            if (!$trabajador->relationLoaded('fichaTecnica')) {
+                $trabajador->load('fichaTecnica.categoria');
             }
             
-            // Si es de un modelo específico
-            if ($this->origen_modelo && $this->origen_campo) {
-                switch ($this->origen_modelo) {
-                    case 'Trabajador':
-                        return $trabajador->{$this->origen_campo} ?? '';
-                    
-                    case 'FichaTecnica':
-                        return $trabajador->fichaTecnica->{$this->origen_campo} ?? '';
-                    
-                    default:
-                        return '';
-                }
+            // ✅ EJECUTAR EL CÓDIGO PHP ALMACENADO
+            $codigo = $this->origen_codigo;
+            
+            // Añadir return si no lo tiene
+            if (!str_starts_with(trim($codigo), 'return')) {
+                $codigo = "return {$codigo};";
             }
             
-            return '';
+            $resultado = eval($codigo);
+            
+            return (string) ($resultado ?? '');
+            
+        } catch (\ParseError $e) {
+            Log::error("Error de sintaxis en variable {$this->nombre_variable}: " . $e->getMessage());
+            return $this->formato_ejemplo ?? "Error: Sintaxis incorrecta";
+            
+        } catch (\Error $e) {
+            Log::error("Error fatal en variable {$this->nombre_variable}: " . $e->getMessage());
+            return $this->formato_ejemplo ?? "Error: Código inválido";
             
         } catch (\Exception $e) {
-            Log::error("Error obteniendo valor de variable {$this->nombre_variable}: " . $e->getMessage());
-            return $this->formato_ejemplo ?? '';
+            Log::error("Error general en variable {$this->nombre_variable}: " . $e->getMessage());
+            return $this->formato_ejemplo ?? "Error: No disponible";
         }
+    }
+
+    /**
+     * ✅ NUEVO: Validar el código PHP de la variable
+     */
+    public function validarCodigo(): array
+    {
+        $errores = [];
+        
+        if (!$this->origen_codigo) {
+            return $errores;
+        }
+        
+        try {
+            // Intentar parsear el código
+            $codigo = $this->origen_codigo;
+            if (!str_starts_with(trim($codigo), 'return')) {
+                $codigo = "return {$codigo};";
+            }
+            
+            // Validar sintaxis básica
+            if (strpos($codigo, '<?php') !== false) {
+                $errores[] = "No incluyas etiquetas PHP (<?php)";
+            }
+            
+            // Verificar que tenga punto y coma al final si es necesario
+            $codigoLimpio = trim($codigo);
+            if (!str_ends_with($codigoLimpio, ';')) {
+                $errores[] = "El código debe terminar con punto y coma (;)";
+            }
+            
+        } catch (\ParseError $e) {
+            $errores[] = "Error de sintaxis: " . $e->getMessage();
+        }
+        
+        return $errores;
     }
 
     /**
@@ -150,8 +188,12 @@ class VariableContrato extends Model
                 break;
                 
             case 'fecha':
-                if (!empty($valor) && !\Carbon\Carbon::parse($valor)) {
-                    $errores[] = "Debe ser una fecha válida";
+                if (!empty($valor)) {
+                    try {
+                        \Carbon\Carbon::parse($valor);
+                    } catch (\Exception $e) {
+                        $errores[] = "Debe ser una fecha válida";
+                    }
                 }
                 break;
                 
@@ -205,5 +247,22 @@ class VariableContrato extends Model
     public function getPrioridadColorAttribute(): string
     {
         return $this->obligatoria ? 'danger' : 'info';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener resumen del código para debug
+     */
+    public function getCodigoResumenAttribute(): string
+    {
+        if (!$this->origen_codigo) {
+            return 'Sin código';
+        }
+        
+        $codigo = $this->origen_codigo;
+        if (strlen($codigo) > 50) {
+            return substr($codigo, 0, 50) . '...';
+        }
+        
+        return $codigo;
     }
 }

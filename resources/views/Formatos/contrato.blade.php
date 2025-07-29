@@ -28,7 +28,6 @@
             font-weight: bold;
             text-transform: uppercase;
             margin-bottom: 25px;
-            padding-left: 120px; /* ✅ NUEVO: Espacio para que no se superponga con la imagen */
         }
 
         .section {
