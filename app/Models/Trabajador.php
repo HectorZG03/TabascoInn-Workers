@@ -38,6 +38,7 @@ class Trabajador extends Model
         'lugar_nacimiento',
         'estado_actual',
         'ciudad_actual',
+        'codigo_postal',  // ✅ CAMPO AÑADIDO
         'curp',
         'rfc',
         'no_nss',
@@ -101,4 +102,4 @@ class Trabajador extends Model
         'Yucatán' => 'Yucatán',
         'Zacatecas' => 'Zacatecas',
     ];
-}
+}   

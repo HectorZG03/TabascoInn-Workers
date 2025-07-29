@@ -240,10 +240,10 @@
             </div>
         </div>
 
-        <!-- Estado y Ciudad Actual -->
+        <!-- Estado, Ciudad Actual y Código Postal -->
         <div class="row">
             <!-- Estado Actual -->
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
                 <label for="estado_actual" class="form-label">
                     <i class="bi bi-map"></i> Estado Actual
                 </label>
@@ -262,9 +262,9 @@
             </div>
 
             <!-- Ciudad Actual -->
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
                 <label for="ciudad_actual" class="form-label">
-                    <i class="bi bi-building"></i> Ciudad Actual
+                    <i class="bi bi-building"></i> Municipio, Ciudad Actual
                 </label>
                 <input type="text" 
                        class="form-control @error('ciudad_actual') is-invalid @enderror" 
@@ -272,10 +272,30 @@
                        name="ciudad_actual" 
                        style="text-transform: uppercase"
                        value="{{ old('ciudad_actual') }}" 
-                       placeholder="Ciudad donde vive"
+                       placeholder="Ej; Centro, Villahermosa"
                        maxlength="50">
-                <div class="form-text">Ciudad donde reside actualmente</div>
+                <div class="form-text">Municipio-Ciudad donde reside actualmente</div>
                 @error('ciudad_actual')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- ✅ NUEVO: Código Postal -->
+            <div class="col-md-4 mb-3">
+                <label for="codigo_postal" class="form-label">
+                    <i class="bi bi-mailbox"></i> Código Postal *
+                </label>
+                <input type="text" 
+                       class="form-control @error('codigo_postal') is-invalid @enderror" 
+                       id="codigo_postal" 
+                       name="codigo_postal" 
+                       value="{{ old('codigo_postal') }}"
+                       maxlength="10"
+                       pattern="[0-9]{5}"
+                       placeholder="Ej: 86000"
+                       required>
+                <div class="form-text">5 dígitos del código postal</div>
+                @error('codigo_postal')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>

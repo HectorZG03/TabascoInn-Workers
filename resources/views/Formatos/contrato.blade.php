@@ -149,8 +149,8 @@
         <p class="clausula">
             <span class="clausula-numero">CLÁUSULA II:</span> EL TRABAJADOR manifiesta llamarse C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, tener una edad de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age }} años</span>, 
             haber nacido el día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('d') }}</span> del mes de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->locale('es')->monthName }}</span> del año <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('Y') }}</span> 
-            en {{ $trabajador->lugar_nacimiento ?? ($trabajador->ciudad_actual && $trabajador->estado_actual ? $trabajador->ciudad_actual . ', ' . $trabajador->estado_actual : 'Villahermosa, Centro, Tabasco') }}; y que su CURP es <span class="bold">{{ $trabajador->curp ?? 'NO ESPECIFICADO' }}</span> 
-            y su RFC es <span class="bold">{{ $trabajador->rfc ?? 'NO ESPECIFICADO' }}</span>, y que su domicilio actual es: {{ $trabajador->direccion ?? ($trabajador->ciudad_actual && $trabajador->estado_actual ? $trabajador->ciudad_actual . ', ' . $trabajador->estado_actual : 'NO ESPECIFICADO') }}.
+            en {{ $trabajador->lugar_nacimiento ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'Villahermosa, Centro, Tabasco') }}; y que su CURP es <span class="bold">{{ $trabajador->curp ?? 'NO ESPECIFICADO' }}</span> 
+            y su RFC es <span class="bold">{{ $trabajador->rfc ?? 'NO ESPECIFICADO' }}</span>, y que su domicilio actual es: {{ $trabajador->direccion ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}, {{$trabajador->ciudad_actual}}, {{$trabajador->estado_actual}}, C.P. {{ $trabajador->codigo_postal ?? 'NO ESPECIFICADO' }}.
         </p>
 
         <p class="clausula">

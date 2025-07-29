@@ -251,47 +251,53 @@ class ActPerfilTrabajadorController extends Controller
             ])->withInput();
         }
 
-        $validated = $request->validate([
-            // Datos personales
-            'nombre_trabajador' => 'required|string|max:50',
-            'ape_pat' => 'required|string|max:50',
-            'ape_mat' => 'nullable|string|max:50',
-            'fecha_nacimiento' => 'required|date|before:-18 years',
-            
-            // ✅ CAMPOS DE UBICACIÓN
-            'lugar_nacimiento' => 'nullable|string|max:100',
-            'estado_actual' => 'nullable|string|max:50',
-            'ciudad_actual' => 'nullable|string|max:50',
-            
-            // Identificadores
-            'curp' => ['required', 'string', 'size:18', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'rfc' => ['required', 'string', 'size:13', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'no_nss' => 'nullable|string|max:11',
-            
-            // Contacto
-            'telefono' => 'required|string|size:10',
-            'correo' => ['nullable', 'email', 'max:55', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'direccion' => 'nullable|string|max:255',
-            'fecha_ingreso' => 'required|date|before_or_equal:today',
-        ], [
-            'nombre_trabajador.required' => 'El nombre es obligatorio',
-            'ape_pat.required' => 'El apellido paterno es obligatorio',
-            'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
-            
-            // ✅ MENSAJES PARA NUEVOS CAMPOS
-            'lugar_nacimiento.max' => 'El lugar de nacimiento no puede exceder 100 caracteres',
-            'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
-            'ciudad_actual.max' => 'La ciudad no puede exceder 50 caracteres',
-            
-            'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
-            'curp.unique' => 'Este CURP ya está registrado',
-            'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
-            'rfc.unique' => 'Este RFC ya está registrado',
-            'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos',
-            'correo.unique' => 'Este correo ya está registrado',
-            'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
-            'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
-        ]);
+    $validated = $request->validate([
+        // Datos personales
+        'nombre_trabajador' => 'required|string|max:50',
+        'ape_pat' => 'required|string|max:50',
+        'ape_mat' => 'nullable|string|max:50',
+        'fecha_nacimiento' => 'required|date|before:-18 years',
+        
+        // ✅ CAMPOS DE UBICACIÓN
+        'lugar_nacimiento' => 'nullable|string|max:100',
+        'estado_actual' => 'nullable|string|max:50',
+        'ciudad_actual' => 'nullable|string|max:50',
+        // ✅ NUEVO: Código postal
+        'codigo_postal' => 'required|string|max:5|regex:/^\d{5}$/',
+        
+        // Identificadores
+        'curp' => ['required', 'string', 'size:18', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'rfc' => ['required', 'string', 'size:13', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'no_nss' => 'nullable|string|max:11',
+        
+        // Contacto
+        'telefono' => 'required|string|size:10',
+        'correo' => ['nullable', 'email', 'max:55', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'direccion' => 'nullable|string|max:255',
+        'fecha_ingreso' => 'required|date|before_or_equal:today',
+    ], [
+        'nombre_trabajador.required' => 'El nombre es obligatorio',
+        'ape_pat.required' => 'El apellido paterno es obligatorio',
+        'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
+        
+        // ✅ MENSAJES PARA NUEVOS CAMPOS
+        'lugar_nacimiento.max' => 'El lugar de nacimiento no puede exceder 100 caracteres',
+        'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
+        'ciudad_actual.max' => 'La ciudad no puede exceder 50 caracteres',
+        // ✅ NUEVO: Mensaje para código postal
+        'codigo_postal.required' => 'El código postal es obligatorio',
+        'codigo_postal.regex' => 'El código postal debe contener exactamente 5 dígitos',
+        'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
+        
+        'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
+        'curp.unique' => 'Este CURP ya está registrado',
+        'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
+        'rfc.unique' => 'Este RFC ya está registrado',
+        'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos',
+        'correo.unique' => 'Este correo ya está registrado',
+        'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
+        'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
+    ]);
 
         DB::beginTransaction();
         
@@ -303,12 +309,14 @@ class ActPerfilTrabajadorController extends Controller
                 'nombre_trabajador' => $validated['nombre_trabajador'],
                 'ape_pat' => $validated['ape_pat'],
                 'ape_mat' => $validated['ape_mat'],
-                'fecha_nacimiento' => $validated['fecha_nacimiento'], // Ya está en formato Y-m-d
+                'fecha_nacimiento' => $validated['fecha_nacimiento'],
                 
                 // ✅ INCLUIR NUEVOS CAMPOS
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
+                // ✅ NUEVO: Incluir código postal
+                'codigo_postal' => $validated['codigo_postal'],
                 
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
@@ -316,7 +324,7 @@ class ActPerfilTrabajadorController extends Controller
                 'telefono' => $validated['telefono'],
                 'correo' => $validated['correo'],
                 'direccion' => $validated['direccion'],
-                'fecha_ingreso' => $validated['fecha_ingreso'], // Ya está en formato Y-m-d
+                'fecha_ingreso' => $validated['fecha_ingreso'],
                 'antiguedad' => $nuevaAntiguedad,
             ]);
 
@@ -347,35 +355,39 @@ class ActPerfilTrabajadorController extends Controller
 
     public function updateFichaTecnica(Request $request, Trabajador $trabajador)
     {
-        // ✅ ACTUALIZAR VALIDACIÓN CON NUEVOS CAMPOS
-        $validated = $request->validate([
-            'id_area' => 'required|exists:area,id_area',
-            'id_categoria' => 'required|exists:categoria,id_categoria',
-            'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
-            'formacion' => 'nullable|string|max:50',
-            'grado_estudios' => 'nullable|string|max:50',
-            'motivo_cambio' => 'nullable|string|max:255',
-            'tipo_cambio' => 'nullable|in:promocion,transferencia,aumento_sueldo,reclasificacion,ajuste_salarial',
-            // ✅ NUEVOS CAMPOS
-            'hora_entrada' => 'nullable|date_format:H:i',
-            'hora_salida' => 'nullable|date_format:H:i',
-            'dias_laborables' => 'nullable|array',
-            'dias_laborables.*' => 'string|in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA)),
-            'beneficiario_nombre' => 'nullable|string|max:150',
-            'beneficiario_parentesco' => 'nullable|string|in:' . implode(',', array_keys(FichaTecnica::PARENTESCOS_BENEFICIARIO)),
-        ], [
-            'id_area.required' => 'Debe seleccionar un área',
-            'id_categoria.required' => 'Debe seleccionar una categoría',
-            'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
-            'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
-            'tipo_cambio.in' => 'El tipo de cambio seleccionado no es válido',
-            // Mensajes para nuevos campos
-            'hora_entrada.date_format' => 'Formato de hora inválido (HH:MM)',
-            'hora_salida.date_format' => 'Formato de hora inválido (HH:MM)',
-            'dias_laborables.array' => 'Los días laborables deben ser una lista',
-            'dias_laborables.*.in' => 'Día laborable no válido',
-            'beneficiario_parentesco.in' => 'Parentesco no válido',
-        ]);
+    $validated = $request->validate([
+        'id_area' => 'required|exists:area,id_area',
+        'id_categoria' => 'required|exists:categoria,id_categoria',
+        'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
+        'formacion' => 'nullable|string|max:50',
+        'grado_estudios' => 'nullable|string|max:50',
+        'motivo_cambio' => 'nullable|string|max:255',
+        'tipo_cambio' => 'nullable|in:promocion,transferencia,aumento_sueldo,reclasificacion,ajuste_salarial',
+        // ✅ CAMPOS EXISTENTES
+        'hora_entrada' => 'nullable|date_format:H:i',
+        'hora_salida' => 'nullable|date_format:H:i',
+        // ✅ NUEVO: Horario de descanso
+        'horario_descanso' => 'required|string|max:100',
+        'dias_laborables' => 'nullable|array',
+        'dias_laborables.*' => 'string|in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA)),
+        'beneficiario_nombre' => 'nullable|string|max:150',
+        'beneficiario_parentesco' => 'nullable|string|in:' . implode(',', array_keys(FichaTecnica::PARENTESCOS_BENEFICIARIO)),
+    ], [
+        'id_area.required' => 'Debe seleccionar un área',
+        'id_categoria.required' => 'Debe seleccionar una categoría',
+        'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
+        'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
+        'tipo_cambio.in' => 'El tipo de cambio seleccionado no es válido',
+        // Mensajes para campos existentes
+        'hora_entrada.date_format' => 'Formato de hora inválido (HH:MM)',
+        'hora_salida.date_format' => 'Formato de hora inválido (HH:MM)',
+        // ✅ NUEVO: Mensaje para horario de descanso
+        'horario_descanso.required' => 'El horario de descanso es obligatorio',
+        'horario_descanso.max' => 'El horario de descanso no puede exceder 100 caracteres',
+        'dias_laborables.array' => 'Los días laborables deben ser una lista',
+        'dias_laborables.*.in' => 'Día laborable no válido',
+        'beneficiario_parentesco.in' => 'Parentesco no válido',
+    ]);
 
         // Validar que la categoría pertenezca al área
         $categoria = Categoria::where('id_categoria', $validated['id_categoria'])
@@ -440,14 +452,17 @@ class ActPerfilTrabajadorController extends Controller
             }
 
             // ✅ PREPARAR DATOS COMPLETOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
+            // ✅ PREPARAR DATOS COMPLETOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
             $datosFicha = [
                 'id_categoria' => $validated['id_categoria'],
                 'sueldo_diarios' => $validated['sueldo_diarios'],
                 'formacion' => $validated['formacion'],
                 'grado_estudios' => $validated['grado_estudios'],
-                // ✅ NUEVOS CAMPOS CON CÁLCULOS AUTOMÁTICOS
+                // ✅ CAMPOS CON CÁLCULOS AUTOMÁTICOS
                 'hora_entrada' => $validated['hora_entrada'],
                 'hora_salida' => $validated['hora_salida'],
+                // ✅ NUEVO: Incluir horario de descanso
+                'horario_descanso' => $validated['horario_descanso'],
                 'horas_trabajo' => $horasCalculadas,
                 'turno' => $turnoCalculado,
                 'dias_laborables' => $diasLaborables,

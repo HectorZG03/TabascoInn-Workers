@@ -71,7 +71,7 @@ class TrabajadorController extends Controller
 
     public function store(Request $request)
     {
-        // ✅ VALIDACIONES ACTUALIZADAS PARA CONTRATOS DETERMINADO/INDETERMINADO
+        // ✅ VALIDACIONES ACTUALIZADAS PARA CONTRATOS DETERMINADO/INDETERMINADO + NUEVOS CAMPOS
         $validated = $request->validate([
             // Datos personales
             'nombre_trabajador' => 'required|string|max:50',
@@ -81,6 +81,8 @@ class TrabajadorController extends Controller
             'lugar_nacimiento' => 'nullable|string|max:100',
             'estado_actual' => 'nullable|string|max:50',
             'ciudad_actual' => 'nullable|string|max:50',
+            // ✅ NUEVO: Código postal
+            'codigo_postal' => 'required|string|max:5|regex:/^\d{5}$/',
             
             // Identificadores
             'curp' => 'required|string|size:18|unique:trabajadores,curp',
@@ -103,6 +105,8 @@ class TrabajadorController extends Controller
             // Horarios
             'hora_entrada' => ['required', 'string', 'regex:/^([01]\d|2[0-3]):([0-5]\d)$/'],
             'hora_salida' => ['required', 'string', 'regex:/^([01]\d|2[0-3]):([0-5]\d)$/', fn($attr, $val, $fail) => $this->validarHorario($val, $request->hora_entrada, $fail)],
+            // ✅ NUEVO: Horario de descanso
+            'horario_descanso' => 'required|string|max:100',
             'dias_laborables' => 'required|array|min:1|max:7',
             'dias_laborables.*' => 'string|in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA)),
             
@@ -113,7 +117,7 @@ class TrabajadorController extends Controller
             // Estado del trabajador
             'estatus' => 'required|in:activo,prueba',
             
-            // ✅ NUEVAS VALIDACIONES PARA CONTRATOS
+            // Contratos
             'tipo_contrato' => 'required|in:determinado,indeterminado',
             'fecha_inicio_contrato' => [
                 'required', 
@@ -121,8 +125,6 @@ class TrabajadorController extends Controller
                 'regex:/^\d{2}\/\d{2}\/\d{4}$/', 
                 fn($attr, $val, $fail) => $this->validarFechaInicioContrato($val, $fail)
             ],
-            
-            // ✅ FECHA FIN CONDICIONAL: Solo requerida para contratos determinados
             'fecha_fin_contrato' => [
                 fn($attr, $val, $fail) => $this->validarFechaFinCondicional($val, $request->tipo_contrato, $request->fecha_inicio_contrato, $fail)
             ],
@@ -133,6 +135,13 @@ class TrabajadorController extends Controller
             'contacto_telefono_principal' => 'nullable|string|size:10',
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
+        ], [
+            // ✅ NUEVOS MENSAJES DE VALIDACIÓN
+            'codigo_postal.required' => 'El código postal es obligatorio',
+            'codigo_postal.regex' => 'El código postal debe tener exactamente 5 dígitos',
+            'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
+            'horario_descanso.required' => 'El horario de descanso es obligatorio',
+            'horario_descanso.max' => 'El horario de descanso no puede exceder 100 caracteres',
         ]);
 
         // Validar relación área-categoría
@@ -161,12 +170,10 @@ class TrabajadorController extends Controller
             $diasTotales = $fechaInicioContrato->diffInDays($fechaFinContrato);
             $tipoDuracion = $diasTotales > 30 ? 'meses' : 'dias';
         }
-        
-        // Para contratos indeterminados, $fechaFinContrato y $tipoDuracion quedan null
 
         DB::beginTransaction();
         try {
-            // ✅ CREAR TRABAJADOR (sin cambios)
+            // ✅ CREAR TRABAJADOR (INCLUIR CÓDIGO POSTAL)
             $trabajador = Trabajador::create([
                 'nombre_trabajador' => $validated['nombre_trabajador'],
                 'ape_pat' => $validated['ape_pat'],
@@ -175,6 +182,8 @@ class TrabajadorController extends Controller
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
+                // ✅ NUEVO: Incluir código postal
+                'codigo_postal' => $validated['codigo_postal'],
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
                 'no_nss' => $validated['no_nss'],
@@ -205,7 +214,7 @@ class TrabajadorController extends Controller
                 $turnoCalculado = 'nocturno';
             }
 
-            // ✅ CREAR FICHA TÉCNICA (sin cambios)
+            // ✅ CREAR FICHA TÉCNICA (INCLUIR HORARIO DE DESCANSO)
             FichaTecnica::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'id_categoria' => $validated['id_categoria'],
@@ -214,6 +223,8 @@ class TrabajadorController extends Controller
                 'grado_estudios' => $validated['grado_estudios'],
                 'hora_entrada' => $validated['hora_entrada'],
                 'hora_salida' => $validated['hora_salida'],
+                // ✅ NUEVO: Incluir horario de descanso
+                'horario_descanso' => $validated['horario_descanso'],
                 'horas_trabajo' => $horasCalculadas,
                 'turno' => $turnoCalculado,
                 'dias_laborables' => $validated['dias_laborables'],
@@ -235,22 +246,19 @@ class TrabajadorController extends Controller
                 ]);
             }
 
-            // ✅ GENERAR CONTRATO ACTUALIZADO PARA DETERMINADO/INDETERMINADO
+            // ✅ GENERAR CONTRATO (sin cambios)
             $contratoController = new ContratoController();
             
-            // Preparar datos base del contrato
             $datosContrato = [
                 'tipo_contrato' => $validated['tipo_contrato'],
                 'fecha_inicio_contrato' => $fechaInicioContrato->format('Y-m-d'),
             ];
 
-            // Solo añadir datos de fin y duración para contratos determinados
             if ($validated['tipo_contrato'] === 'determinado') {
                 $datosContrato['fecha_fin_contrato'] = $fechaFinContrato->format('Y-m-d');
                 $datosContrato['tipo_duracion'] = $tipoDuracion;
             }
 
-            // Generar el contrato
             $contratoController->generarDefinitivo($trabajador, $datosContrato);
 
             DB::commit();

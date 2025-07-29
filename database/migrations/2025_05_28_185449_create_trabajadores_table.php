@@ -20,10 +20,12 @@ return new class extends Migration
             $table->string('ape_mat', 50)->nullable();
             $table->date('fecha_nacimiento')->nullable();
             
-            // ✅ NUEVOS: Datos de nacimiento y ubicación actual
+            // ✅ DATOS DE NACIMIENTO Y UBICACIÓN ACTUAL
             $table->string('lugar_nacimiento', 100)->nullable()->comment('Ciudad y estado de nacimiento');
             $table->string('estado_actual', 50)->nullable()->comment('Estado donde vive actualmente');
             $table->string('ciudad_actual', 50)->nullable()->comment('Ciudad donde vive actualmente');
+            // ✅ NUEVO: Código postal
+            $table->string('codigo_postal', 5)->nullable()->comment('Código postal del domicilio actual');
             
             // ✅ IDENTIFICADORES OFICIALES
             $table->string('curp', 18)->nullable()->unique();
@@ -61,10 +63,12 @@ return new class extends Migration
             $table->index('rfc', 'idx_rfc');
             $table->index('correo', 'idx_correo');
             $table->index(['estado_actual', 'ciudad_actual'], 'idx_ubicacion_actual');
+            // ✅ NUEVO: Índice para código postal
+            $table->index('codigo_postal', 'idx_codigo_postal');
         });
         
         // ✅ COMENTARIO DE LA TABLA
-        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos y datos de ubicación'");
+        DB::statement("ALTER TABLE trabajadores COMMENT = 'Tabla principal de trabajadores con 5 estados laborales definidos, datos de ubicación y código postal'");
     }
 
     public function down()

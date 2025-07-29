@@ -26,6 +26,7 @@ class FichaTecnica extends Model
         'hora_entrada',
         'hora_salida',
         // ✅ CALCULADOS: Se llenan automáticamente
+        'horario_descanso',  // ✅ CAMPO AÑADIDO
         'horas_trabajo',
         'turno',
         // ✅ NUEVOS: Días laborables y descanso
@@ -493,8 +494,14 @@ class FichaTecnica extends Model
     /**
      * ✅ NUEVO: Obtener horario de descanso según el turno
      */
-    public function getHorarioDescansoAttribute()
+    public function getHorarioDescansoAttribute($value)
     {
+        // Si hay un valor guardado en la BD, usarlo
+        if (!empty($value)) {
+            return $value;
+        }
+        
+        // Solo si está vacío, usar el valor predeterminado según turno
         return $this->turno_calculado === 'nocturno' 
             ? '02:00 horas a las 02:30 horas' 
             : '12:30 horas a las 13:00 horas';

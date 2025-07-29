@@ -1,5 +1,5 @@
 {{-- resources/views/trabajadores/secciones_perfil/datos_personales.blade.php --}}
-{{-- ✅ CAMBIAR SOLO LOS CAMPOS DE FECHA --}}
+{{-- ✅ CON CÓDIGO POSTAL --}}
 
 <div class="card shadow">
     <div class="card-header bg-primary text-white">
@@ -170,7 +170,7 @@
 
             <div class="row">
                 <!-- Correo - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label for="correo" class="form-label">
                         <i class="bi bi-envelope"></i> Correo Electrónico
                     </label>
@@ -185,7 +185,7 @@
                 </div>
 
                 <!-- Estado Actual - SIN CAMBIOS (mantener como estaba) -->
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label for="estado_actual" class="form-label">
                         <i class="bi bi-map"></i> Estado Actual
                     </label>
@@ -242,7 +242,7 @@
                 </div>
 
                 <!-- Ciudad Actual - SIN CAMBIOS -->
-                <div class="col-md-4 mb-3">
+                <div class="col-md-3 mb-3">
                     <label for="ciudad_actual" class="form-label">
                         <i class="bi bi-building"></i> Ciudad Actual
                     </label>
@@ -254,6 +254,26 @@
                            placeholder="Ej: Villahermosa"
                            maxlength="50">
                     @error('ciudad_actual')
+                        <div class="invalid-feedback">{{ $message }}</div>
+                    @enderror
+                </div>
+
+                <!-- ✅ NUEVO: Código Postal -->
+                <div class="col-md-3 mb-3">
+                    <label for="codigo_postal" class="form-label">
+                        <i class="bi bi-mailbox"></i> Código Postal *
+                    </label>
+                    <input type="text" 
+                           class="form-control @error('codigo_postal') is-invalid @enderror" 
+                           id="codigo_postal" 
+                           name="codigo_postal" 
+                           value="{{ old('codigo_postal', $trabajador->codigo_postal) }}"
+                           maxlength="5"
+                           pattern="[0-9]{5}"
+                           placeholder="Ej: 86000"
+                           required>
+                    <div class="form-text">5 dígitos</div>
+                    @error('codigo_postal')
                         <div class="invalid-feedback">{{ $message }}</div>
                     @enderror
                 </div>

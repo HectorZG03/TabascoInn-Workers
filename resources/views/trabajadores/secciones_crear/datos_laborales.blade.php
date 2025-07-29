@@ -69,10 +69,10 @@
             </div>
         </div>
 
-        <!-- Horarios: Hora de Entrada y Salida -->
+        <!-- Horarios: Hora de Entrada, Salida y Descanso -->
         <div class="row">
             <!-- Hora de Entrada -->
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
                 <label for="hora_entrada" class="form-label">
                     <i class="bi bi-clock"></i> Hora de Entrada *
                 </label>
@@ -91,7 +91,7 @@
             </div>
 
             <!-- Hora de Salida -->
-            <div class="col-md-6 mb-3">
+            <div class="col-md-4 mb-3">
                 <label for="hora_salida" class="form-label">
                     <i class="bi bi-clock-fill"></i> Hora de Salida *
                 </label>
@@ -105,6 +105,24 @@
                        required>
                 <div class="form-text">Formato: HH:MM (24 horas) - Ejemplo: 17:00</div>
                 @error('hora_salida')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+
+            <!-- ✅ NUEVO: Horario de Descanso -->
+            <div class="col-md-4 mb-3">
+                <label for="horario_descanso" class="form-label">
+                    <i class="bi bi-pause-circle"></i> Horario de Descanso *
+                </label>
+                <input type="text" 
+                       class="form-control @error('horario_descanso') is-invalid @enderror" 
+                       id="horario_descanso" 
+                       name="horario_descanso" 
+                       placeholder="13:00 a 13:30 de la tarde"
+                       maxlength="100"
+                       required>
+                <div class="form-text">Ejemplo: 13:00 a 13:30 de la tarde</div>
+                @error('horario_descanso')
                     <div class="invalid-feedback">{{ $message }}</div>
                 @enderror
             </div>

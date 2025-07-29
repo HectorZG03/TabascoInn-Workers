@@ -29,7 +29,7 @@
                     </div>
                 </div>
 
-                <!-- ✅ HORARIOS CON TURNO MANUAL -->
+                <!-- ✅ HORARIOS CON TURNO MANUAL Y HORARIO DE DESCANSO -->
                 <div class="row mb-3">
                     <div class="col-md-3">
                         <label class="form-label text-muted">Hora Entrada</label>
@@ -76,6 +76,24 @@
                             <span class="badge bg-{{ $badgeClass }}">{{ $turnoTexto }}</span>
                             <small class="text-muted d-block">Configurado manualmente</small>
                         </div>
+                    </div>
+                </div>
+
+                <!-- ✅ NUEVA FILA: Horario de Descanso -->
+                <div class="row mb-3">
+                    <div class="col-md-6">
+                        <label class="form-label text-muted">Horario de Descanso</label>
+                        <div class="fw-bold">
+                            @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->horario_descanso)
+                                <i class="bi bi-pause-circle text-info me-1"></i>
+                                {{ $trabajador->fichaTecnica->horario_descanso }}
+                            @else
+                                <span class="text-muted">No definido</span>
+                            @endif
+                        </div>
+                    </div>
+                    <div class="col-md-6">
+                        <!-- Espacio para información adicional si es necesario -->
                     </div>
                 </div>
 
@@ -261,7 +279,7 @@
     </div>
 </div>
 
-<!-- ✅ MODAL CON SELECCIÓN MANUAL DE TURNO -->
+<!-- ✅ MODAL CON SELECCIÓN MANUAL DE TURNO Y HORARIO DE DESCANSO -->
 <div class="modal fade" id="modalEditarDatosLaborales" tabindex="-1" aria-labelledby="modalEditarDatosLaboralesLabel">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -321,9 +339,9 @@
                         </div>
                     </div>
 
-                    <!-- ✅ HORARIOS Y TURNO MANUAL -->
+                    <!-- ✅ HORARIOS, TURNO MANUAL Y HORARIO DE DESCANSO -->
                     <div class="row mb-3">
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="hora_entrada" class="form-label">Hora de Entrada</label>
                             <input type="text" 
                                    class="form-control formato-hora" 
@@ -334,7 +352,7 @@
                                    maxlength="5">
                             <div class="form-text">Formato: HH:MM (24 horas)</div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="hora_salida" class="form-label">Hora de Salida</label>
                             <input type="text" 
                                    class="form-control formato-hora" 
@@ -345,7 +363,7 @@
                                    maxlength="5">
                             <div class="form-text">Formato: HH:MM (24 horas)</div>
                         </div>
-                        <div class="col-md-4">
+                        <div class="col-md-3">
                             <label for="turno" class="form-label">Turno *</label>
                             <select class="form-select" id="turno" name="turno" required>
                                 <option value="">Seleccionar turno...</option>
@@ -357,6 +375,22 @@
                                 @endforeach
                             </select>
                             <div class="form-text">Selecciona el turno manualmente</div>
+                        </div>
+                        <!-- ✅ NUEVO: Horario de Descanso -->
+                        <div class="col-md-3">
+                            <label for="horario_descanso" class="form-label">Horario Descanso *</label>
+                            <input type="text" 
+                                   class="form-control @error('horario_descanso') is-invalid @enderror" 
+                                   id="horario_descanso" 
+                                   name="horario_descanso" 
+                                   value="{{ $trabajador->fichaTecnica->horario_descanso ?? '' }}" 
+                                   placeholder="13:00 a 13:30"
+                                   maxlength="100"
+                                   required>
+                            <div class="form-text">Ej: 13:00 a 13:30 de la tarde</div>
+                            @error('horario_descanso')
+                                <div class="invalid-feedback">{{ $message }}</div>
+                            @enderror
                         </div>
                     </div>
 
