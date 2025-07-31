@@ -1,6 +1,7 @@
 /**
- * ✅ SCRIPT ESPECÍFICO PARA HORAS EXTRA
+ * ✅ SCRIPT ESPECÍFICO PARA HORAS EXTRA - ACTUALIZADO
  * Integra con formato-global.js para validaciones específicas de fechas
+ * Soporte para decimales y sin restricciones de fecha
  * horas_extra.js
  */
 
@@ -11,7 +12,7 @@ window.HorasExtraJS = {
     // =================================
     
     init() {
-        console.log('🚀 Inicializando validaciones específicas de horas extra');
+        console.log('🚀 Inicializando validaciones específicas de horas extra (con decimales)');
         this.initValidacionesFechas();
         this.initCalculadoras();
         this.initContadores();
@@ -19,52 +20,39 @@ window.HorasExtraJS = {
     },
 
     // =================================
-    // 📅 VALIDACIONES ESPECÍFICAS DE FECHAS
+    // 📅 VALIDACIONES BÁSICAS DE FECHAS (SIN RESTRICCIONES DE PERÍODO)
     // =================================
 
     initValidacionesFechas() {
-        // Validaciones para asignar horas (30 días atrás máximo)
+        // Validaciones básicas para asignar horas (solo formato)
         const camposAsignar = document.querySelectorAll('[id*="fecha_asignar"]');
         camposAsignar.forEach(campo => {
-            this.configurarValidacionAsignar(campo);
+            this.configurarValidacionBasica(campo);
         });
 
-        // Validaciones para compensar horas (7 días atrás máximo)
+        // Validaciones básicas para compensar horas (solo formato)
         const camposCompensar = document.querySelectorAll('[id*="fecha_restar"]');
         camposCompensar.forEach(campo => {
-            this.configurarValidacionCompensar(campo);
+            this.configurarValidacionBasica(campo);
         });
     },
 
-    configurarValidacionAsignar(campo) {
+    configurarValidacionBasica(campo) {
         campo.addEventListener('blur', (e) => {
-            this.validarFechaAsignacion(e.target);
+            this.validarFormatoFecha(e.target);
         });
 
         // También validar en tiempo real después de completar la fecha
         campo.addEventListener('input', (e) => {
             const valor = e.target.value;
             if (valor.length === 10 && valor.includes('/')) {
-                setTimeout(() => this.validarFechaAsignacion(e.target), 100);
+                setTimeout(() => this.validarFormatoFecha(e.target), 100);
             }
         });
     },
 
-    configurarValidacionCompensar(campo) {
-        campo.addEventListener('blur', (e) => {
-            this.validarFechaCompensacion(e.target);
-        });
-
-        // También validar en tiempo real después de completar la fecha
-        campo.addEventListener('input', (e) => {
-            const valor = e.target.value;
-            if (valor.length === 10 && valor.includes('/')) {
-                setTimeout(() => this.validarFechaCompensacion(e.target), 100);
-            }
-        });
-    },
-
-    validarFechaAsignacion(campo) {
+    // ✅ VALIDACIÓN SIMPLIFICADA: Solo formato, sin restricciones de período
+    validarFormatoFecha(campo) {
         const fecha = campo.value.trim();
         
         if (!fecha) {
@@ -84,68 +72,13 @@ window.HorasExtraJS = {
             return false;
         }
 
-        const hoy = new Date();
-        const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-        const hace30Dias = new Date(fechaHoy.getTime() - (30 * 24 * 60 * 60 * 1000));
-
-        // Validar que no sea futura
-        if (fechaObj > fechaHoy) {
-            this.mostrarError(campo, 'La fecha no puede ser futura');
-            return false;
-        }
-
-        // Validar que no sea más de 30 días atrás
-        if (fechaObj < hace30Dias) {
-            this.mostrarError(campo, 'La fecha no puede ser anterior a 30 días');
-            return false;
-        }
-
-        this.mostrarExito(campo);
-        return true;
-    },
-
-    validarFechaCompensacion(campo) {
-        const fecha = campo.value.trim();
-        
-        if (!fecha) {
-            this.limpiarValidacion(campo);
-            return true;
-        }
-
-        // Validar formato usando el sistema global
-        if (!window.FormatoGlobal || !window.FormatoGlobal.validarFormatoFecha(fecha)) {
-            this.mostrarError(campo, 'Formato inválido. Use DD/MM/YYYY');
-            return false;
-        }
-
-        const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
-        if (!fechaObj) {
-            this.mostrarError(campo, 'Fecha inválida');
-            return false;
-        }
-
-        const hoy = new Date();
-        const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-        const hace7Dias = new Date(fechaHoy.getTime() - (7 * 24 * 60 * 60 * 1000));
-
-        // Validar que no sea futura
-        if (fechaObj > fechaHoy) {
-            this.mostrarError(campo, 'La fecha no puede ser futura');
-            return false;
-        }
-
-        // Validar que no sea más de 7 días atrás
-        if (fechaObj < hace7Dias) {
-            this.mostrarError(campo, 'La fecha no puede ser anterior a 7 días');
-            return false;
-        }
-
+        // ✅ SIN RESTRICCIONES DE PERÍODO - Solo validamos que sea una fecha válida
         this.mostrarExito(campo);
         return true;
     },
 
     // =================================
-    // 🧮 CALCULADORAS DE SALDO
+    // 🧮 CALCULADORAS DE SALDO ACTUALIZADAS PARA DECIMALES
     // =================================
 
     initCalculadoras() {
@@ -179,19 +112,22 @@ window.HorasExtraJS = {
         let saldoActual = 0;
         
         if (saldoElement) {
-            const saldoText = saldoElement.textContent.match(/\d+/);
-            saldoActual = saldoText ? parseInt(saldoText[0]) : 0;
+            const saldoText = saldoElement.textContent.match(/[\d.]+/);
+            saldoActual = saldoText ? parseFloat(saldoText[0]) : 0;
         }
 
         input.addEventListener('input', function() {
-            const horasAAsignar = parseInt(this.value) || 0;
+            const horasAAsignar = parseFloat(this.value) || 0; // ✅ CAMBIO: parseFloat en lugar de parseInt
             const saldoFinal = saldoActual + horasAAsignar;
             
-            spanHorasAAsignar.textContent = horasAAsignar;
-            spanSaldoFinal.textContent = saldoFinal;
+            // ✅ FORMATEAR DECIMALES CORRECTAMENTE
+            spanHorasAAsignar.textContent = horasAAsignar === Math.floor(horasAAsignar) ? 
+                horasAAsignar.toString() : horasAAsignar.toFixed(1);
+            spanSaldoFinal.textContent = saldoFinal === Math.floor(saldoFinal) ? 
+                saldoFinal.toString() : saldoFinal.toFixed(1);
             
             // Cambiar color según validez
-            if (horasAAsignar < 1 || horasAAsignar > 24) {
+            if (horasAAsignar < 0.1 || horasAAsignar > 24) {
                 spanSaldoFinal.className = 'text-warning';
             } else {
                 spanSaldoFinal.className = 'text-primary';
@@ -206,14 +142,17 @@ window.HorasExtraJS = {
         if (!spanHorasACompensar || !spanSaldoResultante) return;
 
         // Obtener saldo actual del input max
-        const saldoActual = parseInt(input.getAttribute('max')) || 0;
+        const saldoActual = parseFloat(input.getAttribute('max')) || 0; // ✅ CAMBIO: parseFloat
 
         input.addEventListener('input', function() {
-            const horasACompensar = parseInt(this.value) || 0;
+            const horasACompensar = parseFloat(this.value) || 0; // ✅ CAMBIO: parseFloat
             const saldoResultante = Math.max(0, saldoActual - horasACompensar);
             
-            spanHorasACompensar.textContent = horasACompensar;
-            spanSaldoResultante.textContent = saldoResultante;
+            // ✅ FORMATEAR DECIMALES CORRECTAMENTE
+            spanHorasACompensar.textContent = horasACompensar === Math.floor(horasACompensar) ? 
+                horasACompensar.toString() : horasACompensar.toFixed(1);
+            spanSaldoResultante.textContent = saldoResultante === Math.floor(saldoResultante) ? 
+                saldoResultante.toString() : saldoResultante.toFixed(1);
             
             // Cambiar color según el resultado
             if (horasACompensar > saldoActual) {
@@ -226,7 +165,7 @@ window.HorasExtraJS = {
         });
 
         // Inicializar con valor por defecto
-        const valorInicial = parseInt(input.value) || 0;
+        const valorInicial = parseFloat(input.value) || 0; // ✅ CAMBIO: parseFloat
         if (valorInicial > 0) {
             input.dispatchEvent(new Event('input'));
         }
@@ -290,6 +229,16 @@ window.HorasExtraJS = {
         return match ? match[0] : null;
     },
 
+    // ✅ NUEVA FUNCIÓN: Formatear horas para mostrar
+    formatearHoras(horas) {
+        const numHoras = parseFloat(horas);
+        if (isNaN(numHoras)) return '0';
+        
+        return numHoras === Math.floor(numHoras) ? 
+            numHoras.toString() : 
+            numHoras.toFixed(1);
+    },
+
     // =================================
     // 🎨 FUNCIONES DE FEEDBACK VISUAL
     // =================================
@@ -347,7 +296,7 @@ window.HorasExtraJS = {
     },
 
     // =================================
-    // 📊 FUNCIONES PÚBLICAS ADICIONALES
+    // 📊 FUNCIONES PÚBLICAS ACTUALIZADAS PARA DECIMALES
     // =================================
 
     // Validar todo el formulario antes del envío
@@ -357,14 +306,14 @@ window.HorasExtraJS = {
         
         let esValido = true;
         
-        if (campoFecha && !this.validarFechaAsignacion(campoFecha)) {
+        if (campoFecha && !this.validarFormatoFecha(campoFecha)) {
             esValido = false;
         }
         
         if (campoHoras) {
-            const horas = parseInt(campoHoras.value);
-            if (!horas || horas < 1 || horas > 24) {
-                this.mostrarError(campoHoras, 'Las horas deben estar entre 1 y 24');
+            const horas = parseFloat(campoHoras.value); // ✅ CAMBIO: parseFloat
+            if (!horas || horas < 0.1 || horas > 24) { // ✅ CAMBIO: min 0.1
+                this.mostrarError(campoHoras, 'Las horas deben estar entre 0.1 y 24');
                 esValido = false;
             } else {
                 this.mostrarExito(campoHoras);
@@ -380,16 +329,16 @@ window.HorasExtraJS = {
         
         let esValido = true;
         
-        if (campoFecha && !this.validarFechaCompensacion(campoFecha)) {
+        if (campoFecha && !this.validarFormatoFecha(campoFecha)) {
             esValido = false;
         }
         
         if (campoHoras) {
-            const horas = parseInt(campoHoras.value);
-            const maxHoras = parseInt(campoHoras.getAttribute('max'));
+            const horas = parseFloat(campoHoras.value); // ✅ CAMBIO: parseFloat
+            const maxHoras = parseFloat(campoHoras.getAttribute('max')); // ✅ CAMBIO: parseFloat
             
-            if (!horas || horas < 1 || horas > maxHoras) {
-                this.mostrarError(campoHoras, `Las horas deben estar entre 1 y ${maxHoras}`);
+            if (!horas || horas < 0.1 || horas > maxHoras) { // ✅ CAMBIO: min 0.1
+                this.mostrarError(campoHoras, `Las horas deben estar entre 0.1 y ${this.formatearHoras(maxHoras)}`);
                 esValido = false;
             } else {
                 this.mostrarExito(campoHoras);

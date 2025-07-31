@@ -1,7 +1,7 @@
 {{-- resources/views/trabajadores/secciones_perfil/horas_extra.blade.php --}}
 
 <div class="row">
-    {{-- ✅ RESUMEN DE HORAS EXTRA --}}
+    {{-- ✅ RESUMEN DE HORAS EXTRA ACTUALIZADO PARA DECIMALES --}}
     <div class="col-12 mb-4">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -14,24 +14,42 @@
                     <!-- Horas Acumuladas -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-success mb-1">{{ $stats_horas['total_acumuladas'] }}</div>
-                            <div class="text-muted">{{ $stats_horas['total_acumuladas'] == 1 ? 'Hora Acumulada' : 'Horas Acumuladas' }}</div>
+                            @php
+                                $totalAcumuladas = $stats_horas['total_acumuladas'];
+                                $formatoAcumuladas = $totalAcumuladas == floor($totalAcumuladas) ? 
+                                    number_format($totalAcumuladas, 0) : 
+                                    number_format($totalAcumuladas, 1);
+                            @endphp
+                            <div class="h3 text-success mb-1">{{ $formatoAcumuladas }}</div>
+                            <div class="text-muted">{{ $totalAcumuladas == 1 ? 'Hora Acumulada' : 'Horas Acumuladas' }}</div>
                         </div>
                     </div>
                     
                     <!-- Horas Compensadas -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-warning mb-1">{{ $stats_horas['total_devueltas'] }}</div>
-                            <div class="text-muted">{{ $stats_horas['total_devueltas'] == 1 ? 'Hora Compensada' : 'Horas Compensadas' }}</div>
+                            @php
+                                $totalDevueltas = $stats_horas['total_devueltas'];
+                                $formatoDevueltas = $totalDevueltas == floor($totalDevueltas) ? 
+                                    number_format($totalDevueltas, 0) : 
+                                    number_format($totalDevueltas, 1);
+                            @endphp
+                            <div class="h3 text-warning mb-1">{{ $formatoDevueltas }}</div>
+                            <div class="text-muted">{{ $totalDevueltas == 1 ? 'Hora Compensada' : 'Horas Compensadas' }}</div>
                         </div>
                     </div>
                     
                     <!-- Saldo Actual -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-primary mb-1">{{ $trabajador->saldo_horas_extra }}</div>
-                            <div class="text-muted">{{ $trabajador->saldo_horas_extra == 1 ? 'Hora Disponible' : 'Horas Disponibles' }}</div>
+                            @php
+                                $saldoActual = $trabajador->saldo_horas_extra;
+                                $formatoSaldo = $saldoActual == floor($saldoActual) ? 
+                                    number_format($saldoActual, 0) : 
+                                    number_format($saldoActual, 1);
+                            @endphp
+                            <div class="h3 text-primary mb-1">{{ $formatoSaldo }}</div>
+                            <div class="text-muted">{{ $saldoActual == 1 ? 'Hora Disponible' : 'Horas Disponibles' }}</div>
                         </div>
                     </div>
                     
@@ -62,6 +80,7 @@
                                     data-bs-toggle="modal" 
                                     data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}">
                                 <i class="bi bi-plus-circle"></i> Asignar Horas Extra
+                                <br><small class="opacity-75">Admite decimales (ej: 1.5 hrs)</small>
                             </button>
                         @else
                             <button type="button" class="btn btn-success w-100 disabled" disabled>
@@ -77,6 +96,7 @@
                                     data-bs-toggle="modal" 
                                     data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}">
                                 <i class="bi bi-dash-circle"></i> Compensar Horas Extra
+                                <br><small class="opacity-75">Admite decimales (ej: 0.5 hrs)</small>
                             </button>
                         @else
                             <button type="button" class="btn btn-warning w-100 disabled" disabled>
@@ -176,7 +196,7 @@
                         </table>
                     </div>
 
-                    {{-- ✅ INFORMACIÓN ADICIONAL --}}
+                    {{-- ✅ INFORMACIÓN ADICIONAL ACTUALIZADA --}}
                     <div class="card-footer bg-light">
                         <div class="row align-items-center">
                             <div class="col-md-8">
@@ -192,21 +212,25 @@
                                 <small class="text-muted">
                                     Balance neto: 
                                     <span class="fw-bold text-{{ $trabajador->saldo_horas_extra > 0 ? 'success' : 'secondary' }}">
-                                        {{ $trabajador->saldo_horas_extra }} {{ $trabajador->saldo_horas_extra == 1 ? 'hora' : 'horas' }}
+                                        {{ $trabajador->saldo_horas_extra == floor($trabajador->saldo_horas_extra) ? 
+                                            number_format($trabajador->saldo_horas_extra, 0) : 
+                                            number_format($trabajador->saldo_horas_extra, 1) }} 
+                                        {{ $trabajador->saldo_horas_extra == 1 ? 'hora' : 'horas' }}
                                     </span>
                                 </small>
                             </div>
                         </div>
                     </div>
                 @else
-                    {{-- ✅ ESTADO VACÍO --}}
+                    {{-- ✅ ESTADO VACÍO ACTUALIZADO --}}
                     <div class="text-center py-5">
                         <div class="mb-3">
                             <i class="bi bi-clock text-muted" style="font-size: 4rem;"></i>
                         </div>
                         <h5 class="text-muted">No hay registros de horas extra</h5>
                         <p class="text-muted mb-4">
-                            Este trabajador aún no tiene horas extra registradas.
+                            Este trabajador aún no tiene horas extra registradas.<br>
+                            <small class="opacity-75">Admite decimales para mayor precisión (ej: 1.5, 2.25 horas)</small>
                         </p>
                         @if(!$trabajador->estaSuspendido() && !$trabajador->estaInactivo())
                             <button type="button" 
@@ -223,7 +247,7 @@
     </div>
 </div>
 
-{{-- ✅ JAVASCRIPT PARA FILTROS --}}
+{{-- ✅ JAVASCRIPT PARA FILTROS (SIN CAMBIOS) --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filtroTipo = document.getElementById('filtroTipo');
@@ -275,6 +299,6 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroPeriodo.addEventListener('change', aplicarFiltros);
     }
     
-    console.log('✅ Sección horas extra inicializada correctamente');
+    console.log('✅ Sección horas extra inicializada correctamente (con soporte para decimales)');
 });
 </script>

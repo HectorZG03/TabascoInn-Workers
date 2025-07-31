@@ -96,7 +96,7 @@ trait TieneRelaciones
         return $this->vacaciones()->finalizadas();
     }
 
-    // ✅ MÉTODOS PARA GESTIÓN DE HORAS EXTRA (existentes)
+    // ✅ MÉTODOS PARA GESTIÓN DE HORAS EXTRA ACTUALIZADOS PARA DECIMALES
     /**
      * Obtener saldo actual de horas extra
      */
@@ -110,7 +110,69 @@ trait TieneRelaciones
      */
     public function getTotalHorasAcumuladasAttribute(): float
     {
-        return $this->horasExtraAcumuladas()->sum('horas');
+        return (float) $this->horasExtraAcumuladas()->sum('horas');
+    }
+
+    /**
+     * ✅ NUEVO: Obtener total de horas devueltas/compensadas
+     */
+    public function getTotalHorasDevueltasAttribute(): float
+    {
+        return (float) $this->horasExtraDevueltas()->sum('horas');
+    }
+
+    /**
+     * ✅ NUEVO: Verificar si puede asignar horas extra
+     */
+    public function puedeAsignarHorasExtra(): bool
+    {
+        return $this->estaActivo() || $this->estaEnPrueba();
+    }
+
+    /**
+     * ✅ NUEVO: Verificar si puede compensar horas extra
+     */
+    public function puedeCompensarHorasExtra(): bool
+    {
+        return ($this->estaActivo() || $this->estaEnPrueba()) && $this->saldo_horas_extra > 0;
+    }
+
+    /**
+     * ✅ NUEVO: Obtener horas extra formateadas para mostrar
+     */
+    public function getSaldoHorasExtraFormateadoAttribute(): string
+    {
+        $saldo = $this->saldo_horas_extra;
+        
+        if ($saldo == 1) {
+            return '1 hora';
+        } elseif ($saldo < 1 && $saldo > 0) {
+            $minutos = $saldo * 60;
+            return number_format($saldo, 1) . ' horas (' . round($minutos) . ' min)';
+        } else {
+            return ($saldo == floor($saldo)) ? 
+                number_format($saldo, 0) . ' horas' : 
+                number_format($saldo, 1) . ' horas';
+        }
+    }
+
+    /**
+     * ✅ NUEVO: Obtener estadísticas de horas extra
+     */
+    public function getEstadisticasHorasExtraAttribute(): array
+    {
+        return [
+            'total_acumuladas' => $this->total_horas_acumuladas,
+            'total_devueltas' => $this->total_horas_devueltas,
+            'saldo_actual' => $this->saldo_horas_extra,
+            'total_registros' => $this->horasExtra()->count(),
+            'ultimo_movimiento' => $this->horasExtra()
+                ->latest('fecha')
+                ->latest('created_at')
+                ->first()?->fecha,
+            'puede_asignar' => $this->puedeAsignarHorasExtra(),
+            'puede_compensar' => $this->puedeCompensarHorasExtra()
+        ];
     }
 
     // ✅ NUEVOS MÉTODOS PARA VACACIONES
@@ -188,5 +250,51 @@ trait TieneRelaciones
     public function getTotalDocumentosVacacionesAttribute(): int
     {
         return $this->documentosVacaciones()->count();
+    }
+
+    // ✅ NUEVOS MÉTODOS AUXILIARES PARA HORAS EXTRA
+
+    /**
+     * Registrar horas extra acumuladas desde el modelo Trabajador
+     */
+    public function asignarHorasExtra(float $horas, string $fecha, string $descripcion = null): HorasExtra
+    {
+        if (!$this->puedeAsignarHorasExtra()) {
+            throw new \Exception('Este trabajador no puede tener horas extra asignadas en su estado actual: ' . $this->estatus_texto);
+        }
+
+        return HorasExtra::registrarAcumuladas($this->id_trabajador, $horas, $fecha, $descripcion);
+    }
+
+    /**
+     * Compensar horas extra desde el modelo Trabajador
+     */
+    public function compensarHorasExtra(float $horas, string $fecha, string $descripcion = null): HorasExtra
+    {
+        if (!$this->puedeCompensarHorasExtra()) {
+            throw new \Exception('Este trabajador no puede compensar horas extra en su estado actual o no tiene saldo disponible');
+        }
+
+        return HorasExtra::registrarDevueltas($this->id_trabajador, $horas, $fecha, $descripcion);
+    }
+
+    /**
+     * Obtener historial de horas extra con filtros
+     */
+    public function obtenerHistorialHorasExtra(string $tipo = null, int $limite = null)
+    {
+        $query = $this->horasExtra()
+                     ->orderBy('fecha', 'desc')
+                     ->orderBy('created_at', 'desc');
+
+        if ($tipo) {
+            $query->where('tipo', $tipo);
+        }
+
+        if ($limite) {
+            $query->limit($limite);
+        }
+
+        return $query->get();
     }
 }

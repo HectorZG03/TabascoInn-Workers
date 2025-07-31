@@ -40,7 +40,7 @@ class HorasExtraController extends Controller
     }
 
     /**
-     * ✅ VALIDAR FECHA EN FORMATO DD/MM/YYYY
+     * ✅ VALIDAR FECHA EN FORMATO DD/MM/YYYY - CORREGIDO
      */
     private function validarFechaFormato($fecha, $request, $campo)
     {
@@ -63,7 +63,7 @@ class HorasExtraController extends Controller
     }
 
     /**
-     * ✅ ASIGNAR HORAS EXTRA (ACUMULAR) - ACTUALIZADO
+     * ✅ ASIGNAR HORAS EXTRA (ACUMULAR) - ACTUALIZADO PARA DECIMALES Y SIN RESTRICCIONES DE FECHA
      */
     public function asignar(Request $request, Trabajador $trabajador)
     {
@@ -82,30 +82,27 @@ class HorasExtraController extends Controller
             ])->withInput();
         }
 
-        // ✅ CALCULAR LÍMITES DE FECHA (ahora en formato Y-m-d para Laravel)
-        $fechaMinima = now()->subDays(30)->format('Y-m-d');
-        $fechaMaxima = now()->format('Y-m-d');
-
-        // ✅ VALIDACIONES ACTUALIZADAS
+        // ✅ VALIDACIONES ACTUALIZADAS - SIN RESTRICCIONES DE FECHA Y CON DECIMALES
         $validated = $request->validate([
-            'horas' => 'required|integer|min:1|max:24',
-            'fecha' => "required|date|before_or_equal:{$fechaMaxima}|after_or_equal:{$fechaMinima}",
+            'horas' => 'required|numeric|min:0.1|max:24', // ✅ CAMBIO: numeric en lugar de integer, min 0.1
+            'fecha' => 'required|date', // ✅ CAMBIO: Solo validar que sea una fecha válida
             'descripcion' => 'nullable|string|max:200',
         ], [
             'horas.required' => 'Las horas son obligatorias',
-            'horas.integer' => 'Las horas deben ser un número entero',
-            'horas.min' => 'Mínimo 1 hora',
+            'horas.numeric' => 'Las horas deben ser un número válido',
+            'horas.min' => 'Mínimo 0.1 horas (6 minutos)',
             'horas.max' => 'Máximo 24 horas por registro',
             'fecha.required' => 'La fecha es obligatoria',
             'fecha.date' => 'Formato de fecha inválido',
-            'fecha.before_or_equal' => 'La fecha no puede ser futura',
-            'fecha.after_or_equal' => 'La fecha no puede ser anterior a 30 días',
             'descripcion.max' => 'La descripción no puede exceder 200 caracteres',
         ]);
 
         DB::beginTransaction();
         
         try {
+            // ✅ REDONDEAR HORAS A 2 DECIMALES
+            $validated['horas'] = round((float) $validated['horas'], 2);
+
             // Crear registro de horas acumuladas
             $horasExtra = HorasExtra::create([
                 'id_trabajador' => $trabajador->id_trabajador,
@@ -131,8 +128,9 @@ class HorasExtraController extends Controller
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            $mensajeHoras = $validated['horas'] == 1 ? '1 hora' : $validated['horas'] . ' horas';
-            $mensajeSaldo = $nuevoSaldo == 1 ? '1 hora' : $nuevoSaldo . ' horas';
+            // ✅ MENSAJE ACTUALIZADO PARA MANEJAR DECIMALES
+            $mensajeHoras = $this->formatearHorasParaMensaje($validated['horas']);
+            $mensajeSaldo = $this->formatearHorasParaMensaje($nuevoSaldo);
 
             return back()->with('success', 
                 "Horas extra asignadas exitosamente a {$trabajador->nombre_completo}. " .
@@ -156,7 +154,7 @@ class HorasExtraController extends Controller
     }
 
     /**
-     * ✅ RESTAR HORAS EXTRA (DEVOLVER) - ACTUALIZADO
+     * ✅ RESTAR HORAS EXTRA (DEVOLVER) - ACTUALIZADO PARA DECIMALES Y SIN RESTRICCIONES DE FECHA
      */
     public function restar(Request $request, Trabajador $trabajador)
     {
@@ -178,31 +176,28 @@ class HorasExtraController extends Controller
             ])->withInput();
         }
 
-        // ✅ CALCULAR LÍMITES DE FECHA (7 días para compensación)
-        $fechaMinima = now()->subDays(7)->format('Y-m-d');
-        $fechaMaxima = now()->format('Y-m-d');
-
-        // ✅ VALIDACIONES ACTUALIZADAS
+        // ✅ VALIDACIONES ACTUALIZADAS - SIN RESTRICCIONES DE FECHA Y CON DECIMALES
         $validated = $request->validate([
             'horas' => [
                 'required',
-                'integer',
-                'min:1',
+                'numeric', // ✅ CAMBIO: numeric en lugar de integer
+                'min:0.1',
                 'max:' . $saldoActual,
             ],
-            'fecha' => "required|date|before_or_equal:{$fechaMaxima}|after_or_equal:{$fechaMinima}",
+            'fecha' => 'required|date', // ✅ CAMBIO: Solo validar que sea una fecha válida
             'descripcion' => 'nullable|string|max:200',
         ], [
             'horas.required' => 'Las horas son obligatorias',
-            'horas.integer' => 'Las horas deben ser un número entero',
-            'horas.min' => 'Mínimo 1 hora',
+            'horas.numeric' => 'Las horas deben ser un número válido',
+            'horas.min' => 'Mínimo 0.1 horas (6 minutos)',
             'horas.max' => 'No hay suficientes horas acumuladas. Saldo disponible: ' . $saldoActual . ' horas',
             'fecha.required' => 'La fecha es obligatoria',
             'fecha.date' => 'Formato de fecha inválido',
-            'fecha.before_or_equal' => 'La fecha no puede ser futura',
-            'fecha.after_or_equal' => 'La fecha no puede ser anterior a 7 días',
             'descripcion.max' => 'La descripción no puede exceder 200 caracteres',
         ]);
+
+        // ✅ REDONDEAR HORAS A 2 DECIMALES
+        $validated['horas'] = round((float) $validated['horas'], 2);
 
         // Validación adicional de saldo
         if ($saldoActual < $validated['horas']) {
@@ -240,8 +235,9 @@ class HorasExtraController extends Controller
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
 
-            $mensajeHoras = $validated['horas'] == 1 ? '1 hora' : $validated['horas'] . ' horas';
-            $mensajeSaldo = $nuevoSaldo == 1 ? '1 hora' : $nuevoSaldo . ' horas';
+            // ✅ MENSAJE ACTUALIZADO PARA MANEJAR DECIMALES
+            $mensajeHoras = $this->formatearHorasParaMensaje($validated['horas']);
+            $mensajeSaldo = $this->formatearHorasParaMensaje($nuevoSaldo);
 
             return back()->with('success', 
                 "Horas extra compensadas exitosamente a {$trabajador->nombre_completo}. " .
@@ -265,7 +261,24 @@ class HorasExtraController extends Controller
     }
 
     /**
-     * ✅ OBTENER SALDO ACTUAL (API) - SIN CAMBIOS
+     * ✅ NUEVO MÉTODO: Formatear horas para mensajes
+     */
+    private function formatearHorasParaMensaje(float $horas): string
+    {
+        if ($horas == 1) {
+            return '1 hora';
+        } elseif ($horas < 1) {
+            $minutos = $horas * 60;
+            return number_format($horas, 1) . ' horas (' . round($minutos) . ' min)';
+        } else {
+            return ($horas == floor($horas)) ? 
+                number_format($horas, 0) . ' horas' : 
+                number_format($horas, 1) . ' horas';
+        }
+    }
+
+    /**
+     * ✅ OBTENER SALDO ACTUAL (API) - ACTUALIZADO PARA DECIMALES
      */
     public function obtenerSaldo(Trabajador $trabajador)
     {
@@ -273,13 +286,13 @@ class HorasExtraController extends Controller
         
         return response()->json([
             'saldo' => $saldo,
-            'saldo_formateado' => $saldo == 1 ? '1 hora' : $saldo . ' horas',
+            'saldo_formateado' => $this->formatearHorasParaMensaje($saldo),
             'puede_restar' => $saldo > 0,
         ]);
     }
 
     /**
-     * ✅ OBTENER HISTORIAL (API) - NUEVO MÉTODO
+     * ✅ OBTENER HISTORIAL (API) - SIN CAMBIOS SIGNIFICATIVOS
      */
     public function obtenerHistorial(Trabajador $trabajador)
     {
@@ -310,7 +323,7 @@ class HorasExtraController extends Controller
     }
 
     /**
-     * ✅ OBTENER ESTADÍSTICAS (API) - NUEVO MÉTODO
+     * ✅ OBTENER ESTADÍSTICAS (API) - SIN CAMBIOS SIGNIFICATIVOS
      */
     public function obtenerEstadisticas(Trabajador $trabajador)
     {

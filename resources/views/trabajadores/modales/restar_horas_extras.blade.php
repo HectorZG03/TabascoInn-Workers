@@ -1,4 +1,4 @@
-{{-- ✅ MODAL PARA COMPENSAR HORAS EXTRA CON FORMATO GLOBAL --}}
+{{-- ✅ MODAL PARA COMPENSAR HORAS EXTRA CON DECIMALES Y SIN RESTRICCIONES DE FECHA --}}
 <div class="modal fade" id="modalRestarHoras{{ $trabajador->id_trabajador }}" tabindex="-1" aria-labelledby="modalRestarHorasLabel{{ $trabajador->id_trabajador }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -31,7 +31,8 @@
                                 <div class="badge {{ $saldoActual > 0 ? 'bg-success' : 'bg-secondary' }} fs-6">
                                     <i class="bi bi-clock"></i> 
                                     <span id="saldoActualRestar{{ $trabajador->id_trabajador }}">
-                                        {{ $saldoActual }} {{ $saldoActual == 1 ? 'hora' : 'horas' }}
+                                        {{ $saldoActual == floor($saldoActual) ? number_format($saldoActual, 0) : number_format($saldoActual, 1) }} 
+                                        {{ $saldoActual == 1 ? 'hora' : 'horas' }}
                                     </span>
                                 </div>
                                 <div class="small text-muted mt-1">Disponibles para compensar</div>
@@ -48,7 +49,7 @@
                     @else
                         {{-- Formulario --}}
                         <div class="row g-3">
-                            {{-- Horas a compensar --}}
+                            {{-- ✅ HORAS CON DECIMALES --}}
                             <div class="col-md-6">
                                 <label for="horas_restar{{ $trabajador->id_trabajador }}" class="form-label">
                                     <i class="bi bi-clock-fill text-warning"></i> Horas a Compensar <span class="text-danger">*</span>
@@ -59,23 +60,23 @@
                                            id="horas_restar{{ $trabajador->id_trabajador }}" 
                                            name="horas" 
                                            value="{{ old('horas', $saldoActual) }}"
-                                           min="1" 
+                                           min="0.1" 
                                            max="{{ $saldoActual }}" 
-                                           step="1" 
+                                           step="0.1" 
                                            placeholder="{{ $saldoActual }}"
                                            required>
-                                    <span class="input-group-text">{{ $saldoActual == 1 ? 'hora' : 'horas' }}</span>
+                                    <span class="input-group-text">horas</span>
                                     @error('horas')
                                         <div class="invalid-feedback">{{ $message }}</div>
                                     @enderror
                                 </div>
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 
-                                    Mínimo: 1 hora | Máximo disponible: {{ $saldoActual }} {{ $saldoActual == 1 ? 'hora' : 'horas' }}
+                                    Mínimo: 0.1 horas (6 min) | Máximo disponible: {{ $saldoActual == floor($saldoActual) ? number_format($saldoActual, 0) : number_format($saldoActual, 1) }} horas
                                 </div>
                             </div>
 
-                            {{-- ✅ FECHA DE COMPENSACIÓN CON FORMATO GLOBAL --}}
+                            {{-- ✅ FECHA SIN RESTRICCIONES --}}
                             <div class="col-md-6">
                                 <label for="fecha_restar{{ $trabajador->id_trabajador }}" class="form-label">
                                     <i class="bi bi-calendar3"></i> Fecha de Compensación <span class="text-danger">*</span>
@@ -94,7 +95,7 @@
                                 @enderror
                                 <div class="form-text">
                                     <i class="bi bi-info-circle"></i> 
-                                    Formato: DD/MM/YYYY - Máximo 7 días atrás
+                                    Formato: DD/MM/YYYY - <strong>Cualquier fecha válida</strong>
                                 </div>
                             </div>
 
@@ -117,7 +118,7 @@
                                 </div>
                             </div>
 
-                            {{-- Calculadora de saldo resultante --}}
+                            {{-- ✅ CALCULADORA ACTUALIZADA PARA DECIMALES --}}
                             <div class="col-12">
                                 <div class="card border-warning">
                                     <div class="card-body bg-light">
@@ -126,7 +127,9 @@
                                         </h6>
                                         <div class="row text-center">
                                             <div class="col-4">
-                                                <div class="h5 text-success mb-1">{{ $saldoActual }}</div>
+                                                <div class="h5 text-success mb-1">
+                                                    {{ $saldoActual == floor($saldoActual) ? number_format($saldoActual, 0) : number_format($saldoActual, 1) }}
+                                                </div>
                                                 <small class="text-muted">{{ $saldoActual == 1 ? 'Hora Disponible' : 'Horas Disponibles' }}</small>
                                             </div>
                                             <div class="col-1 align-self-center">
@@ -134,7 +137,9 @@
                                             </div>
                                             <div class="col-3">
                                                 <div class="h5 text-warning mb-1">
-                                                    <span id="horasACompensar{{ $trabajador->id_trabajador }}">{{ $saldoActual }}</span>
+                                                    <span id="horasACompensar{{ $trabajador->id_trabajador }}">
+                                                        {{ $saldoActual == floor($saldoActual) ? number_format($saldoActual, 0) : number_format($saldoActual, 1) }}
+                                                    </span>
                                                 </div>
                                                 <small class="text-muted">A Compensar</small>
                                             </div>
@@ -153,7 +158,7 @@
                             </div>
                         </div>
 
-                        {{-- Información adicional --}}
+                        {{-- ✅ INFORMACIÓN ACTUALIZADA --}}
                         <div class="mt-4">
                             <div class="alert alert-light border">
                                 <h6 class="mb-2">
@@ -161,11 +166,12 @@
                                 </h6>
                                 <ul class="mb-0 small">
                                     <li>Las horas compensadas se restarán del saldo acumulado</li>
-                                    <li>Solo se compensan <strong>horas completas</strong> (sin fracciones)</li>
+                                    <li><strong>Acepta decimales:</strong> puede compensar 0.5, 1.25, 2.75 horas, etc.</li>
                                     <li>Esta acción <strong>no se puede deshacer</strong></li>
                                     <li>El registro quedará en el historial laboral</li>
-                                    <li>Solo se pueden compensar horas de los últimos 7 días</li>
+                                    <li><strong>Sin restricciones de fecha:</strong> puede registrar cualquier fecha válida</li>
                                     <li><strong>Formato de fecha:</strong> DD/MM/YYYY (se formatea automáticamente)</li>
+                                    <li>Mínimo: 0.1 horas (6 minutos) | Máximo: horas disponibles</li>
                                 </ul>
                             </div>
                         </div>
@@ -188,7 +194,7 @@
     </div>
 </div>
 
-{{-- ✅ Script para contador de caracteres y calculadora --}}
+{{-- ✅ Script actualizado para decimales --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('descripcion_restar{{ $trabajador->id_trabajador }}');
@@ -208,66 +214,66 @@ document.addEventListener('DOMContentLoaded', function() {
         contador.textContent = textarea.value.length;
     }
     
-    // Calculadora de saldo resultante
+    // ✅ CALCULADORA ACTUALIZADA PARA DECIMALES
     if (inputHoras && spanHorasACompensar && spanSaldoResultante) {
         inputHoras.addEventListener('input', function() {
-            const horasACompensar = parseInt(this.value) || 0;
+            const horasACompensar = parseFloat(this.value) || 0; // ✅ parseFloat en lugar de parseInt
             const saldoResultante = Math.max(0, saldoActual - horasACompensar);
             
-            spanHorasACompensar.textContent = horasACompensar;
-            spanSaldoResultante.textContent = saldoResultante;
+            // ✅ FORMATEAR DECIMALES CORRECTAMENTE
+            spanHorasACompensar.textContent = horasACompensar === Math.floor(horasACompensar) ? 
+                horasACompensar.toString() : horasACompensar.toFixed(1);
+            spanSaldoResultante.textContent = saldoResultante === Math.floor(saldoResultante) ? 
+                saldoResultante.toString() : saldoResultante.toFixed(1);
             
             // Cambiar color según el resultado
             if (horasACompensar > saldoActual) {
                 spanSaldoResultante.className = 'text-danger';
+                this.classList.add('is-invalid');
+            } else if (horasACompensar < 0.1) { // ✅ Validar mínimo
+                spanSaldoResultante.className = 'text-warning';
+                this.classList.add('is-invalid');
             } else {
                 spanSaldoResultante.className = 'text-primary';
+                this.classList.remove('is-invalid');
             }
         });
         
         // Inicializar la calculadora con el valor por defecto
-        const valorInicial = parseInt(inputHoras.value) || 0;
+        const valorInicial = parseFloat(inputHoras.value) || 0; // ✅ parseFloat
         if (valorInicial > 0) {
             const saldoResultanteInicial = Math.max(0, saldoActual - valorInicial);
-            spanHorasACompensar.textContent = valorInicial;
-            spanSaldoResultante.textContent = saldoResultanteInicial;
+            spanHorasACompensar.textContent = valorInicial === Math.floor(valorInicial) ? 
+                valorInicial.toString() : valorInicial.toFixed(1);
+            spanSaldoResultante.textContent = saldoResultanteInicial === Math.floor(saldoResultanteInicial) ? 
+                saldoResultanteInicial.toString() : saldoResultanteInicial.toFixed(1);
         }
     }
     
-    // ✅ VALIDACIÓN ESPECÍFICA PARA FECHAS DE COMPENSACIÓN
+    // ✅ VALIDACIÓN SIMPLIFICADA DE FECHAS - SOLO FORMATO
     const campoFecha = document.getElementById('fecha_restar{{ $trabajador->id_trabajador }}');
     if (campoFecha) {
-        // Configurar validaciones específicas para compensación de horas
         campoFecha.addEventListener('blur', function() {
             const fecha = this.value.trim();
             
             if (!fecha) return;
             
-            // Usar validación global
+            // Solo validar formato usando el sistema global
             if (window.FormatoGlobal && window.FormatoGlobal.validarFormatoFecha(fecha)) {
                 const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
                 if (fechaObj) {
-                    const hoy = new Date();
-                    const hace7Dias = new Date(hoy.getTime() - (7 * 24 * 60 * 60 * 1000));
-                    
-                    // Validar que no sea futura
-                    if (fechaObj > hoy) {
-                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser futura');
-                        return;
-                    }
-                    
-                    // Validar que no sea más de 7 días atrás
-                    if (fechaObj < hace7Dias) {
-                        window.FormatoGlobal.mostrarError(this, 'La fecha no puede ser anterior a 7 días');
-                        return;
-                    }
-                    
                     window.FormatoGlobal.mostrarExito(this);
+                } else {
+                    window.FormatoGlobal.mostrarError(this, 'Fecha inválida');
+                }
+            } else {
+                if (window.FormatoGlobal) {
+                    window.FormatoGlobal.mostrarError(this, 'Formato inválido. Use DD/MM/YYYY');
                 }
             }
         });
         
-        console.log('✅ Validaciones específicas de fecha asignadas para compensar horas');
+        console.log('✅ Validaciones básicas de fecha asignadas (sin restricciones de período)');
     }
 });
 </script>
