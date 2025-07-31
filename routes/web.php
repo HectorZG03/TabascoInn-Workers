@@ -331,4 +331,121 @@ Route::middleware(['auth'])->group(function () {
     // ✅ NUEVA RUTA API PARA ESTADÍSTICAS
     Route::get('/api/estadisticas', [EstadisticasController::class, 'obtenerEstadisticas'])->name('api.estadisticas');
     
+    Route::get('/debug-fechas-contrato', function() {
+        
+        // 1. ✅ Obtener el contrato más reciente
+        $contrato = \App\Models\ContratoTrabajador::latest()->first();
+        
+        if (!$contrato) {
+            return "❌ No hay contratos en la base de datos";
+        }
+        
+        echo "<h2>🔍 DEBUG FECHAS CONTRATO</h2>";
+        echo "<hr>";
+        
+        // 2. ✅ Mostrar fechas reales de la BD
+        echo "<h3>📋 FECHAS REALES EN BD:</h3>";
+        echo "Contrato ID: {$contrato->id_contrato}<br>";
+        echo "Tipo: {$contrato->tipo_contrato}<br>";
+        echo "Fecha Inicio BD: {$contrato->fecha_inicio_contrato->format('d/m/Y')}<br>";
+        echo "Fecha Fin BD: " . ($contrato->fecha_fin_contrato ? $contrato->fecha_fin_contrato->format('d/m/Y') : 'N/A') . "<br>";
+        echo "<hr>";
+        
+        // 3. ✅ Simular el flujo completo como lo hace AdminContratosController
+        $trabajador = $contrato->trabajador;
+        $trabajador->load('fichaTecnica.categoria');
+        
+        // ✅ SIMULAR DATOS COMO AdminContratosController
+        $datosContrato = [
+            'tipo_contrato' => $contrato->tipo_contrato,
+            'fecha_inicio_contrato' => $contrato->fecha_inicio_contrato->format('Y-m-d'), // STRING como lo hace AdminContratosController
+            'fecha_fin_contrato' => $contrato->fecha_fin_contrato ? $contrato->fecha_fin_contrato->format('Y-m-d') : null,
+            'tipo_duracion' => $contrato->tipo_duracion,
+            'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios ?? 450
+        ];
+        
+        echo "<h3>📊 DATOS ENVIADOS (como AdminContratosController):</h3>";
+        echo "Tipo: {$datosContrato['tipo_contrato']}<br>";
+        echo "Fecha Inicio (string): {$datosContrato['fecha_inicio_contrato']}<br>";
+        echo "Fecha Fin (string): " . ($datosContrato['fecha_fin_contrato'] ?? 'NULL') . "<br>";
+        echo "<hr>";
+        
+        // 4. ✅ SIMULAR procesarDatosContrato()
+        $request = (object) $datosContrato;
+        
+        $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio_contrato);
+        $tipoContrato = $request->tipo_contrato;
+        
+        $datosProcesados = [
+            'tipo_contrato' => $tipoContrato,
+            'fecha_inicio' => $fechaInicio,
+            'salario_texto' => 'CUATROCIENTOS CINCUENTA PESOS'
+        ];
+
+        if ($tipoContrato === 'determinado') {
+            $fechaFin = \Carbon\Carbon::parse($request->fecha_fin_contrato);
+            $datosProcesados['fecha_fin'] = $fechaFin;
+            $datosProcesados['duracion_texto'] = '1 mes';
+        }
+        
+        echo "<h3>🔧 DATOS PROCESADOS (como ContratoController):</h3>";
+        echo "Tipo: {$datosProcesados['tipo_contrato']}<br>";
+        echo "Fecha Inicio (Carbon): {$datosProcesados['fecha_inicio']->format('d/m/Y H:i:s')}<br>";
+        echo "Fecha Fin (Carbon): " . (isset($datosProcesados['fecha_fin']) ? $datosProcesados['fecha_fin']->format('d/m/Y H:i:s') : 'NULL') . "<br>";
+        echo "<hr>";
+        
+        // 5. ✅ PROBAR VARIABLES DIRECTAMENTE
+        echo "<h3>🧪 TEST VARIABLES:</h3>";
+        
+        $variableInicio = \App\Models\VariableContrato::where('nombre_variable', 'contrato_fecha_inicio')->first();
+        $variableFin = \App\Models\VariableContrato::where('nombre_variable', 'contrato_fecha_fin')->first();
+        
+        if ($variableInicio) {
+            try {
+                $resultadoInicio = $variableInicio->obtenerValor($trabajador, $datosProcesados);
+                echo "<strong>contrato_fecha_inicio:</strong> '{$resultadoInicio}'<br>";
+            } catch (\Exception $e) {
+                echo "<strong>contrato_fecha_inicio:</strong> ❌ ERROR: {$e->getMessage()}<br>";
+            }
+        }
+        
+        if ($variableFin) {
+            try {
+                $resultadoFin = $variableFin->obtenerValor($trabajador, $datosProcesados);
+                echo "<strong>contrato_fecha_fin:</strong> '{$resultadoFin}'<br>";
+            } catch (\Exception $e) {
+                echo "<strong>contrato_fecha_fin:</strong> ❌ ERROR: {$e->getMessage()}<br>";
+            }
+        }
+        
+        echo "<hr>";
+        
+        // 6. ✅ TEST MANUAL DIRECTO
+        echo "<h3>🔧 TEST MANUAL DIRECTO:</h3>";
+        
+        $fecha_inicio = $datosProcesados['fecha_inicio'];
+        $fecha_fin = $datosProcesados['fecha_fin'] ?? null;
+        
+        if ($fecha_inicio) {
+            $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"];
+            $fechaInicioManual = $fecha_inicio->format("d") . " de " . $meses[(int)$fecha_inicio->format("n")] . " del " . $fecha_inicio->format("Y");
+            echo "Test manual fecha_inicio: '{$fechaInicioManual}'<br>";
+        }
+        
+        if ($fecha_fin) {
+            $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"];
+            $fechaFinManual = $fecha_fin->format("d") . " de " . $meses[(int)$fecha_fin->format("n")] . " del " . $fecha_fin->format("Y");
+            echo "Test manual fecha_fin: '{$fechaFinManual}'<br>";
+        }
+        
+        echo "<hr>";
+        echo "<h3>🎯 DIAGNÓSTICO:</h3>";
+        echo "<p><strong>Si las fechas del 'TEST MANUAL' son correctas pero las 'VARIABLES' no:</strong><br>";
+        echo "→ Problema en el código de las variables en la BD</p>";
+        echo "<p><strong>Si ambas muestran fechas incorrectas:</strong><br>";
+        echo "→ Problema en el flujo de datos entre controladores</p>";
+        echo "<p><strong>Si todo se ve correcto aquí pero el PDF muestra fechas incorrectas:</strong><br>";
+        echo "→ Problema en el cache de plantillas o variables</p>";
+        
+    });
 });

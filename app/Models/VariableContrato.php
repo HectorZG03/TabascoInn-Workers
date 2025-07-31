@@ -4,6 +4,8 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
+use App\Models\Contrato;
+
 
 class VariableContrato extends Model
 {
@@ -91,50 +93,66 @@ class VariableContrato extends Model
     /**
      * ✅ ACTUALIZADO: Obtener valor de una variable ejecutando codigo PHP directamente
      */
-    public function obtenerValor($trabajador, $datosContrato = []): string
-    {
-        try {
-            // Si no tiene código, devolver ejemplo
-            if (!$this->origen_codigo) {
-                return $this->formato_ejemplo ?? '';
-            }
-
-            // ✅ PREPARAR VARIABLES DISPONIBLES EN EL SCOPE
-            $fecha_inicio = $datosContrato['fecha_inicio'] ?? null;
-            $fecha_fin = $datosContrato['fecha_fin'] ?? null;
-            $duracion_texto = $datosContrato['duracion_texto'] ?? null;
-            $salario_texto = $datosContrato['salario_texto'] ?? null;
-            
-            // ✅ ASEGURAR QUE EL TRABAJADOR TENGA LAS RELACIONES CARGADAS
-            if (!$trabajador->relationLoaded('fichaTecnica')) {
-                $trabajador->load('fichaTecnica.categoria');
-            }
-            
-            // ✅ EJECUTAR EL CÓDIGO PHP ALMACENADO
-            $codigo = $this->origen_codigo;
-            
-            // Añadir return si no lo tiene
-            if (!str_starts_with(trim($codigo), 'return')) {
-                $codigo = "return {$codigo};";
-            }
-            
-            $resultado = eval($codigo);
-            
-            return (string) ($resultado ?? '');
-            
-        } catch (\ParseError $e) {
-            Log::error("Error de sintaxis en variable {$this->nombre_variable}: " . $e->getMessage());
-            return $this->formato_ejemplo ?? "Error: Sintaxis incorrecta";
-            
-        } catch (\Error $e) {
-            Log::error("Error fatal en variable {$this->nombre_variable}: " . $e->getMessage());
-            return $this->formato_ejemplo ?? "Error: Código inválido";
-            
-        } catch (\Exception $e) {
-            Log::error("Error general en variable {$this->nombre_variable}: " . $e->getMessage());
-            return $this->formato_ejemplo ?? "Error: No disponible";
+public function obtenerValor($trabajador, $datosContrato = []): string
+{
+    try {
+        // ✅ DEBUG TEMPORAL PARA VARIABLES DE FECHA
+        if (in_array($this->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+            Log::info("🔍 DEBUG Variable {$this->nombre_variable}", [
+                'datos_recibidos' => array_keys($datosContrato),
+                'fecha_inicio_existe' => isset($datosContrato['fecha_inicio']),
+                'fecha_fin_existe' => isset($datosContrato['fecha_fin']),
+                'fecha_inicio_valor' => isset($datosContrato['fecha_inicio']) ? $datosContrato['fecha_inicio']->format('Y-m-d') : 'NO EXISTE',
+                'fecha_fin_valor' => isset($datosContrato['fecha_fin']) ? $datosContrato['fecha_fin']->format('Y-m-d') : 'NO EXISTE',
+            ]);
         }
+
+        // Si no tiene código, devolver ejemplo
+        if (!$this->origen_codigo) {
+            return $this->formato_ejemplo ?? '';
+        }
+
+        // ✅ PREPARAR VARIABLES DISPONIBLES EN EL SCOPE
+        $fecha_inicio = $datosContrato['fecha_inicio'] ?? null;
+        $fecha_fin = $datosContrato['fecha_fin'] ?? null;
+        $duracion_texto = $datosContrato['duracion_texto'] ?? null;
+        $salario_texto = $datosContrato['salario_texto'] ?? null;
+        
+        // ✅ ASEGURAR QUE EL TRABAJADOR TENGA LAS RELACIONES CARGADAS
+        if (!$trabajador->relationLoaded('fichaTecnica')) {
+            $trabajador->load('fichaTecnica.categoria');
+        }
+        
+        // ✅ EJECUTAR EL CÓDIGO PHP ALMACENADO
+        $codigo = $this->origen_codigo;
+        
+        // Añadir return si no lo tiene
+        if (!str_starts_with(trim($codigo), 'return')) {
+            $codigo = "return {$codigo};";
+        }
+        
+        $resultado = eval($codigo);
+        
+        // ✅ DEBUG RESULTADO PARA VARIABLES DE FECHA
+        if (in_array($this->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+            Log::info("✅ Resultado final {$this->nombre_variable}: '{$resultado}'");
+        }
+        
+        return (string) ($resultado ?? '');
+        
+    } catch (\ParseError $e) {
+        Log::error("Error de sintaxis en variable {$this->nombre_variable}: " . $e->getMessage());
+        return $this->formato_ejemplo ?? "Error: Sintaxis incorrecta";
+        
+    } catch (\Error $e) {
+        Log::error("Error fatal en variable {$this->nombre_variable}: " . $e->getMessage());
+        return $this->formato_ejemplo ?? "Error: Código inválido";
+        
+    } catch (\Exception $e) {
+        Log::error("Error general en variable {$this->nombre_variable}: " . $e->getMessage());
+        return $this->formato_ejemplo ?? "Error: No disponible";
     }
+}
 
     /**
      * ✅ NUEVO: Validar el código PHP de la variable
@@ -265,4 +283,7 @@ class VariableContrato extends Model
         
         return $codigo;
     }
+
+
+
 }

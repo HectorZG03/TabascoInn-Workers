@@ -119,13 +119,37 @@ class ContratoController extends Controller
      */
     private function obtenerValoresVariables($trabajador, array $datosContrato): array
     {
+        // ✅ DEBUG TEMPORAL - Agregar estas líneas al inicio del método
+        Log::info('🔍 DEBUG: Datos que llegan a obtenerValoresVariables', [
+            'datos_keys' => array_keys($datosContrato),
+            'tipo_contrato' => $datosContrato['tipo_contrato'] ?? 'NO EXISTE',
+            'fecha_inicio_type' => gettype($datosContrato['fecha_inicio'] ?? null),
+            'fecha_inicio_value' => isset($datosContrato['fecha_inicio']) ? $datosContrato['fecha_inicio']->format('Y-m-d H:i:s') : 'NO EXISTE',
+            'fecha_fin_type' => gettype($datosContrato['fecha_fin'] ?? null),
+            'fecha_fin_value' => isset($datosContrato['fecha_fin']) ? $datosContrato['fecha_fin']->format('Y-m-d H:i:s') : 'NO EXISTE',
+        ]);
+
         $variables = VariableContrato::activas()->get();
         $valores = [];
         
         foreach ($variables as $variable) {
+            // ✅ DEBUG ESPECÍFICO PARA VARIABLES DE FECHA
+            if (in_array($variable->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+                Log::info("🎯 Procesando variable de fecha: {$variable->nombre_variable}", [
+                    'datos_disponibles' => array_keys($datosContrato),
+                    'fecha_inicio_disponible' => isset($datosContrato['fecha_inicio']),
+                    'fecha_fin_disponible' => isset($datosContrato['fecha_fin'])
+                ]);
+            }
+            
             try {
                 $valor = $variable->obtenerValor($trabajador, $datosContrato);
                 $valores[$variable->nombre_variable] = $valor;
+                
+                // ✅ DEBUG RESULTADO PARA VARIABLES DE FECHA
+                if (in_array($variable->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+                    Log::info("✅ Resultado variable {$variable->nombre_variable}: '{$valor}'");
+                }
                 
             } catch (\Exception $e) {
                 Log::warning('⚠️ Error obteniendo valor de variable', [

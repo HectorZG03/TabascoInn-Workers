@@ -68,11 +68,12 @@ class AreaCategoriaController extends Controller
         return redirect()->back()->with('success', 'Área creada correctamente.');
     }
 
+// ✅ ACTUALIZADO: Sin validación de unicidad - nombres pueden repetirse
     public function storeCategoria(Request $request)
     {
         $request->validate([
             'id_area' => 'required|exists:area,id_area',
-            'nombre_categoria' => 'required|string|max:100|unique:categoria,nombre_categoria'
+            'nombre_categoria' => 'required|string|max:100' // ✅ Sin unique
         ]);
 
         Categoria::create([
@@ -163,18 +164,18 @@ class AreaCategoriaController extends Controller
     }
 
     public function updateCategoria(Request $request, Categoria $categoria)
-    {
-        $request->validate([
-            'id_area' => 'required|exists:area,id_area',
-            'nombre_categoria' => 'required|string|max:100|unique:categoria,nombre_categoria,' . $categoria->id_categoria . ',id_categoria'
-        ]);
+        {
+            $request->validate([
+                'id_area' => 'required|exists:area,id_area',
+                'nombre_categoria' => 'required|string|max:100' // ✅ Sin unique
+            ]);
 
-        $categoria->update([
-            'id_area' => $request->id_area,
-            'nombre_categoria' => $request->nombre_categoria,
-        ]);
+            $categoria->update([
+                'id_area' => $request->id_area,
+                'nombre_categoria' => $request->nombre_categoria,
+            ]);
 
-        return redirect()->back()->with('success', 'Categoría actualizada correctamente.');
+            return redirect()->back()->with('success', 'Categoría actualizada correctamente.');
     }
 
     public function destroyCategoria(Categoria $categoria)

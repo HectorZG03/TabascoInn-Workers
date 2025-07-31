@@ -12,7 +12,7 @@ class VariablesContratoSeeder extends Seeder
         // ✅ LIMPIAR VARIABLES EXISTENTES PARA EVITAR DUPLICADOS
         DB::table('variables_contrato')->truncate();
         
-        // ✅ VARIABLES ACTUALIZADAS CON DÍAS LABORALES INCLUIDOS
+        // ✅ VARIABLES ACTUALIZADAS CON DÍAS LABORALES INCLUIDOS + NUEVAS VARIABLES
         $variables = [
             // ===== TRABAJADOR =====
             [
@@ -35,6 +35,40 @@ class VariablesContratoSeeder extends Seeder
                 'origen_codigo' => '\Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age',
                 'obligatoria' => true
             ],
+            // ✅ NUEVA VARIABLE: ESTADO CIVIL
+            [
+                'nombre_variable' => 'trabajador_estado_civil',
+                'etiqueta' => 'Estado Civil del Trabajador',
+                'descripcion' => 'Estado civil del trabajador (soltero, casado, etc.)',
+                'categoria' => 'trabajador',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'Casado(a)',
+                'origen_codigo' => '$trabajador->estado_civil ? (\App\Models\Trabajador::ESTADOS_CIVILES[$trabajador->estado_civil] ?? ucfirst($trabajador->estado_civil)) : "No especificado"',
+                'obligatoria' => false
+            ],
+            // ✅ NUEVA VARIABLE: CÓDIGO POSTAL
+            [
+                'nombre_variable' => 'trabajador_codigo_postal',
+                'etiqueta' => 'Código Postal del Trabajador',
+                'descripcion' => 'Código postal del domicilio actual del trabajador',
+                'categoria' => 'trabajador',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => '86100',
+                'origen_codigo' => '$trabajador->codigo_postal ?? "No especificado"',
+                'obligatoria' => false
+            ],
+
+            // ✅ NUEVA VARIABLE: ESTADO ACTUAL
+            [
+                'nombre_variable' => 'trabajador_estado_actual',
+                'etiqueta' => 'Estado Actual del Trabajador',
+                'descripcion' => 'Estado donde vive actualmente el trabajador',
+                'categoria' => 'trabajador',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => 'Tabasco',
+                'origen_codigo' => '$trabajador->estado_actual ?? "No especificado"',
+                'obligatoria' => false
+            ],
             [
                 'nombre_variable' => 'trabajador_fecha_nacimiento_dia',
                 'etiqueta' => 'Día de Nacimiento',
@@ -51,7 +85,7 @@ class VariablesContratoSeeder extends Seeder
                 'categoria' => 'fechas',
                 'tipo_dato' => 'texto',
                 'formato_ejemplo' => 'marzo',
-                'origen_codigo' => '\Carbon\Carbon::parse($trabajador->fecha_nacimiento)->locale("es")->monthName'
+                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; $meses[(int)$fechaNac->format("n")]'
             ],
             [
                 'nombre_variable' => 'trabajador_fecha_nacimiento_año',
@@ -70,7 +104,7 @@ class VariablesContratoSeeder extends Seeder
                 'categoria' => 'fechas',
                 'tipo_dato' => 'texto',
                 'formato_ejemplo' => 'nacido el día 07 del mes de mayo del año 2002',
-                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); "nacido el día " . $fechaNac->format("d") . " del mes de " . $fechaNac->locale("es")->monthName . " del año " . $fechaNac->format("Y")',
+                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; "nacido el día " . $fechaNac->format("d") . " del mes de " . $meses[(int)$fechaNac->format("n")] . " del año " . $fechaNac->format("Y")',
                 'obligatoria' => false
             ],
             // ✅ VERSIÓN ALTERNATIVA - SOLO LA FECHA (SIN "NACIDO EL DÍA")
@@ -81,7 +115,7 @@ class VariablesContratoSeeder extends Seeder
                 'categoria' => 'fechas',
                 'tipo_dato' => 'texto',
                 'formato_ejemplo' => '07 del mes de mayo del año 2002',
-                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); $fechaNac->format("d") . " del mes de " . $fechaNac->locale("es")->monthName . " del año " . $fechaNac->format("Y")',
+                'origen_codigo' => '$fechaNac = \Carbon\Carbon::parse($trabajador->fecha_nacimiento); $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; $fechaNac->format("d") . " del mes de " . $meses[(int)$fechaNac->format("n")] . " del año " . $fechaNac->format("Y")',
                 'obligatoria' => false
             ],
             [
@@ -277,7 +311,7 @@ class VariablesContratoSeeder extends Seeder
                 'categoria' => 'fechas',
                 'tipo_dato' => 'texto',
                 'formato_ejemplo' => 'enero',
-                'origen_codigo' => '\Carbon\Carbon::parse($trabajador->fecha_ingreso)->locale("es")->monthName'
+                'origen_codigo' => '$fechaIngreso = \Carbon\Carbon::parse($trabajador->fecha_ingreso); $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; $meses[(int)$fechaIngreso->format("n")]'
             ],
             [
                 'nombre_variable' => 'fecha_ingreso_año',
@@ -288,6 +322,19 @@ class VariablesContratoSeeder extends Seeder
                 'formato_ejemplo' => '2020',
                 'origen_codigo' => '\Carbon\Carbon::parse($trabajador->fecha_ingreso)->format("Y")'
             ],
+            // ✅ NUEVA VARIABLE: FECHA DE INGRESO FORMATEADA COMPLETA
+            [
+                'nombre_variable' => 'fecha_ingreso_legal',
+                'etiqueta' => 'Fecha de Ingreso Formato Legal',
+                'descripcion' => 'Fecha de ingreso en formato legal: "08 de marzo del año 2025"',
+                'categoria' => 'fechas',
+                'tipo_dato' => 'texto',
+                'formato_ejemplo' => '08 de marzo del año 2025',
+                'origen_codigo' => '$fechaIngreso = \Carbon\Carbon::parse($trabajador->fecha_ingreso); $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; $fechaIngreso->format("d") . " de " . $meses[(int)$fechaIngreso->format("n")] . " del año " . $fechaIngreso->format("Y")',
+                'obligatoria' => false
+            ],
+
+            
 
             // ===== BENEFICIARIO =====
             [
@@ -309,7 +356,7 @@ class VariablesContratoSeeder extends Seeder
                 'origen_codigo' => '$trabajador->fichaTecnica->beneficiario_parentesco ?? "parentesco por especificar"'
             ],
 
-            // ===== CONTRATO =====
+// ===== CONTRATO =====
             [
                 'nombre_variable' => 'contrato_tipo',
                 'etiqueta' => 'Tipo de Contrato',
@@ -329,24 +376,25 @@ class VariablesContratoSeeder extends Seeder
                 'formato_ejemplo' => 'tiempo determinado de 6 meses',
                 'origen_codigo' => '$datosContrato["tipo_contrato"] === "indeterminado" ? "tiempo indeterminado" : ("tiempo determinado de " . ($duracion_texto ?? "duración a determinar"))'
             ],
+            // ✅ VARIABLES DE FECHAS DEL CONTRATO CORREGIDAS
             [
                 'nombre_variable' => 'contrato_fecha_inicio',
-                'etiqueta' => 'Fecha de Inicio Formateada',
-                'descripcion' => 'Fecha de inicio del contrato formateada',
+                'etiqueta' => 'Fecha de Inicio del Contrato',
+                'descripcion' => 'Fecha de inicio del contrato en formato legal',
                 'categoria' => 'contrato',
                 'tipo_dato' => 'fecha',
-                'formato_ejemplo' => '15 de enero del 2024',
-                'origen_codigo' => '$fecha_inicio ? $fecha_inicio->format("d \\d\\e F \\d\\e\\l Y") : "fecha a determinar"',
+                'formato_ejemplo' => '30 de julio del 2025',
+                'origen_codigo' => 'if (!isset($fecha_inicio) || !$fecha_inicio) return "fecha a determinar"; $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; return $fecha_inicio->format("d") . " de " . $meses[(int)$fecha_inicio->format("n")] . " del " . $fecha_inicio->format("Y");',
                 'obligatoria' => true
             ],
             [
                 'nombre_variable' => 'contrato_fecha_fin',
-                'etiqueta' => 'Fecha de Fin Formateada',
-                'descripcion' => 'Fecha de fin del contrato (solo determinados)',
+                'etiqueta' => 'Fecha de Fin del Contrato',
+                'descripcion' => 'Fecha de terminación del contrato (solo para determinados)',
                 'categoria' => 'contrato',
                 'tipo_dato' => 'fecha',
-                'formato_ejemplo' => '31 de diciembre del 2024',
-                'origen_codigo' => '$fecha_fin ? $fecha_fin->format("d \\d\\e F \\d\\e\\l Y") : "fecha a determinar"'
+                'formato_ejemplo' => '16 de julio del 2026',
+                'origen_codigo' => 'if (!isset($fecha_fin) || !$fecha_fin) return ($datosContrato["tipo_contrato"] ?? "determinado") === "indeterminado" ? "Sin fecha de terminación" : "fecha a determinar"; $meses = [1 => "enero", 2 => "febrero", 3 => "marzo", 4 => "abril", 5 => "mayo", 6 => "junio", 7 => "julio", 8 => "agosto", 9 => "septiembre", 10 => "octubre", 11 => "noviembre", 12 => "diciembre"]; return $fecha_fin->format("d") . " de " . $meses[(int)$fecha_fin->format("n")] . " del " . $fecha_fin->format("Y");'
             ]
         ];
 
@@ -364,7 +412,10 @@ class VariablesContratoSeeder extends Seeder
         }
 
         echo "✅ " . count($variables) . " variables de contrato insertadas correctamente\n";
-        echo "🎯 Nuevas variables de fecha de nacimiento agregadas:\n";
+        echo "🎯 Nuevas variables agregadas:\n";
+        echo "   • {{trabajador_estado_civil}} - Estado civil del trabajador\n";
+        echo "   • {{trabajador_codigo_postal}} - Código postal del domicilio\n";
+        echo "   • {{fecha_ingreso_legal}} - Fecha de ingreso formato: '08 de marzo del año 2025'\n";
         echo "   • {{trabajador_fecha_nacimiento_completa}} - Formato completo con 'nacido el día'\n";
         echo "   • {{fecha_nacimiento_legal}} - Solo la fecha sin prefijo\n";
     }

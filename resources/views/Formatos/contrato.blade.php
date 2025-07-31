@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <title>Contrato Individual de Trabajo</title>
     <style>
+        @page {
+            size: 21.59cm 35.56cm; /* Tamaño oficio: 8.5 x 14 pulgadas */
+            margin: 2cm;
+        }
         body {
             font-family: 'Consolas', monospace;
-            font-size: 12px;
+            font-size: 14px;
             line-height: 1.5;
             text-align: justify;
             color: #000;
