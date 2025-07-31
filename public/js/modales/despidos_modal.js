@@ -210,7 +210,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   });
 
-  // ✅ VALIDACIÓN PERSONALIZADA
+  // ✅ VALIDACIÓN PERSONALIZADA (MODIFICADA PARA PERMITIR FECHAS PASADAS)
   function validarFecha(campo, valor) {
     if (!FormatoGlobal.validarFormatoFecha(valor)) {
       return 'Formato inválido. Use DD/MM/YYYY';
@@ -220,10 +220,7 @@ document.addEventListener('DOMContentLoaded', () => {
     if (!fecha) return 'Fecha inválida';
 
     if (campo.id === 'fecha_baja') {
-      // ✅ ELIMINADA la validación "no puede ser posterior a hoy"
-      // Ahora se permiten fechas futuras para la baja
-      
-      // Solo validar que no sea anterior a la fecha de ingreso
+      // ✅ SOLO VALIDAR QUE NO SEA ANTERIOR A LA FECHA DE INGRESO
       if (fechaIngresoTrabajador) {
         const [año, mes, dia] = fechaIngresoTrabajador.split('-').map(Number);
         const fechaIngreso = new Date(año, mes - 1, dia);
@@ -232,13 +229,7 @@ document.addEventListener('DOMContentLoaded', () => {
         }
       }
     } else if (campo.id === 'fecha_reintegro') {
-      // Para fecha de reintegro sí debe ser posterior a hoy
-      const hoy = new Date();
-      hoy.setHours(23, 59, 59, 999);
-      
-      if (fecha <= hoy) return 'Debe ser posterior a hoy';
-      
-      // Debe ser posterior a la fecha de baja
+      // ✅ SOLO VALIDAR QUE SEA POSTERIOR A LA FECHA DE BAJA
       if (fechaBaja && fechaBaja.value) {
         const fechaBajaObj = FormatoGlobal.convertirFechaADate(fechaBaja.value);
         if (fechaBajaObj && fecha <= fechaBajaObj) {

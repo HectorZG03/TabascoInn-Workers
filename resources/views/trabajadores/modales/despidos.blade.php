@@ -27,27 +27,27 @@
           </div>
           
           <div class="row g-3">
-            <!-- ✅ FECHA DE BAJA CON FORMATO PERSONALIZADO -->
+          <!-- ✅ FECHA DE BAJA CON FORMATO PERSONALIZADO -->
             <div class="col-md-6">
-              <label for="fecha_baja" class="form-label fw-semibold">
-                <i class="bi bi-calendar-x-fill me-1"></i> Fecha de Baja <span class="text-danger">*</span>
-              </label>
-              @php
-                  $fechaBaja = old('fecha_baja') 
-                      ? \Carbon\Carbon::parse(old('fecha_baja'))->format('d/m/Y') 
-                      : '';
-              @endphp
+                <label for="fecha_baja" class="form-label fw-semibold">
+                    <i class="bi bi-calendar-x-fill me-1"></i> Fecha de Baja <span class="text-danger">*</span>
+                </label>
+                @php
+                    $fechaBaja = old('fecha_baja') 
+                        ? \Carbon\Carbon::parse(old('fecha_baja'))->format('d/m/Y') 
+                        : '';
+                @endphp
 
-              <input type="text" 
-                    class="form-control formato-fecha" 
-                    id="fecha_baja" 
-                    name="fecha_baja" 
-                    placeholder="DD/MM/YYYY"
-                    maxlength="10"
-                    value="{{ $fechaBaja }}"
-                    required>
-              <div class="form-text">Formato: DD/MM/YYYY</div>
-              <div class="invalid-feedback"></div>
+                <input type="text" 
+                      class="form-control formato-fecha" 
+                      id="fecha_baja" 
+                      name="fecha_baja" 
+                      placeholder="DD/MM/YYYY"
+                      maxlength="10"
+                      value="{{ $fechaBaja }}"
+                      required>
+                <div class="form-text">Formato: DD/MM/YYYY</div> <!-- Eliminado mensaje restrictivo -->
+                <div class="invalid-feedback"></div>
             </div>
             
             <!-- Tipo de Baja -->

@@ -128,7 +128,7 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 
-    // ✅ FUNCIÓN PARA CALCULAR DURACIÓN CON FORMATO DD/MM/YYYY
+    // ✅ FUNCIÓN PARA CALCULAR DURACIÓN CON FORMATO DD/MM/YYYY (MODIFICADA PARA PERMITIR FECHAS PASADAS)
     function calcularDuracion() {
         if (!fechaInicio.value || !fechaFin.value || !window.FormatoGlobal) {
             duracionPermiso.innerHTML = '<span class="fw-bold text-primary">0 días</span>';
@@ -160,16 +160,6 @@ document.addEventListener('DOMContentLoaded', function () {
             return;
         }
 
-        // Validar que fecha inicio no sea pasada
-        const hoy = new Date();
-        const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-        
-        if (fechaInicioObj < fechaHoy) {
-            duracionPermiso.innerHTML = '<span class="fw-bold text-danger">Fecha de inicio no puede ser pasada</span>';
-            FormatoGlobal.mostrarError(fechaInicio, 'La fecha de inicio no puede ser anterior a hoy');
-            return;
-        }
-
         // Calcular días
         const diffTime = fechaFinObj.getTime() - fechaInicioObj.getTime();
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24)) + 1;
@@ -181,7 +171,7 @@ document.addEventListener('DOMContentLoaded', function () {
         FormatoGlobal.limpiarValidacion(fechaFin);
     }
 
-    // ✅ VALIDACIÓN DEL FORMULARIO CON FORMATO PERSONALIZADO
+    // ✅ VALIDACIÓN DEL FORMULARIO CON FORMATO PERSONALIZADO (MODIFICADA PARA PERMITIR FECHAS PASADAS)
     formPermisos.addEventListener('submit', function (e) {
         e.preventDefault();
 
@@ -229,22 +219,13 @@ document.addEventListener('DOMContentLoaded', function () {
             isValid = false;
         }
 
-        // ✅ VALIDAR FECHAS CON FORMATO PERSONALIZADO
+        // ✅ VALIDAR FECHAS CON FORMATO PERSONALIZADO (SIN RESTRICCIÓN DE FECHAS PASADAS)
         if (!valores.fechaInicio) {
             showFieldError(fechaInicio, 'La fecha de inicio es obligatoria');
             isValid = false;
         } else if (!FormatoGlobal.validarFormatoFecha(valores.fechaInicio)) {
             showFieldError(fechaInicio, 'Formato de fecha inválido (DD/MM/YYYY)');
             isValid = false;
-        } else {
-            const fechaInicioObj = FormatoGlobal.convertirFechaADate(valores.fechaInicio);
-            const hoy = new Date();
-            const fechaHoy = new Date(hoy.getFullYear(), hoy.getMonth(), hoy.getDate());
-            
-            if (fechaInicioObj < fechaHoy) {
-                showFieldError(fechaInicio, 'La fecha de inicio no puede ser anterior a hoy');
-                isValid = false;
-            }
         }
 
         if (!valores.fechaFin) {
@@ -257,6 +238,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const fechaInicioObj = FormatoGlobal.convertirFechaADate(valores.fechaInicio);
             const fechaFinObj = FormatoGlobal.convertirFechaADate(valores.fechaFin);
             
+            // SOLO validar que fin sea >= inicio
             if (fechaFinObj < fechaInicioObj) {
                 showFieldError(fechaFin, 'La fecha de fin debe ser igual o posterior a la fecha de inicio');
                 isValid = false;

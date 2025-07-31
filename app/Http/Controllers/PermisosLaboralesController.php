@@ -8,10 +8,12 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class PermisosLaboralesController extends Controller
 {
+    // ✅ VALIDACIÓN ACTUALIZADA - PERMITE FECHAS PASADAS, PRESENTES Y FUTURAS
     public function store(Request $request, Trabajador $trabajador)
     {
         if (!$trabajador->puedeAsignarPermiso()) {
@@ -26,8 +28,18 @@ class PermisosLaboralesController extends Controller
             'tipo_personalizado' => ['nullable', 'required_if:tipo_permiso,OTRO', 'string', 'min:3', 'max:80'],
             'motivo' => ['required', 'string', 'min:3', 'max:100'],
             'archivo_permiso' => ['nullable', 'file', 'mimes:pdf,jpeg,jpg,png', 'max:5120'],
-            'fecha_inicio' => ['required', 'date_format:d/m/Y', 'after_or_equal:today'],
-            'fecha_fin' => ['required', 'date_format:d/m/Y', 'after_or_equal:fecha_inicio'],
+            
+            // ✅ FECHAS ACTUALIZADAS - SIN RESTRICCIÓN DE FECHAS PASADAS
+            'fecha_inicio' => [
+                'required', 
+                'date_format:d/m/Y'
+            ],
+            'fecha_fin' => [
+                'required', 
+                'date_format:d/m/Y', 
+                'after_or_equal:fecha_inicio'
+            ],
+            
             'observaciones' => ['nullable', 'string', 'max:500'],
             'es_por_horas' => ['nullable', 'boolean'],
             'hora_inicio' => ['nullable', 'required_if:es_por_horas,1', 'date_format:H:i'],
@@ -43,7 +55,6 @@ class PermisosLaboralesController extends Controller
             'motivo.required' => 'El motivo es obligatorio',
             'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
             'fecha_inicio.date_format' => 'La fecha de inicio debe tener el formato DD/MM/YYYY',
-            'fecha_inicio.after_or_equal' => 'La fecha de inicio no puede ser anterior a hoy',
             'fecha_fin.required' => 'La fecha de fin es obligatoria',
             'fecha_fin.date_format' => 'La fecha de fin debe tener el formato DD/MM/YYYY',
             'fecha_fin.after_or_equal' => 'La fecha de fin debe ser igual o posterior a la fecha de inicio',
@@ -65,22 +76,22 @@ class PermisosLaboralesController extends Controller
 
         $esPorHoras = $request->boolean('es_por_horas');
 
-        // Validar conflicto con permisos activos existentes
+        // ✅ VALIDACIÓN DE CONFLICTOS ACTUALIZADA - MÁS FLEXIBLE PARA FECHAS PASADAS
         $conflicto = PermisosLaborales::where('id_trabajador', $trabajador->id_trabajador)
             ->where('estatus_permiso', 'activo')
             ->where(function ($q) use ($fechaInicioCarbon, $fechaFinCarbon, $esPorHoras, $request) {
                 $q->whereBetween('fecha_inicio', [$fechaInicioCarbon->format('Y-m-d'), $fechaFinCarbon->format('Y-m-d')])
-                  ->orWhereBetween('fecha_fin', [$fechaInicioCarbon->format('Y-m-d'), $fechaFinCarbon->format('Y-m-d')])
-                  ->orWhere(function ($sub) use ($fechaInicioCarbon, $fechaFinCarbon) {
-                      $sub->where('fecha_inicio', '<=', $fechaInicioCarbon->format('Y-m-d'))
-                          ->where('fecha_fin', '>=', $fechaFinCarbon->format('Y-m-d'));
-                  });
+                ->orWhereBetween('fecha_fin', [$fechaInicioCarbon->format('Y-m-d'), $fechaFinCarbon->format('Y-m-d')])
+                ->orWhere(function ($sub) use ($fechaInicioCarbon, $fechaFinCarbon) {
+                    $sub->where('fecha_inicio', '<=', $fechaInicioCarbon->format('Y-m-d'))
+                        ->where('fecha_fin', '>=', $fechaFinCarbon->format('Y-m-d'));
+                });
 
                 if ($esPorHoras && $request->filled('hora_inicio') && $request->filled('hora_fin')) {
                     $q->where(function ($h) use ($fechaInicioCarbon, $request) {
                         $h->where('fecha_inicio', $fechaInicioCarbon->format('Y-m-d'))
-                          ->where('hora_inicio', '<', $request->hora_fin)
-                          ->where('hora_fin', '>', $request->hora_inicio);
+                        ->where('hora_inicio', '<', $request->hora_fin)
+                        ->where('hora_fin', '>', $request->hora_inicio);
                     });
                 }
             })
