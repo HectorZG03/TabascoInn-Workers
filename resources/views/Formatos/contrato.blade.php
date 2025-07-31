@@ -2,30 +2,23 @@
 <html lang="es">
 <head>
     <meta charset="UTF-8">
-    <title>Contrato Individual de Trabajo</title>
+        <title>Contrato Individual de Trabajo</title>
     <style>
         @page {
-            size: 21.59cm 35.56cm; /* Tamaño oficio: 8.5 x 14 pulgadas */
+            size: 21.59cm 35.56cm; /* Oficio: 8.5 x 14 pulgadas */
             margin: 2cm;
         }
+
         body {
             font-family: 'Consolas', monospace;
             font-size: 14px;
-            line-height: 1.5;
+            line-height: 2.0;
             text-align: justify;
             color: #000;
             max-width: 19cm;
             margin: 0 auto;
         }
 
-        /* ✅ NUEVO: Contenedor para el header con imagen */
-        .header-container {
-            position: relative;
-            margin-bottom: 30px;
-            min-height: 80px; /* Espacio mínimo para la imagen */
-        }
-
-        /* ✅ MODIFICADO: Título con espacio para la imagen */
         h1 {
             text-align: center;
             font-size: 16px;
@@ -34,48 +27,62 @@
             margin-bottom: 25px;
         }
 
+        .header-container {
+            position: relative;
+            margin-bottom: 30px;
+            min-height: 80px;
+        }
+
         .section {
             margin-top: 15px;
         }
+
         .clausula {
             text-align: justify;
             margin-bottom: 12px;
         }
+
         .bold {
             font-weight: bold;
         }
+
         .center {
             text-align: center;
         }
+
         .uppercase {
             text-transform: uppercase;
         }
+
         .clausula-numero {
             font-weight: bold;
             text-decoration: underline;
         }
+
         .clausula-final {
             margin-top: 20px;
             margin-bottom: 30px;
         }
-        
-        /* ✅ FIRMAS OPTIMIZADAS PARA EVITAR SALTO DE PÁGINA */
+
         .contenedor-firmas {
             margin-top: 30px;
             width: 100%;
             page-break-inside: avoid;
         }
+
         .atentamente {
             text-align: center;
             font-weight: bold;
             margin-bottom: 20px;
         }
+
         .firmas-row {
             width: 100%;
             display: table;
             table-layout: fixed;
             margin-bottom: 25px;
         }
+
         .firma-seccion {
             width: 50%;
             text-align: center;
@@ -83,28 +90,31 @@
             display: table-cell;
             padding: 0 15px;
         }
+
         .linea-firma {
             border-top: 1px solid black;
             margin: 25px 10px 8px 10px;
         }
+
         .small-text {
-            font-size: 10px;
-            line-height: 1.2;
+            font-size: 12px;
+            line-height: 1.5;
         }
+
         ul {
             margin: 8px 0;
             padding-left: 18px;
         }
+
         li {
             margin-bottom: 3px;
         }
 
-        /* ✅ NUEVO: Ajustes para impresión */
         @media print {
             .header-container {
                 margin-bottom: 20px;
             }
-            
+
             .logo-empresa {
                 max-width: 80px;
                 max-height: 60px;
@@ -115,6 +125,7 @@
             }
         }
     </style>
+
 </head>
 <body>
     {{-- ✅ NUEVO: Contenedor con imagen en la esquina superior izquierda --}}

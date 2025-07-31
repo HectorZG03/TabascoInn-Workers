@@ -156,6 +156,7 @@ class AdminContratosController extends Controller
             $datosContrato = [
                 'tipo_contrato' => $validated['tipo_contrato'],
                 'fecha_inicio_contrato' => $fechaInicio->format('Y-m-d'), // Convertir a formato ISO para el controlador
+                'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios, // AÑADIR ESTA LÍNEA
             ];
 
             // Solo añadir datos de fin para contratos determinados

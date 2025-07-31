@@ -256,6 +256,7 @@ class TrabajadorController extends Controller
             $datosContrato = [
                 'tipo_contrato' => $validated['tipo_contrato'],
                 'fecha_inicio_contrato' => $fechaInicioContrato->format('Y-m-d'),
+                'sueldo_diarios' => $validated['sueldo_diarios'],
             ];
 
             if ($validated['tipo_contrato'] === 'determinado') {

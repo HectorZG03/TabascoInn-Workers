@@ -230,7 +230,7 @@ class ContratoTrabajador extends Model
     /**
      * ✅ ACTUALIZADO: Marcar contrato como terminado por vencimiento
      */
-    public function marcarComoTerminado(string $motivo = null): bool
+    public function marcarComoTerminado(?string $motivo = null): bool
     {
         if ($this->estatus !== self::ESTATUS_ACTIVO) {
             return false;
@@ -248,7 +248,7 @@ class ContratoTrabajador extends Model
     /**
      * ✅ MEJORADO: Marcar como renovado con mejor logging
      */
-    public function marcarComoRenovado(int $nuevoContratoId = null): bool
+    public function marcarComoRenovado(?int $nuevoContratoId = null): bool
     {
         if ($this->estatus !== self::ESTATUS_ACTIVO) {
             return false;
