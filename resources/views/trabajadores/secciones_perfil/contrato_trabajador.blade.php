@@ -222,7 +222,7 @@
                                                 @endif
                                             </td>
 
-                                            {{-- Acciones --}}
+                                            {{-- ✅ ACTUALIZADO: Acciones sin modal de eliminación --}}
                                             <td>
                                                 <div class="btn-group btn-group-sm">
                                                     {{-- Ver detalles --}}
@@ -275,17 +275,25 @@
                                                         </button>
                                                     @endif
 
-                                                    {{-- Eliminar contrato --}}
+                                                    {{-- ✅ NUEVO: Eliminar contrato con confirmación simple --}}
+                                                    {{-- ✅ BOTÓN DE ELIMINAR SIMPLE - Solo confirmación del servidor --}}
                                                     @if($contrato->esta_vigente_bool)
-                                                        <button type="button" 
-                                                                class="btn btn-outline-danger"
-                                                                data-bs-toggle="modal" 
-                                                                data-bs-target="#modalEliminarContrato"
-                                                                data-contrato-id="{{ $contrato->id_contrato }}"
-                                                                data-contrato-info="{{ $contrato->fecha_inicio_contrato->format('d/m/Y') }} - {{ $contrato->tipo_contrato === 'indeterminado' ? 'Sin fecha fin' : $contrato->fecha_fin_contrato->format('d/m/Y') }}"
-                                                                title="Eliminar contrato">
-                                                            <i class="bi bi-trash"></i>
-                                                        </button>
+                                                        <form method="POST" 
+                                                            action="{{ route('trabajadores.contratos.eliminar', [$trabajador, $contrato]) }}" 
+                                                            style="display: inline-block;"
+                                                            onsubmit="return confirm('¿Está seguro de que desea eliminar permanentemente este contrato?\n\nPeríodo: {{ $contrato->fecha_inicio_contrato->format('d/m/Y') }} - {{ $contrato->tipo_contrato === 'indeterminado' ? 'Sin fecha fin' : $contrato->fecha_fin_contrato->format('d/m/Y') }}\n\nEsta acción no se puede deshacer.')">
+                                                            @csrf
+                                                            @method('DELETE')
+                                                            
+                                                            {{-- Campo oculto para motivo - se enviará vacío y el servidor pedirá el motivo --}}
+                                                            <input type="hidden" name="motivo_eliminacion" value="Eliminación solicitada desde interfaz">
+                                                            
+                                                            <button type="submit" 
+                                                                    class="btn btn-outline-danger btn-sm"
+                                                                    title="Eliminar contrato">
+                                                                <i class="bi bi-trash"></i>
+                                                            </button>
+                                                        </form>
                                                     @endif
                                                 </div>
                                             </td>
@@ -457,9 +465,9 @@
     </div>
 </div>
 
-{{-- ✅ MODALES ACTUALIZADOS --}}
+{{-- ✅ MODALES ACTUALIZADOS (sin modal de eliminación) --}}
 
-{{-- ✅ ACTUALIZADO: Modal de detalles con soporte completo para indeterminados --}}
+{{-- ✅ Modal de detalles --}}
 <div class="modal fade" id="detalleContratoModal" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -489,10 +497,10 @@
     </div>
 </div>
 
-{{-- Modal crear contrato (actualizado) --}}
+{{-- Modal crear contrato --}}
 @include('trabajadores.modales.crear_contrato', ['trabajador' => $trabajador])
 
-{{-- ✅ MODAL RENOVAR CONTRATO CORREGIDO - Reemplazar solo esta sección --}}
+{{-- ✅ Modal renovar contrato --}}
 <div class="modal fade" id="modalRenovarContrato" tabindex="-1">
     <div class="modal-dialog">
         <div class="modal-content">
@@ -510,7 +518,6 @@
                     </div>
                     
                     <div class="row">
-                        {{-- ✅ FECHA INICIO CORREGIDA: tipo text con formato global --}}
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Fecha de Inicio *</label>
                             <input type="text" 
@@ -524,7 +531,6 @@
                             <div class="form-text">Formato: DD/MM/YYYY</div>
                         </div>
                         
-                        {{-- ✅ FECHA FIN CORREGIDA: tipo text con formato global --}}
                         <div class="col-md-6 mb-3">
                             <label class="form-label">Fecha de Fin *</label>
                             <input type="text" 
@@ -597,45 +603,6 @@
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
                     <button type="submit" class="btn btn-warning">
                         <i class="bi bi-arrow-repeat"></i> Renovar Contrato
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
-</div>
-
-{{-- Modal eliminar contrato --}}
-<div class="modal fade" id="modalEliminarContrato" tabindex="-1">
-    <div class="modal-dialog">
-        <div class="modal-content">
-            <div class="modal-header bg-danger text-white">
-                <h5 class="modal-title">
-                    <i class="bi bi-trash"></i> Eliminar Contrato
-                </h5>
-                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
-            </div>
-            <form id="formEliminarContrato" method="POST" data-trabajador-id="{{ $trabajador->id_trabajador }}">
-                @csrf
-                @method('DELETE')
-                <div class="modal-body">
-                    <div class="alert alert-danger">
-                        <i class="bi bi-exclamation-triangle"></i> 
-                        <strong>¡Atención!</strong> Esta acción eliminará permanentemente el contrato y no se puede deshacer.
-                    </div>
-                    <div class="mb-3">
-                        <strong>Período del contrato:</strong>
-                        <span id="contrato-periodo-info"></span>
-                    </div>
-                    <div class="mb-3">
-                        <label class="form-label">Motivo de Eliminación *</label>
-                        <textarea name="motivo_eliminacion" class="form-control" rows="3" required 
-                                  placeholder="Especifique el motivo por el cual se elimina este contrato"></textarea>
-                    </div>
-                </div>
-                <div class="modal-footer">
-                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
-                    <button type="submit" class="btn btn-danger">
-                        <i class="bi bi-trash"></i> Eliminar Permanentemente
                     </button>
                 </div>
             </form>

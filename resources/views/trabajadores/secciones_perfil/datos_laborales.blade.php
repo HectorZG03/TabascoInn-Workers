@@ -2,7 +2,7 @@
 
 <div class="row">
     <!-- ✅ DATOS LABORALES CON TURNO MANUAL -->
-    <div class="col-md-8">
+    <div class="col-md-12">
         <div class="card shadow mb-4">
             <div class="card-header bg-success text-white d-flex justify-content-between align-items-center">
                 <h5 class="mb-0">
@@ -185,98 +185,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Panel de Historial -->
-    <div class="col-md-4">
-        <div class="card shadow">
-            <div class="card-header bg-info text-white">
-                <div class="d-flex justify-content-between align-items-center">
-                    <h6 class="mb-0">
-                        <i class="bi bi-graph-up-arrow"></i> Historial de Cambios
-                    </h6>
-                    @if(Route::has('trabajadores.historial-promociones'))
-                        <a href="{{ route('trabajadores.historial-promociones', $trabajador) }}" 
-                           class="btn btn-light btn-sm">
-                            <i class="bi bi-eye"></i> Ver Todo
-                        </a>
-                    @endif
-                </div>
-            </div>
-            <div class="card-body p-2">
-                @if(isset($statsPromociones) && $statsPromociones['total_cambios'] > 0)
-                    <!-- Estadísticas -->
-                    <div class="row text-center mb-3">
-                        <div class="col-4">
-                            <div class="text-success fw-bold">{{ $statsPromociones['promociones'] ?? 0 }}</div>
-                            <small class="text-muted">Promociones</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-primary fw-bold">{{ $statsPromociones['transferencias'] ?? 0 }}</div>
-                            <small class="text-muted">Transferencias</small>
-                        </div>
-                        <div class="col-4">
-                            <div class="text-info fw-bold">{{ $statsPromociones['total_cambios'] ?? 0 }}</div>
-                            <small class="text-muted">Total</small>
-                        </div>
-                    </div>
-
-                    <!-- Últimos Cambios -->
-                    @if(isset($historialReciente) && $historialReciente->isNotEmpty())
-                        <div class="timeline-sm">
-                            @foreach($historialReciente->take(3) as $cambio)
-                                <div class="timeline-item mb-2">
-                                    <div class="d-flex">
-                                        <div class="me-2">
-                                            <span class="badge bg-{{ $cambio->color_tipo_cambio ?? 'secondary' }} rounded-pill p-1">
-                                                @if($cambio->tipo_cambio == 'promocion')
-                                                    <i class="bi bi-arrow-up"></i>
-                                                @elseif($cambio->tipo_cambio == 'transferencia')
-                                                    <i class="bi bi-arrow-left-right"></i>
-                                                @elseif($cambio->tipo_cambio == 'aumento_sueldo')
-                                                    <i class="bi bi-cash"></i>
-                                                @else
-                                                    <i class="bi bi-gear"></i>
-                                                @endif
-                                            </span>
-                                        </div>
-                                        <div class="flex-grow-1">
-                                            <div class="small fw-bold">{{ $cambio->tipo_cambio_texto ?? 'Cambio' }}</div>
-                                            <div class="text-muted small">
-                                                {{ $cambio->categoriaNueva->nombre_categoria ?? 'Sin categoría' }}
-                                            </div>
-                                            <div class="text-success small">
-                                                ${{ number_format($cambio->sueldo_nuevo ?? 0, 2) }}
-                                                @if(isset($cambio->diferencia_sueldo) && $cambio->diferencia_sueldo != 0)
-                                                    <small class="text-muted">
-                                                        ({{ $cambio->diferencia_sueldo >= 0 ? '+' : '' }}${{ number_format($cambio->diferencia_sueldo, 2) }})
-                                                    </small>
-                                                @endif
-                                            </div>
-                                            <div class="text-muted small">
-                                                {{ $cambio->fecha_cambio ? $cambio->fecha_cambio->format('d/m/Y') : 'Fecha no disponible' }}
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                                @if(!$loop->last)<hr class="my-2">@endif
-                            @endforeach
-                        </div>
-                    @else
-                        <div class="text-center text-muted py-3">
-                            <i class="bi bi-graph-up fs-2 opacity-50"></i>
-                            <p class="mb-0 small">Sin historial reciente</p>
-                        </div>
-                    @endif
-                @else
-                    <div class="text-center text-muted py-3">
-                        <i class="bi bi-graph-up fs-2 opacity-50"></i>
-                        <p class="mb-0 small">Sin historial de cambios</p>
-                        <small class="text-muted">Los cambios aparecerán aquí cuando actualices los datos laborales</small>
-                    </div>
-                @endif
-            </div>
-        </div>
-    </div>
 </div>
 
 <!-- ✅ MODAL CON SELECCIÓN MANUAL DE TURNO Y HORARIO DE DESCANSO -->
@@ -435,20 +343,35 @@
                                     @endforeach
                                 </div>
                                 
-                                <!-- Botones de selección rápida -->
+                                <!-- ✅ BOTONES DE SELECCIÓN RÁPIDA CORREGIDOS -->
                                 <div class="mt-3 pt-2 border-top">
                                     <small class="text-muted">Selección rápida:</small>
                                     <div class="btn-group btn-group-sm ms-2" role="group">
-                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarDiasPerfil(['lunes', 'martes', 'miercoles', 'jueves', 'viernes'])">
+                                        @php
+                                            // Obtenemos las claves reales de DIAS_SEMANA para los botones
+                                            $diasSemanaKeys = array_keys(\App\Models\FichaTecnica::DIAS_SEMANA);
+                                            $lunesViernesKeys = array_slice($diasSemanaKeys, 0, 5); // Primeros 5 días
+                                            $lunesSabadoKeys = array_slice($diasSemanaKeys, 0, 6); // Primeros 6 días
+                                        @endphp
+                                        
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                onclick="seleccionarDiasPerfil({{ json_encode($lunesViernesKeys) }})">
                                             Lun-Vie
                                         </button>
-                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarDiasPerfil(['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado'])">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                onclick="seleccionarDiasPerfil({{ json_encode($lunesSabadoKeys) }})">
                                             Lun-Sáb
                                         </button>
-                                        <button type="button" class="btn btn-outline-primary" onclick="seleccionarTodosDiasPerfil()">
+                                        <button type="button" 
+                                                class="btn btn-outline-primary" 
+                                                onclick="seleccionarTodosDiasPerfil()">
                                             Todos
                                         </button>
-                                        <button type="button" class="btn btn-outline-secondary" onclick="limpiarDiasPerfil()">
+                                        <button type="button" 
+                                                class="btn btn-outline-secondary" 
+                                                onclick="limpiarDiasPerfil()">
                                             Limpiar
                                         </button>
                                     </div>
@@ -568,7 +491,7 @@
     </div>
 </div>
 
-<!-- ✅ SCRIPT PARA TURNO MANUAL -->
+<!-- ✅ SCRIPT PARA TURNO MANUAL Y SELECCIÓN RÁPIDA CORREGIDA -->
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     // Elementos del formulario
@@ -578,6 +501,47 @@ document.addEventListener('DOMContentLoaded', function() {
     const sugerenciaTurno = document.getElementById('sugerenciaTurno');
     const sugerenciaTurnoTexto = document.getElementById('sugerenciaTurnoTexto');
     const btnAplicarSugerencia = document.getElementById('btnAplicarSugerencia');
+    
+    // ✅ FUNCIONES PARA DÍAS LABORABLES CORREGIDAS
+    window.seleccionarDiasPerfil = function(dias) {
+        console.log('Seleccionando días:', dias);
+        
+        // Primero limpiar todos
+        limpiarDiasPerfil();
+        
+        // Luego seleccionar los días especificados
+        dias.forEach(dia => {
+            const checkbox = document.getElementById(`dia_${dia}_perfil`);
+            if (checkbox) {
+                checkbox.checked = true;
+                console.log(`✓ Día ${dia} seleccionado`);
+            } else {
+                console.warn(`⚠️ No se encontró checkbox para día: ${dia}`);
+            }
+        });
+        
+        actualizarPreviewCalculos();
+    };
+
+    window.seleccionarTodosDiasPerfil = function() {
+        console.log('Seleccionando todos los días');
+        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = true;
+        });
+        console.log(`✓ ${checkboxes.length} días seleccionados`);
+        actualizarPreviewCalculos();
+    };
+
+    window.limpiarDiasPerfil = function() {
+        console.log('Limpiando selección de días');
+        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
+        checkboxes.forEach(checkbox => {
+            checkbox.checked = false;
+        });
+        console.log('✓ Días limpiados');
+        actualizarPreviewCalculos();
+    };
     
     // Función para calcular turno sugerido
     function calcularTurnoSugerido() {
@@ -618,42 +582,23 @@ document.addEventListener('DOMContentLoaded', function() {
         
         // Mostrar sugerencia solo si es diferente al seleccionado
         if (turnoSelect.value !== turnoSugerido) {
-            const textoTurno = turnoSelect.querySelector(`option[value="${turnoSugerido}"]`).textContent;
-            sugerenciaTurnoTexto.textContent = `${textoTurno} - ${descripcion}`;
-            sugerenciaTurno.style.display = 'block';
-            
-            // Aplicar sugerencia
-            btnAplicarSugerencia.onclick = function() {
-                turnoSelect.value = turnoSugerido;
-                sugerenciaTurno.style.display = 'none';
-                actualizarPreviewCalculos();
-            };
+            const opcionTurno = turnoSelect.querySelector(`option[value="${turnoSugerido}"]`);
+            if (opcionTurno) {
+                const textoTurno = opcionTurno.textContent;
+                sugerenciaTurnoTexto.textContent = `${textoTurno} - ${descripcion}`;
+                sugerenciaTurno.style.display = 'block';
+                
+                // Aplicar sugerencia
+                btnAplicarSugerencia.onclick = function() {
+                    turnoSelect.value = turnoSugerido;
+                    sugerenciaTurno.style.display = 'none';
+                    actualizarPreviewCalculos();
+                };
+            }
         } else {
             sugerenciaTurno.style.display = 'none';
         }
     }
-    
-    // Funciones para días laborables
-    window.seleccionarDiasPerfil = function(dias) {
-        limpiarDiasPerfil();
-        dias.forEach(dia => {
-            const checkbox = document.getElementById(`dia_${dia}_perfil`);
-            if (checkbox) checkbox.checked = true;
-        });
-        actualizarPreviewCalculos();
-    };
-
-    window.seleccionarTodosDiasPerfil = function() {
-        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
-        checkboxes.forEach(checkbox => checkbox.checked = true);
-        actualizarPreviewCalculos();
-    };
-
-    window.limpiarDiasPerfil = function() {
-        const checkboxes = document.querySelectorAll('input[name="dias_laborables[]"]');
-        checkboxes.forEach(checkbox => checkbox.checked = false);
-        actualizarPreviewCalculos();
-    };
 
     // Función para actualizar preview
     function actualizarPreviewCalculos() {
@@ -673,36 +618,53 @@ document.addEventListener('DOMContentLoaded', function() {
         const horasSemanales = horasDiarias * diasSeleccionados;
         
         // Actualizar preview
-        document.getElementById('preview-horas-diarias').textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) + 'h' : '-';
-        document.getElementById('preview-horas-semanales').textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) + 'h' : '-';
-        document.getElementById('preview-turno-seleccionado').textContent = turnoSeleccionado ? 
-            turnoSelect.querySelector(`option[value="${turnoSeleccionado}"]`).textContent : '-';
-        document.getElementById('preview-dias-count').textContent = diasSeleccionados || '-';
+        const previewHorasDiarias = document.getElementById('preview-horas-diarias');
+        const previewHorasSemanales = document.getElementById('preview-horas-semanales');
+        const previewTurnoSeleccionado = document.getElementById('preview-turno-seleccionado');
+        const previewDiasCount = document.getElementById('preview-dias-count');
+        
+        if (previewHorasDiarias) previewHorasDiarias.textContent = horasDiarias > 0 ? horasDiarias.toFixed(1) + 'h' : '-';
+        if (previewHorasSemanales) previewHorasSemanales.textContent = horasSemanales > 0 ? horasSemanales.toFixed(1) + 'h' : '-';
+        if (previewTurnoSeleccionado) {
+            if (turnoSeleccionado) {
+                const opcionSeleccionada = turnoSelect.querySelector(`option[value="${turnoSeleccionado}"]`);
+                previewTurnoSeleccionado.textContent = opcionSeleccionada ? opcionSeleccionada.textContent : '-';
+            } else {
+                previewTurnoSeleccionado.textContent = '-';
+            }
+        }
+        if (previewDiasCount) previewDiasCount.textContent = diasSeleccionados || '-';
         
         // Mostrar/ocultar preview
         const previewDiv = document.getElementById('previewCalculos');
-        if (entrada || salida || turnoSeleccionado || diasSeleccionados > 0) {
+        if (previewDiv && (entrada || salida || turnoSeleccionado || diasSeleccionados > 0)) {
             previewDiv.style.display = 'block';
-        } else {
+        } else if (previewDiv) {
             previewDiv.style.display = 'none';
         }
     }
 
     // Event listeners
-    horaEntrada.addEventListener('input', function() {
-        calcularTurnoSugerido();
-        actualizarPreviewCalculos();
-    });
+    if (horaEntrada) {
+        horaEntrada.addEventListener('input', function() {
+            calcularTurnoSugerido();
+            actualizarPreviewCalculos();
+        });
+    }
     
-    horaSalida.addEventListener('input', function() {
-        calcularTurnoSugerido();
-        actualizarPreviewCalculos();
-    });
+    if (horaSalida) {
+        horaSalida.addEventListener('input', function() {
+            calcularTurnoSugerido();
+            actualizarPreviewCalculos();
+        });
+    }
     
-    turnoSelect.addEventListener('change', function() {
-        sugerenciaTurno.style.display = 'none';
-        actualizarPreviewCalculos();
-    });
+    if (turnoSelect) {
+        turnoSelect.addEventListener('change', function() {
+            if (sugerenciaTurno) sugerenciaTurno.style.display = 'none';
+            actualizarPreviewCalculos();
+        });
+    }
     
     document.querySelectorAll('input[name="dias_laborables[]"]').forEach(checkbox => {
         checkbox.addEventListener('change', actualizarPreviewCalculos);
@@ -712,10 +674,18 @@ document.addEventListener('DOMContentLoaded', function() {
     const modal = document.getElementById('modalEditarDatosLaborales');
     if (modal) {
         modal.addEventListener('hidden.bs.modal', function() {
-            sugerenciaTurno.style.display = 'none';
+            if (sugerenciaTurno) sugerenciaTurno.style.display = 'none';
             const previewDiv = document.getElementById('previewCalculos');
             if (previewDiv) previewDiv.style.display = 'none';
         });
     }
+
+    // ✅ DEBUG: Mostrar información de los días disponibles
+    console.log('=== DEBUG: Días Laborables ===');
+    const checkboxesDias = document.querySelectorAll('input[name="dias_laborables[]"]');
+    checkboxesDias.forEach(checkbox => {
+        console.log(`Día disponible: ${checkbox.value} (ID: ${checkbox.id})`);
+    });
+    console.log('===============================');
 });
 </script>

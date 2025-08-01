@@ -195,6 +195,17 @@
                            class="btn btn-outline-info">
                             <i class="bi bi-files"></i> Crear Copia
                         </a>
+                        {{-- EN LA SECCIÓN DE ACCIONES --}}
+                        <form action="{{ route('configuracion.plantillas.destroy', $plantilla) }}" 
+                            method="POST" 
+                            class="d-inline"
+                            onsubmit="return confirm('¿Eliminar permanentemente esta plantilla? Esta acción no se puede deshacer.');">
+                            @csrf
+                            @method('DELETE')
+                            <button type="submit" class="btn btn-outline-danger w-100 mt-2">
+                                <i class="bi bi-trash"></i> Eliminar Permanentemente
+                            </button>
+                        </form>
                     </div>
                 </div>
             </div>

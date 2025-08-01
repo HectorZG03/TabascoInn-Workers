@@ -68,7 +68,7 @@ class DocumentoVacaciones extends Model
                 $tamaño = Storage::disk('public')->size($this->ruta);
                 return $this->formatearTamaño($tamaño);
             } catch (\Exception $e) {
-                \Log::warning("Error obteniendo tamaño de archivo", [
+                Log::warning("Error obteniendo tamaño de archivo", [
                     'documento_id' => $this->id,
                     'ruta' => $this->ruta,
                     'error' => $e->getMessage()
@@ -91,7 +91,7 @@ class DocumentoVacaciones extends Model
         try {
             return !empty($this->ruta) && Storage::disk('public')->exists($this->ruta);
         } catch (\Exception $e) {
-            \Log::warning("Error verificando existencia de archivo", [
+            Log::warning("Error verificando existencia de archivo", [
                 'documento_id' => $this->id,
                 'ruta' => $this->ruta,
                 'error' => $e->getMessage()
@@ -109,7 +109,7 @@ class DocumentoVacaciones extends Model
             }
             return true; // Si no existe, consideramos que ya está "eliminado"
         } catch (\Exception $e) {
-            \Log::error("Error eliminando archivo", [
+            Log::error("Error eliminando archivo", [
                 'documento_id' => $this->id,
                 'ruta' => $this->ruta,
                 'error' => $e->getMessage()

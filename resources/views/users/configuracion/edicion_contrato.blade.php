@@ -117,6 +117,19 @@
                                                         <i class="bi bi-download"></i> Exportar
                                                     </a>
                                                 </li>
+                                                {{-- EN EL DROPDOWN DE ACCIONES --}}
+                                                <li>
+                                                    <form action="{{ route('configuracion.plantillas.destroy', $plantilla) }}" 
+                                                        method="POST" 
+                                                        class="d-inline"
+                                                        onsubmit="return confirm('¿Eliminar permanentemente esta plantilla? Esta acción no se puede deshacer.');">
+                                                        @csrf
+                                                        @method('DELETE')
+                                                        <button type="submit" class="dropdown-item text-danger">
+                                                            <i class="bi bi-trash"></i> Eliminar
+                                                        </button>
+                                                    </form>
+                                                </li>
                                             </ul>
                                         </div>
                                     </div>

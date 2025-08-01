@@ -418,4 +418,47 @@ class PlantillaContratoController extends Controller
         
         return $valores;
     }
+    // AÑADIR ESTE MÉTODO EN EL CONTROLADOR
+    public function destroy(PlantillaContrato $plantilla)
+    {
+        // Verificar si la plantilla está activa
+        if ($plantilla->activa) {
+            return back()->withErrors([
+                'error' => 'No se puede eliminar una plantilla activa. Desactívela primero.'
+            ]);
+        }
+
+        DB::beginTransaction();
+        
+        try {
+            $plantillaInfo = [
+                'id' => $plantilla->id_plantilla,
+                'nombre' => $plantilla->nombre_plantilla,
+                'version' => $plantilla->version,
+                'tipo' => $plantilla->tipo_contrato
+            ];
+            
+            $plantilla->delete();
+
+            DB::commit();
+
+            Log::warning('Plantilla eliminada permanentemente', [
+                'plantilla' => $plantillaInfo,
+                'usuario' => Auth::user()->email
+            ]);
+
+            return redirect()->route('configuracion.plantillas.index')
+                ->with('success', "Plantilla '{$plantilla->nombre_plantilla}' (v{$plantilla->version}) eliminada permanentemente.");
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error eliminando plantilla', [
+                'plantilla_id' => $plantilla->id_plantilla,
+                'error' => $e->getMessage()
+            ]);
+            
+            return back()->withErrors(['error' => 'Error al eliminar la plantilla: ' . $e->getMessage()]);
+        }
+    }
 }
