@@ -1,8 +1,8 @@
 <?php
 
 namespace App\Models\Traits\Trabajador;
-
 use App\Models\VacacionesTrabajador;
+use App\Models\DiaAntiguedad;
 use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
@@ -16,6 +16,25 @@ trait TieneVacaciones
     public function getDiasVacacionesCorrespondientesAttribute(): int
     {
         return VacacionesTrabajador::calcularDiasCorrespondientes($this->antiguedad ?? 0);
+    }
+
+
+    public static function calcularDiasCorrespondientes(int $antiguedadAños): int
+    {
+        // Valor por defecto para 0 años
+        if ($antiguedadAños === 0) {
+            return 6;
+        }
+
+        $rango = DiaAntiguedad::where('antiguedad_min', '<=', $antiguedadAños)
+            ->where(function($query) use ($antiguedadAños) {
+                $query->where('antiguedad_max', '>=', $antiguedadAños)
+                      ->orWhereNull('antiguedad_max');
+            })
+            ->orderByDesc('antiguedad_min')
+            ->first();
+
+        return $rango ? $rango->dias : 6;
     }
 
     public function getDiasVacacionesRestantesEsteAñoAttribute(): int

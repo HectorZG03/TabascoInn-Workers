@@ -13,6 +13,7 @@ use App\Http\Controllers\GerenteController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\PlantillaContratoController;
 use App\Http\Controllers\VariableContratoController;
+use App\Http\Controllers\DiasAntiguedadController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
@@ -71,43 +72,51 @@ Route::middleware(['auth'])->group(function () {
         });
 
             // ✅ RUTAS DE PLANTILLAS DE CONTRATO
-    // ✅ RUTAS DE PLANTILLAS DE CONTRATO
-    Route::prefix('plantillas-contrato')->name('configuracion.plantillas.')->controller(PlantillaContratoController::class)->group(function () {
-        // Vista principal del editor
-        Route::get('/', 'index')->name('index');
+        // ✅ RUTAS DE PLANTILLAS DE CONTRATO
+        Route::prefix('plantillas-contrato')->name('configuracion.plantillas.')->controller(PlantillaContratoController::class)->group(function () {
+            // Vista principal del editor
+            Route::get('/', 'index')->name('index');
+            
+            // Crear nueva plantilla
+            Route::get('/crear', 'create')->name('create');
+            Route::post('/', 'store')->name('store');
+            
+            // Ver plantilla específica
+            Route::get('/{plantilla}', 'show')->name('show');
+            
+            // Editar plantilla
+            Route::get('/{plantilla}/editar', 'edit')->name('edit');
+            Route::put('/{plantilla}', 'update')->name('update');
+            
+            // Activar/Desactivar plantilla
+            Route::patch('/{plantilla}/toggle', 'toggleActivacion')->name('toggle');
+            
+            // Vista previa
+            Route::post('/preview', 'preview')->name('preview');
+            
+            // Obtener variables (AJAX)
+            Route::get('/api/variables', 'obtenerVariables')->name('api.variables');
+            
+            // Exportar plantilla
+            Route::get('/exportar/{tipo?}', 'exportar')->name('exportar');
+        });
         
-        // Crear nueva plantilla
-        Route::get('/crear', 'create')->name('create');
-        Route::post('/', 'store')->name('store');
-        
-        // Ver plantilla específica
-        Route::get('/{plantilla}', 'show')->name('show');
-        
-        // Editar plantilla
-        Route::get('/{plantilla}/editar', 'edit')->name('edit');
-        Route::put('/{plantilla}', 'update')->name('update');
-        
-        // Activar/Desactivar plantilla
-        Route::patch('/{plantilla}/toggle', 'toggleActivacion')->name('toggle');
-        
-        // Vista previa
-        Route::post('/preview', 'preview')->name('preview');
-        
-        // Obtener variables (AJAX)
-        Route::get('/api/variables', 'obtenerVariables')->name('api.variables');
-        
-        // Exportar plantilla
-        Route::get('/exportar/{tipo?}', 'exportar')->name('exportar');
-    });
-    
-    // ✅ RUTAS DE VARIABLES DE CONTRATO (opcional, para gestión avanzada)
-    Route::prefix('variables-contrato')->name('variables.')->controller(VariableContratoController::class)->group(function () {
-        Route::get('/', 'index')->name('index');
-        Route::post('/', 'store')->name('store');
-        Route::put('/{variable}', 'update')->name('update');
-        Route::patch('/{variable}/toggle', 'toggleEstado')->name('toggle');
-        Route::delete('/{variable}', 'destroy')->name('destroy');
-    });
+        // ✅ RUTAS DE VARIABLES DE CONTRATO (opcional, para gestión avanzada)
+        Route::prefix('variables-contrato')->name('variables.')->controller(VariableContratoController::class)->group(function () {
+            Route::get('/', 'index')->name('index');
+            Route::post('/', 'store')->name('store');
+            Route::put('/{variable}', 'update')->name('update');
+            Route::patch('/{variable}/toggle', 'toggleEstado')->name('toggle');
+            Route::delete('/{variable}', 'destroy')->name('destroy');
+        });
+
+        // Agregar estas rutas en el grupo de configuración
+        Route::prefix('configuracion/dias-antiguedad')->name('configuracion.dias_antiguedad.')->group(function () {
+            Route::get('/', [DiasAntiguedadController::class, 'index'])->name('index');
+            Route::post('/', [DiasAntiguedadController::class, 'store'])->name('store');
+            Route::put('/{diaAntiguedad}', [DiasAntiguedadController::class, 'update'])->name('update');
+            Route::delete('/{diaAntiguedad}', [DiasAntiguedadController::class, 'destroy'])->name('destroy');
+        });
 
     });
     

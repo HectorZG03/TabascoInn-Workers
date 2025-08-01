@@ -66,6 +66,20 @@
             </div>
         </div>
 
+        {{-- Agregar este botón en la sección de tarjetas --}}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #20c997;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-calendar-range fs-1 mb-3" style="color: #20c997;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Días por Antigüedad</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Configurar días de vacaciones según antigüedad</p>
+                    <a href="{{ route('configuracion.dias_antiguedad.index') }}" class="btn text-white" style="background-color: #20c997;">
+                        <i class="bi bi-gear"></i> Configurar
+                    </a>
+                </div>
+            </div>
+        </div>
+
 
 
         <!-- Cerrar Sesión -->

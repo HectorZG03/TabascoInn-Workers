@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Carbon\Carbon;
+use App\Models\DiaAntiguedad; // ✅ NUEVO IMPORT
 
 class VacacionesTrabajador extends Model
 {
@@ -45,10 +46,7 @@ class VacacionesTrabajador extends Model
         'cancelada' => ['texto' => 'Cancelada', 'color' => 'danger', 'icono' => 'bi-x-circle']
     ];
 
-    public const DIAS_POR_ANTIGUEDAD = [
-        0 => 6, 1 => 12, 2 => 14, 3 => 16, 4 => 18, 5 => 20,
-        6 => 22, 11 => 24, 16 => 26, 21 => 28, 26 => 30, 31 => 32,
-    ];
+    // ❌ CONSTANTE ELIMINADA: DIAS_POR_ANTIGUEDAD
 
     // ✅ RELACIONES SIMPLIFICADAS
     public function trabajador(): BelongsTo { return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador'); }
@@ -121,13 +119,23 @@ class VacacionesTrabajador extends Model
         return true;
     }
 
-    // ✅ MÉTODOS ESTÁTICOS SIMPLIFICADOS
+    // ✅ MÉTODO ACTUALIZADO: Usa la tabla de configuración
     public static function calcularDiasCorrespondientes(int $antiguedadAños): int
     {
-        foreach (array_reverse(self::DIAS_POR_ANTIGUEDAD, true) as $años => $dias) {
-            if ($antiguedadAños >= $años) return $dias;
+        // Valor por defecto para 0 años
+        if ($antiguedadAños === 0) {
+            return 6;
         }
-        return 6;
+
+        $rango = DiaAntiguedad::where('antiguedad_min', '<=', $antiguedadAños)
+            ->where(function($query) use ($antiguedadAños) {
+                $query->where('antiguedad_max', '>=', $antiguedadAños)
+                      ->orWhereNull('antiguedad_max');
+            })
+            ->orderBy('antiguedad_min', 'desc')
+            ->first();
+
+        return $rango ? $rango->dias : 6;
     }
 
     // ✅ RELACIÓN CON DOCUMENTOS
