@@ -322,22 +322,22 @@ class ContratoController extends Controller
         }
     }
 
-    /**
+  /**
      * ✅ Convertir número a texto para el salario
      */
     private function numeroATexto($numero): string
     {
         if (!$numero || $numero == 0) {
-            return 'CERO PESOS';
+            return 'CERO';
         }
 
         $unidades = [
-            '', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
+            '', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
             'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'
         ];
 
         $decenas = [
-            '', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'
+            '', '', 'VEINTI', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'
         ];
 
         $centenas = [
@@ -347,39 +347,41 @@ class ContratoController extends Controller
 
         $numero = intval($numero);
 
+        // Manejo de números menores a 20
         if ($numero < 20) {
-            return ($unidades[$numero] ?: 'CERO') . ' PESOS';
-        } elseif ($numero < 100) {
+            return $unidades[$numero] ?: 'CERO';
+        } 
+        // Manejo de números entre 20 y 99
+        elseif ($numero < 100) {
             $dec = intval($numero / 10);
             $uni = $numero % 10;
-            return $decenas[$dec] . ($uni > 0 ? ' Y ' . $unidades[$uni] : '') . ' PESOS';
-        } elseif ($numero < 1000) {
+            
+            // Casos especiales para 20-29
+            if ($dec == 2) {
+                return $uni == 0 ? 'VEINTE' : $decenas[$dec] . $unidades[$uni];
+            }
+            // Resto de decenas
+            return $decenas[$dec] . ($uni > 0 ? ' Y ' . $unidades[$uni] : '');
+        } 
+        // Manejo de números entre 100 y 999
+        elseif ($numero < 1000) {
             $cen = intval($numero / 100);
             $resto = $numero % 100;
             $centena = ($numero == 100) ? 'CIEN' : $centenas[$cen];
             
-            if ($resto > 0) {
-                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
-                return $centena . ' ' . $restoTexto . ' PESOS';
-            } else {
-                return $centena . ' PESOS';
-            }
-        } elseif ($numero < 1000000) {
+            return $centena . ($resto > 0 ? ' ' . $this->numeroATexto($resto) : '');
+        } 
+        // Manejo de números entre 1000 y 999999
+        elseif ($numero < 1000000) {
             $miles = intval($numero / 1000);
             $resto = $numero % 1000;
-            $milesTexto = ($miles == 1) ? 'MIL' : str_replace(' PESOS', '', $this->numeroATexto($miles)) . ' MIL';
+            $milesTexto = ($miles == 1) ? 'MIL' : $this->numeroATexto($miles) . ' MIL';
             
-            if ($resto > 0) {
-                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
-                return $milesTexto . ' ' . $restoTexto . ' PESOS';
-            } else {
-                return $milesTexto . ' PESOS';
-            }
+            return $milesTexto . ($resto > 0 ? ' ' . $this->numeroATexto($resto) : '');
         }
 
-        return number_format($numero, 2) . ' PESOS';
+        return 'NÚMERO MUY GRANDE';
     }
-
     /**
      * ✅ Obtener texto del turno
      */

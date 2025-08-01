@@ -1,5 +1,5 @@
 {{-- resources/views/trabajadores/modales/asignar_vacaciones.blade.php --}}
-{{-- Modal con FORMATO GLOBAL - Fechas DD/MM/YYYY automáticas + Días Laborables --}}
+{{-- Modal REFACTORIZADO - Entrada manual de año y período + Sin restricciones de fechas --}}
 
 <div class="modal fade" id="asignarVacacionesModal" tabindex="-1" aria-labelledby="asignarVacacionesModalLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
@@ -33,14 +33,12 @@
                                 <div class="h5 mb-0 text-primary" id="dias-disponibles-display">
                                     <i class="bi bi-calendar-check"></i> <span id="dias-disponibles">0</span> días
                                 </div>
-                                <small class="text-muted">Disponibles este año</small>
+                                <small class="text-muted">Disponibles año actual</small>
                             </div>
                         </div>
                     </div>
 
-                    <!-- ===================================== -->
-                    <!-- ✅ NUEVA: INFORMACIÓN DE HORARIO LABORAL -->
-                    <!-- ===================================== -->
+                    <!-- ✅ INFORMACIÓN DE HORARIO LABORAL -->
                     @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
                         <div class="alert alert-success">
                             <div class="row align-items-center">
@@ -85,11 +83,52 @@
                     @endif
 
                     <!-- ===================================== -->
-                    <!-- FORMULARIO PRINCIPAL -->
+                    <!-- ✅ FORMULARIO REFACTORIZADO -->
                     <!-- ===================================== -->
                     <div class="row">
                         
-                        <!-- ✅ ACTUALIZADO: Días Solicitados con contexto -->
+                        <!-- ✅ NUEVO: AÑO CORRESPONDIENTE - INPUT MANUAL -->
+                        <div class="col-md-6 mb-3">
+                            <label for="año_correspondiente" class="form-label">
+                                <i class="bi bi-calendar3"></i> Año Correspondiente
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="number" 
+                                   class="form-control" 
+                                   id="año_correspondiente" 
+                                   name="año_correspondiente"
+                                   min="2000" 
+                                   max="2050"
+                                   value="{{ date('Y') }}"
+                                   required
+                                   autocomplete="off">
+                            <div class="invalid-feedback"></div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Año al que corresponden estos días de vacaciones (ej: 2025, 2024, etc.)
+                            </div>
+                        </div>
+
+                        <!-- ✅ NUEVO: PERÍODO VACACIONAL - INPUT MANUAL -->
+                        <div class="col-md-6 mb-3">
+                            <label for="periodo_vacacional" class="form-label">
+                                <i class="bi bi-calendar-range"></i> Período Vacacional
+                                <span class="text-danger">*</span>
+                            </label>
+                            <input type="text" 
+                                   class="form-control" 
+                                   id="periodo_vacacional" 
+                                   name="periodo_vacacional"
+                                   placeholder="2025-2026"
+                                   maxlength="30"
+                                   required
+                                   autocomplete="off">
+                            <div class="invalid-feedback"></div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Período que abarca estas vacaciones (ej: "2025-2026", "Período 2024", etc.)
+                            </div>
+                        </div>
+                        
+                        <!-- Días Solicitados -->
                         <div class="col-md-6 mb-3">
                             <label for="dias_solicitados" class="form-label">
                                 <i class="bi bi-calendar2-date"></i> 
@@ -106,7 +145,7 @@
                                        id="dias_solicitados" 
                                        name="dias_solicitados" 
                                        min="1" 
-                                       max="30"
+                                       max="365"
                                        required
                                        autocomplete="off">
                                 <span class="input-group-text">
@@ -121,30 +160,37 @@
                             <div class="form-text">
                                 @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
                                     <i class="bi bi-info-circle text-success"></i> 
-                                    Se calculará considerando solo <strong>{{ $trabajador->fichaTecnica->dias_laborables_texto }}</strong>.
-                                    Máximo: <span id="max-dias-texto">0</span> días disponibles
+                                    Se calculará considerando solo <strong>{{ $trabajador->fichaTecnica->dias_laborables_texto }}</strong>
                                 @else
                                     <i class="bi bi-info-circle text-warning"></i> 
-                                    Cálculo tradicional (días calendario consecutivos).
-                                    Máximo: <span id="max-dias-texto">0</span> días disponibles
+                                    Cálculo tradicional (días calendario consecutivos)
                                 @endif
                             </div>
                         </div>
 
-                        <!-- Año Correspondiente -->
+                        <!-- ✅ NUEVO: Días Correspondientes - INPUT MANUAL -->
                         <div class="col-md-6 mb-3">
-                            <label for="año_correspondiente" class="form-label">
-                                <i class="bi bi-calendar"></i> Año Correspondiente
+                            <label for="dias_correspondientes" class="form-label">
+                                <i class="bi bi-award"></i> Días Correspondientes LFT
                             </label>
-                            <select class="form-select" id="año_correspondiente" name="año_correspondiente">
-                                <option value="{{ date('Y') - 1 }}">{{ date('Y') - 1 }}</option>
-                                <option value="{{ date('Y') }}" selected>{{ date('Y') }}</option>
-                                <option value="{{ date('Y') + 1 }}">{{ date('Y') + 1 }}</option>
-                            </select>
+                            <div class="input-group">
+                                <input type="number" 
+                                       class="form-control" 
+                                       id="dias_correspondientes" 
+                                       name="dias_correspondientes"
+                                       min="6" 
+                                       max="50"
+                                       value="{{ $trabajador->dias_vacaciones_correspondientes ?? 6 }}"
+                                       autocomplete="off">
+                                <span class="input-group-text">días LFT</span>
+                            </div>
                             <div class="invalid-feedback"></div>
+                            <div class="form-text">
+                                <i class="bi bi-info-circle"></i> Días que le corresponden según Ley Federal del Trabajo (calculado: {{ $trabajador->dias_vacaciones_correspondientes ?? 6 }})
+                            </div>
                         </div>
 
-                        <!-- ✅ FECHA DE INICIO - CON FORMATO GLOBAL DD/MM/YYYY -->
+                        <!-- ✅ FECHA DE INICIO - SIN RESTRICCIONES -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_inicio" class="form-label">
                                 <i class="bi bi-calendar-event"></i> Fecha de Inicio
@@ -160,7 +206,7 @@
                                    autocomplete="off">
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
-                                <i class="bi bi-info-circle"></i> Formato: DD/MM/YYYY - No puede ser fecha pasada
+                                <i class="bi bi-info-circle"></i> Formato: DD/MM/YYYY - Puede ser cualquier fecha
                                 @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
                                     <br><i class="bi bi-lightbulb text-success"></i> 
                                     <small>Si no es día laborable, se ajustará al siguiente día hábil</small>
@@ -168,7 +214,7 @@
                             </div>
                         </div>
 
-                        <!-- ✅ FECHA DE FIN - CON FORMATO GLOBAL DD/MM/YYYY -->
+                        <!-- ✅ FECHA DE FIN - SIN RESTRICCIONES -->
                         <div class="col-md-6 mb-3">
                             <label for="fecha_fin" class="form-label">
                                 <i class="bi bi-calendar-x"></i> Fecha de Fin
@@ -181,11 +227,10 @@
                                    placeholder="DD/MM/YYYY"
                                    maxlength="10"
                                    required
-                                   readonly
                                    autocomplete="off">
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
-                                <i class="bi bi-info-circle"></i> Se calcula automáticamente según los días solicitados
+                                <i class="bi bi-info-circle"></i> Se puede calcular automáticamente o ingresar manualmente
                                 @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->dias_laborables)
                                     <br><i class="bi bi-gear text-success"></i> 
                                     <small>Calculado usando horario laboral definido</small>
@@ -213,7 +258,26 @@
                     </div>
 
                     <!-- ===================================== -->
-                    <!-- ✅ ACTUALIZADO: RESUMEN DE VACACIONES CON DÍAS LABORABLES -->
+                    <!-- ✅ CONTROLES ADICIONALES -->
+                    <!-- ===================================== -->
+                    <div class="row mb-3">
+                        <div class="col-12">
+                            <div class="d-flex gap-2 justify-content-center">
+                                <button type="button" class="btn btn-outline-secondary btn-sm" id="btn-calcular-fecha-fin">
+                                    <i class="bi bi-calculator"></i> Calcular Fecha Fin
+                                </button>
+                                <button type="button" class="btn btn-outline-info btn-sm" id="btn-generar-periodo">
+                                    <i class="bi bi-magic"></i> Generar Período
+                                </button>
+                                <button type="button" class="btn btn-outline-success btn-sm" id="btn-usar-año-actual">
+                                    <i class="bi bi-calendar-check"></i> Usar Año Actual
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- ===================================== -->
+                    <!-- RESUMEN DE VACACIONES -->
                     <!-- ===================================== -->
                     <div class="card bg-light mt-3" id="resumen-vacacion" style="display: none;">
                         <div class="card-body">
@@ -223,21 +287,21 @@
                             <div class="row text-sm">
                                 <div class="col-md-6">
                                     <ul class="list-unstyled mb-0">
+                                        <li><strong>Año:</strong> <span id="resumen-año">-</span></li>
+                                        <li><strong>Período:</strong> <span id="resumen-periodo">-</span></li>
                                         <li><strong>Duración:</strong> <span id="resumen-duracion">0 días</span></li>
-                                        <li><strong>Período:</strong> <span id="resumen-fechas">-</span></li>
                                     </ul>
                                 </div>
                                 <div class="col-md-6">
                                     <ul class="list-unstyled mb-0">
+                                        <li><strong>Fechas:</strong> <span id="resumen-fechas">-</span></li>
                                         <li><strong>Estado inicial:</strong> <span class="badge bg-warning">Pendiente</span></li>
-                                        <li id="resumen-tipo-calculo" style="display: none;">
-                                            <strong>Tipo de cálculo:</strong> <span id="tipo-calculo-badge" class="badge">-</span>
-                                        </li>
+                                        <li><strong>Días LFT:</strong> <span id="resumen-dias-lft">0</span></li>
                                     </ul>
                                 </div>
                             </div>
                             
-                            <!-- ✅ NUEVA: Información adicional dinámica -->
+                            <!-- Información adicional dinámica -->
                             <div id="resumen-info-adicional" class="mt-2" style="display: none;">
                                 <!-- Se llena dinámicamente desde JS -->
                             </div>

@@ -16,9 +16,9 @@ return new class extends Migration
             $table->unsignedBigInteger('id_trabajador');
             $table->unsignedBigInteger('creado_por'); // Usuario que creó el registro
 
-            // Período vacacional
-            $table->string('periodo_vacacional', 20); // ej: "2025-2026"
-            $table->year('año_correspondiente'); // ej: 2025
+            // ✅ PERÍODO VACACIONAL - ENTRADA MANUAL
+            $table->string('periodo_vacacional', 30)->comment('Período ingresado manualmente ej: "2025-2026", "2024-2025"');
+            $table->integer('año_correspondiente')->comment('Año ingresado manualmente, puede ser cualquier año');
 
             // Días de vacaciones
             $table->integer('dias_correspondientes')->comment('Días que le corresponden según antigüedad');
@@ -26,15 +26,15 @@ return new class extends Migration
             $table->integer('dias_disfrutados')->default(0)->comment('Días efectivamente disfrutados');
             $table->integer('dias_restantes')->comment('Días pendientes de disfrutar');
 
-            // Fechas
-            $table->date('fecha_inicio')->comment('Fecha de inicio de vacaciones');
-            $table->date('fecha_fin')->comment('Fecha de fin de vacaciones');
+            // ✅ FECHAS - SIN RESTRICCIONES TEMPORALES
+            $table->date('fecha_inicio')->comment('Fecha de inicio - puede ser pasada, presente o futura');
+            $table->date('fecha_fin')->comment('Fecha de fin - puede ser pasada, presente o futura');
             $table->date('fecha_reintegro')->nullable()->comment('Fecha real de reintegro');
 
-            // ✅ ESTADOS ACTUALIZADOS: pendiente, activa, finalizada, cancelada
+            // Estados de vacaciones
             $table->enum('estado', ['pendiente', 'activa', 'finalizada', 'cancelada'])->default('pendiente');
 
-            // Observaciones
+            // Observaciones y motivos
             $table->text('observaciones')->nullable();
             $table->text('motivo_finalizacion')->nullable();
             $table->text('motivo_cancelacion')->nullable()->comment('Motivo por el cual se canceló');
@@ -42,7 +42,7 @@ return new class extends Migration
                   ->default(false)
                   ->comment('Indica si la vacación tiene documento de amortización');
 
-            // ✅ NUEVOS CAMPOS PARA CONTROL DE CANCELACIÓN
+            // Control de cancelación
             $table->unsignedBigInteger('cancelado_por')->nullable()->comment('Usuario que canceló las vacaciones');
             $table->timestamp('fecha_cancelacion')->nullable()->comment('Fecha cuando se canceló');
 
@@ -54,11 +54,13 @@ return new class extends Migration
             $table->foreign('creado_por')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('cancelado_por')->references('id')->on('users')->onDelete('restrict');
 
-            // Índices para consultas frecuentes
+            // ✅ ÍNDICES OPTIMIZADOS PARA CONSULTAS HISTÓRICAS
             $table->index(['id_trabajador', 'estado']);
-            $table->index(['periodo_vacacional']);
+            $table->index(['periodo_vacacional']); // Para filtrar por período
+            $table->index(['año_correspondiente']); // Para filtrar por año
             $table->index(['fecha_inicio', 'fecha_fin']);
             $table->index(['estado']);
+            $table->index(['id_trabajador', 'año_correspondiente']); // Para estadísticas por trabajador y año
         });
     }
 
