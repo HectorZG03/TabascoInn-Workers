@@ -14,12 +14,12 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // ✅ PRIMERO: Crear Departamentos, Áreas y Categorías (EN ORDEN CORRECTO)
+        // ✅ PRIMERO: Crear estructura real del Hotel Tabasco Inn (EN ORDEN CORRECTO)
         $this->call([
-            DepartamentoSeeder::class,  // 1️⃣ NUEVO: Primero los departamentos
-            AreaSeeder::class,          // 2️⃣ Segundo las áreas (necesitan departamentos)
-            CategoriaSeeder::class,     // 3️⃣ Tercero las categorías (necesitan áreas)
-            VariablesContratoSeeder::class, // ✅ CUATRO: Variables de contrato
+            DepartamentoSeeder::class,      // 1️⃣ Departamentos reales
+            AreaSeeder::class,              // 2️⃣ Áreas reales (necesitan departamentos)
+            CategoriaSeeder::class,         // 3️⃣ Categorías reales (necesitan áreas)
+            VariablesContratoSeeder::class, // 4️⃣ Variables de contrato corregidas
         ]);
 
         // ✅ DESPUÉS: Crear Usuarios de prueba
@@ -39,41 +39,41 @@ class DatabaseSeeder extends Seeder
             'tipo' => 'Gerencia',
         ]);
 
-        // ✅ OPCIONAL: Usuario Administrador adicional
+        // ✅ Usuario Administrador adicional
         User::create([
             'nombre' => 'Administrador',
             'email' => 'admin@hotel.com',
             'password' => Hash::make('password123'),
-            'tipo' => 'Gerencia', // O crear un tipo 'Admin' si lo necesitas
+            'tipo' => 'Gerencia',
         ]);
 
-        // ✅ ACTUALIZADO: Mostrar información correcta en consola
+        // ✅ INFORMACIÓN ACTUALIZADA CON DATOS REALES DEL HOTEL TABASCO INN
         $this->command->info('🏨 Datos del Hotel TABASCO INN creados exitosamente:');
-        $this->command->info('🏢 8 Departamentos creados');          // ✅ NUEVO
-        $this->command->info('📍 11 Áreas creadas');                 // ✅ ACTUALIZADO
-        $this->command->info('👥 43 Categorías de trabajo creadas'); // ✅ ACTUALIZADO
+        $this->command->info('🏢 7 Departamentos reales creados');
+        $this->command->info('📍 14 Áreas operativas creadas');
+        $this->command->info('👥 45 Categorías de trabajo reales creadas');
         $this->command->info('🔑 3 Usuarios de prueba creados');
         $this->command->line('');
         
-        // ✅ NUEVO: Mostrar estructura de departamentos
-        $this->command->info('🏢 Departamentos creados:');
-        $this->command->line('• Alimentos y Bebidas → Meseros, Cocina, Stewards');
-        $this->command->line('• Recepción y Hospedaje → Recepción, Hospedaje');
-        $this->command->line('• Servicios Generales → Áreas Públicas');
-        $this->command->line('• Seguridad → Vigilancia');
-        $this->command->line('• Comercial → Ventas');
-        $this->command->line('• Abastecimiento → Almacén');
-        $this->command->line('• Administrativo → Gerencia Administrativa');
-        $this->command->line('• Técnico → Mantenimiento');
+        // ✅ ESTRUCTURA REAL DEL HOTEL TABASCO INN
+        $this->command->info('🏢 Estructura Real del Hotel:');
+        $this->command->line('• ALIMENTOS Y BEBIDAS → Restaurante, Cocina, Índigo, A&B General');
+        $this->command->line('• DIVISIÓN CUARTOS → Recepción, Rest-Recepción, Áreas Públicas, Hospedaje, Lavandería');
+        $this->command->line('• MANTENIMIENTO → Mantenimiento General');
+        $this->command->line('• VENTAS → Ventas y Eventos');
+        $this->command->line('• SERVICIOS → Seguridad');
+        $this->command->line('• COMPRAS → Almacén');
+        $this->command->line('• ADMINISTRATIVO → Gerencia Administrativa');
         $this->command->line('');
         
-        $this->command->info('Usuarios de prueba:');
+        $this->command->info('👤 Usuarios de prueba:');
         $this->command->line('• RH: rh@hotel.com / password123');
         $this->command->line('• Gerencia: gerencia@hotel.com / password123');
         $this->command->line('• Admin: admin@hotel.com / password123');
         
         $this->command->info('');
-        $this->command->info('✅ Sistema completo inicializado con estructura jerárquica:');
-        $this->command->info('   Departamentos → Áreas → Categorías → Trabajadores');
+        $this->command->info('✅ Sistema inicializado con estructura REAL del Hotel Tabasco Inn:');
+        $this->command->info('   Departamentos → Áreas → Categorías → Variables de Contrato');
+        $this->command->info('🎯 Listo para recibir trabajadores reales del hotel');
     }
 }

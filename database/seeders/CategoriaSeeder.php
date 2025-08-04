@@ -12,87 +12,92 @@ class CategoriaSeeder extends Seeder
      */
     public function run(): void
     {
+        // ✅ DATOS REALES DEL HOTEL TABASCO INN EN PRODUCCIÓN
         $categorias = [
             // DEPARTAMENTO DE ALIMENTOS Y BEBIDAS
             
-            // Área: Meseros (id_area = 1)
-            ['id_categoria' => 1, 'id_area' => 1, 'nombre_categoria' => 'Mesero'],
-            ['id_categoria' => 2, 'id_area' => 1, 'nombre_categoria' => 'Capitán de meseros'],
-            ['id_categoria' => 3, 'id_area' => 1, 'nombre_categoria' => 'Hostess'],
-            ['id_categoria' => 4, 'id_area' => 1, 'nombre_categoria' => 'Auxiliar de restaurante'],
+            // Área: RESTAURANTE (id_area = 12)
+            ['id_categoria' => 44, 'id_area' => 12, 'nombre_categoria' => 'CAPITAN DE MESEROS'],
+            ['id_categoria' => 45, 'id_area' => 12, 'nombre_categoria' => 'MESERO'],
+            ['id_categoria' => 47, 'id_area' => 12, 'nombre_categoria' => 'HOSTESS'],
+            ['id_categoria' => 87, 'id_area' => 12, 'nombre_categoria' => 'MESERO'],
+            ['id_categoria' => 88, 'id_area' => 12, 'nombre_categoria' => 'MESERA'],
 
-            // Área: Cocina (id_area = 2)
-            ['id_categoria' => 5, 'id_area' => 2, 'nombre_categoria' => 'Chef ejecutivo'],
-            ['id_categoria' => 6, 'id_area' => 2, 'nombre_categoria' => 'Sous chef'],
-            ['id_categoria' => 7, 'id_area' => 2, 'nombre_categoria' => 'Cocinero'],
-            ['id_categoria' => 8, 'id_area' => 2, 'nombre_categoria' => 'Ayudante de cocina'],
-            ['id_categoria' => 9, 'id_area' => 2, 'nombre_categoria' => 'Panadero'],
-            ['id_categoria' => 10, 'id_area' => 2, 'nombre_categoria' => 'Pastelero'],
+            // Área: COCINA (id_area = 13)
+            ['id_categoria' => 48, 'id_area' => 13, 'nombre_categoria' => 'CHEFF EJECUTIVO'],
+            ['id_categoria' => 49, 'id_area' => 13, 'nombre_categoria' => 'COCINERO (A)'],
+            ['id_categoria' => 50, 'id_area' => 13, 'nombre_categoria' => 'PANADERO'],
+            ['id_categoria' => 51, 'id_area' => 13, 'nombre_categoria' => 'REPOSTERA (O)'],
+            ['id_categoria' => 52, 'id_area' => 13, 'nombre_categoria' => 'CHEFF STEWARD'],
+            ['id_categoria' => 53, 'id_area' => 13, 'nombre_categoria' => 'SUPERVISOR DE STEWARD'],
+            ['id_categoria' => 54, 'id_area' => 13, 'nombre_categoria' => 'STEWARD'],
 
-            // Área: Stewards (id_area = 3)
-            ['id_categoria' => 11, 'id_area' => 3, 'nombre_categoria' => 'Steward general'],
-            ['id_categoria' => 12, 'id_area' => 3, 'nombre_categoria' => 'Lavaloza'],
-            ['id_categoria' => 13, 'id_area' => 3, 'nombre_categoria' => 'Encargado de limpieza de cocina'],
+            // Área: INDIGO (id_area = 14)
+            ['id_categoria' => 56, 'id_area' => 14, 'nombre_categoria' => 'BARMAN'],
+            ['id_categoria' => 67, 'id_area' => 14, 'nombre_categoria' => 'MESERA'],
 
-            // DEPARTAMENTO DE RECEPCIÓN Y HOSPEDAJE
+            // Área: ALIMENTOS Y BEBIDAS (id_area = 25)
+            ['id_categoria' => 86, 'id_area' => 25, 'nombre_categoria' => 'GERENTE DE ALIMENTOS Y BEBIDAS'],
+
+            // DEPARTAMENTO DE DIVISIÓN CUARTOS
             
-            // Área: Recepción (id_area = 4)
-            ['id_categoria' => 14, 'id_area' => 4, 'nombre_categoria' => 'Recepcionista'],
-            ['id_categoria' => 15, 'id_area' => 4, 'nombre_categoria' => 'Conserje'],
-            ['id_categoria' => 16, 'id_area' => 4, 'nombre_categoria' => 'Botones'],
-            ['id_categoria' => 17, 'id_area' => 4, 'nombre_categoria' => 'Jefe de recepción'],
+            // Área: RECEPCION (id_area = 15)
+            ['id_categoria' => 57, 'id_area' => 15, 'nombre_categoria' => 'ENCARGADO DE RECEPCION Y RESERVACIONES'],
+            ['id_categoria' => 58, 'id_area' => 15, 'nombre_categoria' => 'AUDITOR NOCTURNO-RECEPCIONISTA'],
+            ['id_categoria' => 59, 'id_area' => 15, 'nombre_categoria' => 'RECEPCIONISTA'],
+            ['id_categoria' => 60, 'id_area' => 15, 'nombre_categoria' => 'BELL BOY'],
 
-            // Área: Hospedaje (id_area = 5)
-            ['id_categoria' => 18, 'id_area' => 5, 'nombre_categoria' => 'Camarista'],
-            ['id_categoria' => 19, 'id_area' => 5, 'nombre_categoria' => 'Supervisor de pisos'],
-            ['id_categoria' => 20, 'id_area' => 5, 'nombre_categoria' => 'Encargado de habitaciones'],
+            // Área: RESTAURANTE-RECEPCION (id_area = 16)
+            ['id_categoria' => 61, 'id_area' => 16, 'nombre_categoria' => 'CAJERO (A) RESTAURANTE'],
 
-            // DEPARTAMENTO DE SERVICIOS GENERALES
+            // Área: AREAS PUBLICAS (id_area = 17)
+            ['id_categoria' => 62, 'id_area' => 17, 'nombre_categoria' => 'SUPERVISOR DE AREAS PUBLICAS'],
+            ['id_categoria' => 63, 'id_area' => 17, 'nombre_categoria' => 'MOZO DE AREAS PUBLICAS'],
+
+            // Área: HOSPEDAJE (id_area = 18)
+            ['id_categoria' => 64, 'id_area' => 18, 'nombre_categoria' => 'AMA DE LLAVES'],
+            ['id_categoria' => 65, 'id_area' => 18, 'nombre_categoria' => 'SUPERVISORA DE AMA DE LLAVES'],
+            ['id_categoria' => 66, 'id_area' => 18, 'nombre_categoria' => 'RECAMARERA'],
+
+            // Área: LAVANDERIA (id_area = 19)
+            ['id_categoria' => 68, 'id_area' => 19, 'nombre_categoria' => 'LAVANDERO'],
+
+            // DEPARTAMENTO DE MANTENIMIENTO
             
-            // Área: Áreas Públicas (id_area = 6)
-            ['id_categoria' => 21, 'id_area' => 6, 'nombre_categoria' => 'Auxiliar de limpieza'],
-            ['id_categoria' => 22, 'id_area' => 6, 'nombre_categoria' => 'Encargado de áreas públicas'],
-            ['id_categoria' => 23, 'id_area' => 6, 'nombre_categoria' => 'Personal de limpieza nocturno'],
+            // Área: MANTENIMIENTO (id_area = 20)
+            ['id_categoria' => 69, 'id_area' => 20, 'nombre_categoria' => 'GERENTE DE MANTENIMIENTO'],
+            ['id_categoria' => 70, 'id_area' => 20, 'nombre_categoria' => 'OFICIAL ALBAÑIL B'],
+            ['id_categoria' => 71, 'id_area' => 20, 'nombre_categoria' => 'AUX. DE ALBAÑIL'],
+            ['id_categoria' => 72, 'id_area' => 20, 'nombre_categoria' => 'AUX. DE MANTTO. B'],
+            ['id_categoria' => 73, 'id_area' => 20, 'nombre_categoria' => 'TEC. AIRE ACONDICIONADO'],
 
-            // DEPARTAMENTO DE SEGURIDAD
+            // DEPARTAMENTO DE VENTAS
             
-            // Área: Vigilancia (id_area = 7)
-            ['id_categoria' => 24, 'id_area' => 7, 'nombre_categoria' => 'Guardia de seguridad'],
-            ['id_categoria' => 25, 'id_area' => 7, 'nombre_categoria' => 'Vigilante nocturno'],
-            ['id_categoria' => 26, 'id_area' => 7, 'nombre_categoria' => 'Jefe de seguridad'],
+            // Área: VENTAS (id_area = 21)
+            ['id_categoria' => 74, 'id_area' => 21, 'nombre_categoria' => 'GERENTE DE VENTAS'],
+            ['id_categoria' => 75, 'id_area' => 21, 'nombre_categoria' => 'EJECUTIVO DE VENTAS B'],
+            ['id_categoria' => 76, 'id_area' => 21, 'nombre_categoria' => 'EJECUTIVO DE VENTAS'],
 
-            // DEPARTAMENTO COMERCIAL
+            // DEPARTAMENTO DE SERVICIOS
             
-            // Área: Ventas (id_area = 8)
-            ['id_categoria' => 27, 'id_area' => 8, 'nombre_categoria' => 'Ejecutivo de ventas'],
-            ['id_categoria' => 28, 'id_area' => 8, 'nombre_categoria' => 'Coordinador de eventos'],
-            ['id_categoria' => 29, 'id_area' => 8, 'nombre_categoria' => 'Auxiliar administrativo de ventas'],
+            // Área: SEGURIDAD (id_area = 22)
+            ['id_categoria' => 77, 'id_area' => 22, 'nombre_categoria' => 'SUPERVISOR DE SEGURIDAD'],
+            ['id_categoria' => 78, 'id_area' => 22, 'nombre_categoria' => 'VIGILANTE'],
 
-            // DEPARTAMENTO DE ABASTECIMIENTO
+            // DEPARTAMENTO DE COMPRAS
             
-            // Área: Almacén (id_area = 9)
-            ['id_categoria' => 30, 'id_area' => 9, 'nombre_categoria' => 'Almacenista'],
-            ['id_categoria' => 31, 'id_area' => 9, 'nombre_categoria' => 'Encargado de inventarios'],
-            ['id_categoria' => 32, 'id_area' => 9, 'nombre_categoria' => 'Repartidor interno'],
+            // Área: ALMACEN (id_area = 23)
+            ['id_categoria' => 79, 'id_area' => 23, 'nombre_categoria' => 'ENCARGADO DE ALMACEN'],
+            ['id_categoria' => 80, 'id_area' => 23, 'nombre_categoria' => 'CHOFER DE ALMACEN'],
 
             // DEPARTAMENTO ADMINISTRATIVO
             
-            // Área: Gerencia Administrativa (id_area = 10)
-            ['id_categoria' => 33, 'id_area' => 10, 'nombre_categoria' => 'Gerente general'],
-            ['id_categoria' => 34, 'id_area' => 10, 'nombre_categoria' => 'Subgerente'],
-            ['id_categoria' => 35, 'id_area' => 10, 'nombre_categoria' => 'Auxiliar contable'],
-            ['id_categoria' => 36, 'id_area' => 10, 'nombre_categoria' => 'Secretaria'],
-            ['id_categoria' => 37, 'id_area' => 10, 'nombre_categoria' => 'Contador'],
-
-            // DEPARTAMENTO TÉCNICO
-            
-            // Área: Mantenimiento (id_area = 11)
-            ['id_categoria' => 38, 'id_area' => 11, 'nombre_categoria' => 'Técnico eléctrico'],
-            ['id_categoria' => 39, 'id_area' => 11, 'nombre_categoria' => 'Técnico en plomería'],
-            ['id_categoria' => 40, 'id_area' => 11, 'nombre_categoria' => 'Técnico en aires acondicionados'],
-            ['id_categoria' => 41, 'id_area' => 11, 'nombre_categoria' => 'Jardinero'],
-            ['id_categoria' => 42, 'id_area' => 11, 'nombre_categoria' => 'Pintor'],
-            ['id_categoria' => 43, 'id_area' => 11, 'nombre_categoria' => 'Jefe de mantenimiento'],
+            // Área: GERENCIA ADMINISTRATIVA (id_area = 24)
+            ['id_categoria' => 81, 'id_area' => 24, 'nombre_categoria' => 'GERENTE GENERAL'],
+            ['id_categoria' => 82, 'id_area' => 24, 'nombre_categoria' => 'SUBGERENTE ADMINISTRATIVO'],
+            ['id_categoria' => 83, 'id_area' => 24, 'nombre_categoria' => 'JEFE DE RECURSOS HUMANOS'],
+            ['id_categoria' => 84, 'id_area' => 24, 'nombre_categoria' => 'JEFE DE COSTOS'],
+            ['id_categoria' => 85, 'id_area' => 24, 'nombre_categoria' => 'JEFE DE INGRESOS'],
         ];
 
         foreach ($categorias as $categoria) {
