@@ -640,39 +640,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
     
-    // Auto-submit con debounce para búsqueda
-    if (searchInput) {
-        let searchTimeout;
-        searchInput.addEventListener('input', function() {
-            clearTimeout(searchTimeout);
-            searchTimeout = setTimeout(() => {
-                document.getElementById('filtrosForm').submit();
-            }, 500);
-        });
-    }
-    
-    // Submit inmediato para selects
-    if (areaSelect) {
-        areaSelect.addEventListener('change', () => {
-            setTimeout(() => {
-                document.getElementById('filtrosForm').submit();
-            }, 100);
-        });
-    }
-    
-    if (categoriaSelect) {
-        categoriaSelect.addEventListener('change', () => {
-            document.getElementById('filtrosForm').submit();
-        });
-    }
-    
-    // Submit inmediato para estado
-    if (estatusSelect) {
-        estatusSelect.addEventListener('change', () => {
-            document.getElementById('filtrosForm').submit();
-        });
-    }
-    
     // Auto-hide alerts después de 5 segundos
     setTimeout(() => {
         const alerts = document.querySelectorAll('.alert:not(.alert-permanent)');
@@ -687,28 +654,6 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }, 5000);
-    
-    // ✅ EJECUTAR DEBUG EN DESARROLLO
-    if (typeof window.APP_DEBUG !== 'undefined' && window.APP_DEBUG) {
-        setTimeout(() => {
-            if (typeof window.debugAppRoutes === 'function') {
-                console.group('🔍 Debug Lista Trabajadores');
-                window.debugAppRoutes();
-                console.log('Modales disponibles:', {
-                    permisos: document.getElementById('modalPermisos') ? 'Disponible' : 'No encontrado',
-                    despidos: document.getElementById('modalDespido') ? 'Disponible' : 'No encontrado'
-                });
-                console.log('Filtros disponibles:', {
-                    area: areaSelect ? 'Disponible' : 'No encontrado',
-                    categoria: categoriaSelect ? 'Disponible' : 'No encontrado',
-                    estatus: estatusSelect ? 'Disponible' : 'No encontrado'
-                });
-                console.groupEnd();
-            }
-        }, 1000);
-    }
-    
-    console.log('✅ Vista lista trabajadores con rutas dinámicas y modales inicializada correctamente');
 });
 </script>
 @endsection
