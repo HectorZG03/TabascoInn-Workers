@@ -148,7 +148,7 @@
     
     <div class="section">
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA I:</span> Para los efectos de los artículos 24 y 25 de la Ley Federal del Trabajo, declara el representante de la empresa TABASCO INN, 
+            <span class="clausula-numero"> I:</span> Para los efectos de los artículos 24 y 25 de la Ley Federal del Trabajo, declara el representante de la empresa TABASCO INN, 
             S.A. DE C.V., representada por el LIC. GUSTAVO ENRIQUE ZURITA GONZALEZ, que dicha empresa está constituida conforme a las leyes Mexicanas, dedicándose entre otras actividades a la prestación y desarrollo de servicios de hotelería, 
             restaurante, bar, salón de eventos, servicios de banquetes, y toda clases de actividades propias de la industria. 
         </p>
@@ -161,14 +161,14 @@
             Y que tiene establecido su domicilio social en la Avenida José Pagues Llergo Número 150, de la Colonia Arboledas, de esta Ciudad de Villahermosa, Tabasco; con C.P. 86079 y con su RFC TIN080522-A59.
         </p>
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA II:</span> EL TRABAJADOR manifiesta llamarse C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, tener una edad de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age }} años</span>,
+            <span class="clausula-numero">II:</span> EL TRABAJADOR manifiesta llamarse C. <span class="bold uppercase">{{ $trabajador->nombre_completo }}</span>, tener una edad de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->age }} años</span>,
             haber nacido el día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('d') }}</span> del mes de <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->locale('es')->monthName }}</span> del año <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_nacimiento)->format('Y') }}</span>
             en <span class="bold">{{ $trabajador->lugar_nacimiento ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}</span>; y que su estado civil es <span class="bold">{{ $trabajador->estado_civil ? strtolower(\App\Models\Trabajador::ESTADOS_CIVILES[$trabajador->estado_civil]) : 'NO ESPECIFICADO' }}</span> y que su CURP es <span class="bold">{{ $trabajador->curp ?? 'NO ESPECIFICADO' }}</span>
             y su RFC es <span class="bold">{{ $trabajador->rfc ?? 'NO ESPECIFICADO' }}</span>, y que su domicilio actual es: <span class="bold">{{ $trabajador->direccion ?? ($trabajador->ciudad_actual ? $trabajador->ciudad_actual : 'NO ESPECIFICADO') }}, {{ $trabajador->ciudad_actual }}, {{ $trabajador->estado_actual }}, C.P. {{ $trabajador->codigo_postal ?? 'NO ESPECIFICADO' }}</span>.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA III:</span> EL TRABAJADOR se obliga a prestar sus servicios subordinados jurídicamente a la empresa <span class="bold">TABASCO INN, S.A. DE C.V.,</span> 
+            <span class="clausula-numero">III:</span> EL TRABAJADOR se obliga a prestar sus servicios subordinados jurídicamente a la empresa <span class="bold">TABASCO INN, S.A. DE C.V.,</span> 
             en los términos de los artículos 20 y 21 de la Ley Federal del Trabajo, consistiendo las actividades de EL TRABAJADOR en revisar el cumplimiento de los procedimientos y políticas de control interno de las diferentes operaciones de la empresa en 
             base a riesgos, verificando la fiabilidad de la operación en las diferentes áreas de la empresa, de acuerdo a la categoría o puesto de <span class="bold">{{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'CATEGORÍA A ASIGNAR' }}.</span>
         </p>
@@ -178,11 +178,11 @@
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA IV:</span> Para hacer más racional el empleo de la mano de obra disponible, EL TRABAJADOR conviene en que el patrón podrá asignarle labores distintas a su categoría y especialidad básica, procurando que éste retorne a ella a la brevedad posible.
+            <span class="clausula-numero">IV:</span> Para hacer más racional el empleo de la mano de obra disponible, EL TRABAJADOR conviene en que el patrón podrá asignarle labores distintas a su categoría y especialidad básica, procurando que éste retorne a ella a la brevedad posible.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA V:</span> EL TRABAJADOR se obliga a prestar sus servicios con la intensidad y esmero apropiados, en la forma y condiciones que la empresa le indique ejecutando todas las labores inherentes al puesto mencionado en la cláusula anterior y todas 
+            <span class="clausula-numero">V:</span> EL TRABAJADOR se obliga a prestar sus servicios con la intensidad y esmero apropiados, en la forma y condiciones que la empresa le indique ejecutando todas las labores inherentes al puesto mencionado en la cláusula anterior y todas 
             aquellas que se relacionen directa o indirectamente con ese puesto.
         </p>
         <p class="clausula">
@@ -192,23 +192,23 @@
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA VI:</span> La propiedad de los bienes originados de la relación laboral, EL TRABAJADOR reconoce que son propiedad exclusiva de la empresa, todos los documentos, programas, lista de clientes, artículos, estudios, información, folletos, publicaciones, 
+            <span class="clausula-numero">VI:</span> La propiedad de los bienes originados de la relación laboral, EL TRABAJADOR reconoce que son propiedad exclusiva de la empresa, todos los documentos, programas, lista de clientes, artículos, estudios, información, folletos, publicaciones, 
             manuales, dibujos, trazos, software, hardware, fotografías, diseños o cualquier otro trabajo intelectual o información que se le proporcione con motivo de la relación de trabajo, así como los que EL TRABAJADOR prepare o formule en relación o conexión con sus servicios, por lo que se obliga 
             a conservarlo en buen estado y entregarlos a la empresa en el momento en que este lo requiera, o bien al terminarse el presente contrato.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA VII:</span> La propiedad de las herramientas de trabajo, EL TRABAJADOR reconoce que son propiedad de la empresa, en todo tiempo, los vehículos, instrumentos, herramientas, aparatos, maquinarias, artículos software, hardware, manuales de operación, y en 
+            <span class="clausula-numero">VII:</span> La propiedad de las herramientas de trabajo, EL TRABAJADOR reconoce que son propiedad de la empresa, en todo tiempo, los vehículos, instrumentos, herramientas, aparatos, maquinarias, artículos software, hardware, manuales de operación, y en 
             general, todos los instrumentos de trabajo, datos, diseños, e información verbal, que se le proporcionen con motivo de la relación laboral.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA VIII:</span> El uso del Software se compromete EL TRABAJADOR a utilizar los que exclusivamente pertenecen y son autorizados por la empresa, en el manejo de los equipos de cómputos que se utilicen en y para el desarrollo de su trabajo.
+            <span class="clausula-numero">VIII:</span> El uso del Software se compromete EL TRABAJADOR a utilizar los que exclusivamente pertenecen y son autorizados por la empresa, en el manejo de los equipos de cómputos que se utilicen en y para el desarrollo de su trabajo.
             Serán propiedad de la empresa la creación, modificación, de nuevos programas de cómputo o en su perfeccionamiento hechas por EL TRABAJADOR, con motivo del desempeño de su puesto de trabajo, ya que estos están cubiertos por el salario que este percibe.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA IX:</span> Confidencialidad.- Tanto dentro de la vigencia de este contrato como después de la terminación del mismo, EL TRABAJADOR se obliga a no divulgar ni a utilizar en su propio beneficio cualquier aspecto o información relacionada 
+            <span class="clausula-numero">IX:</span> Confidencialidad.- Tanto dentro de la vigencia de este contrato como después de la terminación del mismo, EL TRABAJADOR se obliga a no divulgar ni a utilizar en su propio beneficio cualquier aspecto o información relacionada 
             con las actividades y operaciones de la empresa, o de las personas con los que esta tuviese relación de negocios que fueron de su conocimiento, no proporcionara a terceros, directa e indirectamente información verbal o por escrito, de los métodos, sistemas o actividades de cualquier 
             clase que se relacione con los servicios prestados, durante el desarrollo de sus actividades. Así mismo tampoco divulgará el contenido de los documentos, estudios, programas, propuesta, y en general cualquier documento que se hubiera proporcionado o facilitado durante su desempeño de sus servicios. 
             Igualmente queda obligado a no servirse para su provecho personal o de terceros de la patente, marcas y derechos, de autor de propiedad de la empresa, o de las personas con la que esta tuviese relación de negocios.
@@ -226,11 +226,11 @@
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA X:</span> EL TRABAJADOR está de acuerdo en prestar sus servicios al patrón en el domicilio señalado en la cláusula primera del presente contrato, así como en cualquier otro que el patrón indique, pudiendo ser en cualquier otra Entidad Federativa de la República Mexicana.
+            <span class="clausula-numero">X:</span> EL TRABAJADOR está de acuerdo en prestar sus servicios al patrón en el domicilio señalado en la cláusula primera del presente contrato, así como en cualquier otro que el patrón indique, pudiendo ser en cualquier otra Entidad Federativa de la República Mexicana.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XI:</span> 
+            <span class="clausula-numero">XI:</span> 
             @if(isset($tipo_contrato) && $tipo_contrato === 'indeterminado')
                 El presente Contrato Individual de Trabajo se celebra por <span class="bold">tiempo indeterminado</span>, en términos de los artículos 35 y 40 de la Ley Federal del Trabajo.
             @else
@@ -238,13 +238,13 @@
             @endif
         </p>
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XII:</span> EL TRABAJADOR percibirá como salario diario la cantidad de <span class="bold">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }} ({{ $salario_texto ?? 'CANTIDAD A DETERMINAR' }}) PESOS MEXICANOS</span>; el cual se le pagará los días quince y último de cada mes incluyéndose 
+            <span class="clausula-numero">XII:</span> EL TRABAJADOR percibirá como salario diario la cantidad de <span class="bold">${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }} ({{ $salario_texto ?? 'CANTIDAD A DETERMINAR' }}) PESOS MEXICANOS</span>; el cual se le pagará los días quince y último de cada mes incluyéndose 
             en dicho pago el séptimo día, días festivos y descansos obligatorios que por Ley existan, con fundamento en los artículos 69, 70, 71, 72, 74, 88, 108 y 109 de la Ley Federal del Trabajo, debiendo EL TRABAJADOR firmar los comprobantes respectivos.
         </p>
 
       {{-- ✅ CLÁUSULA XIII: ULTRA SIMPLIFICADA CON ACCESSORS --}}
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XIII:</span> La duración de la jornada 
+            <span class="clausula-numero">XIII:</span> La duración de la jornada 
             @if($trabajador->fichaTecnica)
                 {{ $trabajador->fichaTecnica->tipo_jornada_texto }} de trabajo será de <span class="bold">{{ $trabajador->fichaTecnica->horas_semanales_calculadas }} horas a la semana</span> {{ $trabajador->fichaTecnica->descripcion_turno }} debiendo EL TRABAJADOR de entrar a sus labores a las <span class="bold">{{ $trabajador->fichaTecnica->hora_entrada_formateada }} horas</span>, finalizando su jornada de trabajo a las <span class="bold">{{ $trabajador->fichaTecnica->hora_salida_formateada }} horas</span>, 
                 es decir, EL TRABAJADOR laborará <span class="bold">{{ $trabajador->fichaTecnica->horas_trabajadas_calculadas }} horas diarias</span> los días <span class="bold">{{ $trabajador->fichaTecnica->dias_laborables_texto }}</span> de cada semana, disfrutando EL TRABAJADOR de media hora descanso comprendida de las {{ $trabajador->fichaTecnica->horario_descanso }}, 
@@ -257,15 +257,15 @@
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XIV:</span> Se prohíbe a EL TRABAJADOR laborar tiempo extraordinario por su cuenta y sólo podrá hacerlo cuando exista autorización previa y por escrito del patrón debiendo estar dicha autorización firmado por el patrón y por el jefe inmediato de EL TRABAJADOR y/o jefe de personal, independientemente de estarse a lo dispuesto sobre dicho particular por los artículos 65, 66, 67 y 68 de la Ley Federal del Trabajo. Dicha prohibición se hace extensiva a lo referente a séptimos días, descansos obligatorios y días festivos, debiendo de estarse a lo señalado por los artículos 74 y 75 del citado Ordenamiento Legal. EL TRABAJADOR tiene la obligación de reportarse por escrito diariamente al patrón todas las actividades que realice, cualquier violación al presente Contrato o a la Ley por parte de EL TRABAJADOR, será causa de rescisión de la relación de trabajo, imputable al mismo y sin responsabilidad para el patrón.
+            <span class="clausula-numero">XIV:</span> Se prohíbe a EL TRABAJADOR laborar tiempo extraordinario por su cuenta y sólo podrá hacerlo cuando exista autorización previa y por escrito del patrón debiendo estar dicha autorización firmado por el patrón y por el jefe inmediato de EL TRABAJADOR y/o jefe de personal, independientemente de estarse a lo dispuesto sobre dicho particular por los artículos 65, 66, 67 y 68 de la Ley Federal del Trabajo. Dicha prohibición se hace extensiva a lo referente a séptimos días, descansos obligatorios y días festivos, debiendo de estarse a lo señalado por los artículos 74 y 75 del citado Ordenamiento Legal. EL TRABAJADOR tiene la obligación de reportarse por escrito diariamente al patrón todas las actividades que realice, cualquier violación al presente Contrato o a la Ley por parte de EL TRABAJADOR, será causa de rescisión de la relación de trabajo, imputable al mismo y sin responsabilidad para el patrón.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XV:</span> EL TRABAJADOR tendrá derecho al disfrute y pago de vacaciones, prima vacacional y aguinaldo en los términos de los artículos 76, 77, 78, 79. 80 y 87 de la Ley Federal del Trabajo. EL TRABAJADOR será adiestrado y capacitado en los términos de Ley y con lineamientos ordenados por la Ley de la Materia, conforme al capítulo III Bis del Título Cuarto de la Ley precitada. Son días de descansos obligatorios los siguientes: 1o. de enero, el primer lunes de febrero en conmemoración del 5 de febrero, el tercer lunes de marzo en conmemoración del 21 de marzo, 1o. de mayo, 16 de septiembre, el tercer lunes de noviembre en conmemoración del 20 de noviembre, 1o. de diciembre de cada seis años, cuando corresponda a la transmisión del Poder Ejecutivo Federal y el 25 de diciembre de cada año, de acuerdo al artículo 74 del multicitado Ordenamiento Legal. EL TRABAJADOR percibirá en esos días el importe de sus salarios conforme a derecho.
+            <span class="clausula-numero">XV:</span> EL TRABAJADOR tendrá derecho al disfrute y pago de vacaciones, prima vacacional y aguinaldo en los términos de los artículos 76, 77, 78, 79. 80 y 87 de la Ley Federal del Trabajo. EL TRABAJADOR será adiestrado y capacitado en los términos de Ley y con lineamientos ordenados por la Ley de la Materia, conforme al capítulo III Bis del Título Cuarto de la Ley precitada. Son días de descansos obligatorios los siguientes: 1o. de enero, el primer lunes de febrero en conmemoración del 5 de febrero, el tercer lunes de marzo en conmemoración del 21 de marzo, 1o. de mayo, 16 de septiembre, el tercer lunes de noviembre en conmemoración del 20 de noviembre, 1o. de diciembre de cada seis años, cuando corresponda a la transmisión del Poder Ejecutivo Federal y el 25 de diciembre de cada año, de acuerdo al artículo 74 del multicitado Ordenamiento Legal. EL TRABAJADOR percibirá en esos días el importe de sus salarios conforme a derecho.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XVI:</span> En los términos del artículo 135 de la Ley Federal del Trabajo, queda prohibido al trabajador lo siguiente:
+            <span class="clausula-numero">XVI:</span> En los términos del artículo 135 de la Ley Federal del Trabajo, queda prohibido al trabajador lo siguiente:
         </p>
         <ul class="small-text">
             <li><strong>a).-</strong> Faltar al trabajo sin permiso del patrón o sin causa justificada.</li>
@@ -281,7 +281,7 @@
         </ul>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XVII:</span> Para cumplir con lo establecido por la NOM – 035 –STPS- 2018, el patrón debe asegurarse de prevenir los riesgos psicosociales que se puedan generar en sus organizaciones esto para cumplir; es decir aquellos factores que pueden provocar trastornos de ansiedad, no orgánicos del ciclo sueño-vigilia, de estrés grave y de adaptación, derivado de la naturaleza de las funciones del puesto de trabajo, el tipo de jornada de trabajo y la exposición a acontecimientos traumáticos severos o a actos de violencia laboral. De acuerdo a lo anterior algunos de los factores que pueden provocar riesgos psicosociales son los siguientes:
+            <span class="clausula-numero">XVII:</span> Para cumplir con lo establecido por la NOM – 035 –STPS- 2018, el patrón debe asegurarse de prevenir los riesgos psicosociales que se puedan generar en sus organizaciones esto para cumplir; es decir aquellos factores que pueden provocar trastornos de ansiedad, no orgánicos del ciclo sueño-vigilia, de estrés grave y de adaptación, derivado de la naturaleza de las funciones del puesto de trabajo, el tipo de jornada de trabajo y la exposición a acontecimientos traumáticos severos o a actos de violencia laboral. De acuerdo a lo anterior algunos de los factores que pueden provocar riesgos psicosociales son los siguientes:
         </p>
         <ul class="small-text">
             <li>Cargas de trabajo cuando exceden la capacidad del TRABAJADOR.</li>
@@ -293,7 +293,7 @@
         </ul>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XVIII:</span> Para evitar este tipo de riesgos es necesario que en el centro de trabajo se realicen las siguientes acciones:
+            <span class="clausula-numero">XVIII:</span> Para evitar este tipo de riesgos es necesario que en el centro de trabajo se realicen las siguientes acciones:
         </p>
         <ul class="small-text">
             <li>Establecer y difundir en el centro de trabajo una política de prevención de riesgos psicosociales.</li>
@@ -303,7 +303,7 @@
         </ul>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XIX:</span> Para el debido cumplimiento de la NOM – 035 –STPS- 2018, son obligaciones de EL TRABAJADOR las siguientes:
+            <span class="clausula-numero">XIX:</span> Para el debido cumplimiento de la NOM – 035 –STPS- 2018, son obligaciones de EL TRABAJADOR las siguientes:
         </p>
         <ul class="small-text">
             <li>Observar las medidas de prevención y, en su caso, de control que dispone esta Norma, así como las que establezca el patrón para: controlar los factores de riesgo psicosocial, colaborar para contar con un entorno organizacional favorable y prevenir actos de violencia laboral.</li>
@@ -316,25 +316,25 @@
         </ul>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XX:</span> EL TRABAJADOR o empleado queda obligado a cumplir las disposiciones de las normas de trabajo que le sean aplicables, a observar las medidas preventivas e higiénicas que acuerden las autoridades competentes y las que indiquen los patrones para seguridad de los trabajadores y al efecto a someterse a los reconocimientos médicos que periódicamente ordene el patrón, a ejecutar el trabajo bajo la dirección del patrón o de su representante cuya Autoridad estarán subordinados en todo lo concerniente al trabajo, a ejecutar el trabajo con la intensidad, cuidado y esmero apropiado y en la forma, tiempo y lugar convenidos, dar aviso de inmediato al patrón de las causas justificadas que le impiden concurrir a su trabajo; restituir al patrón los materiales no usados y conservar en buen estado los instrumentos y útiles que les hayan dado para el trabajo, a observar buenas costumbres durante el servicio, prestar auxilio en cualquier tiempo que se necesite, cuando por siniestro o riesgo inminente peligren las personas o los intereses del patrón y de sus compañeros de trabajo, a poner en conocimiento del patrón las enfermedades contagiosas que padezcan tan pronto tengan conocimiento de las mismas; a comunicar al patrón o su representante las deficiencias que adviertan a fin de evitar daños y perjuicios a los intereses y vidas de sus compañeros de trabajo o a los patrones, y a guardar escrupulosamente los secretos técnicos, comerciales y de fabricación de los cuales tengan conocimiento por razón del trabajo así como de los asuntos administrativos reservados cuya divulgación pueda causar perjuicio a la empresa, quedando prohibido al trabajador sustraer útiles de trabajo o materia prima o elaborada, presentarse al trabajo en estado de embriaguez o bajo la influencia de narcótico o drogas enervantes, portar armas durante las horas del trabajo, salvo que la naturaleza de ésta lo exija y usar los útiles y herramientas suministradas por el patrón u objetos distintos de aquel a que estén destinados y todos los demás actos que a los trabajadores veta el artículo 135 de la Ley de la Materia.
+            <span class="clausula-numero">XX:</span> EL TRABAJADOR o empleado queda obligado a cumplir las disposiciones de las normas de trabajo que le sean aplicables, a observar las medidas preventivas e higiénicas que acuerden las autoridades competentes y las que indiquen los patrones para seguridad de los trabajadores y al efecto a someterse a los reconocimientos médicos que periódicamente ordene el patrón, a ejecutar el trabajo bajo la dirección del patrón o de su representante cuya Autoridad estarán subordinados en todo lo concerniente al trabajo, a ejecutar el trabajo con la intensidad, cuidado y esmero apropiado y en la forma, tiempo y lugar convenidos, dar aviso de inmediato al patrón de las causas justificadas que le impiden concurrir a su trabajo; restituir al patrón los materiales no usados y conservar en buen estado los instrumentos y útiles que les hayan dado para el trabajo, a observar buenas costumbres durante el servicio, prestar auxilio en cualquier tiempo que se necesite, cuando por siniestro o riesgo inminente peligren las personas o los intereses del patrón y de sus compañeros de trabajo, a poner en conocimiento del patrón las enfermedades contagiosas que padezcan tan pronto tengan conocimiento de las mismas; a comunicar al patrón o su representante las deficiencias que adviertan a fin de evitar daños y perjuicios a los intereses y vidas de sus compañeros de trabajo o a los patrones, y a guardar escrupulosamente los secretos técnicos, comerciales y de fabricación de los cuales tengan conocimiento por razón del trabajo así como de los asuntos administrativos reservados cuya divulgación pueda causar perjuicio a la empresa, quedando prohibido al trabajador sustraer útiles de trabajo o materia prima o elaborada, presentarse al trabajo en estado de embriaguez o bajo la influencia de narcótico o drogas enervantes, portar armas durante las horas del trabajo, salvo que la naturaleza de ésta lo exija y usar los útiles y herramientas suministradas por el patrón u objetos distintos de aquel a que estén destinados y todos los demás actos que a los trabajadores veta el artículo 135 de la Ley de la Materia.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XXI:</span> EL TRABAJADOR se reconoce y se obliga a respetar en todas y cada una de sus partes el reglamento interior de trabajo de la empresa que se encuentra depositado ante las Autoridades de Trabajo del Estado de Tabasco y aceptando que su inobservancia al mismo podría hacerlo acreedor a sanciones.
+            <span class="clausula-numero">XXI:</span> EL TRABAJADOR se reconoce y se obliga a respetar en todas y cada una de sus partes el reglamento interior de trabajo de la empresa que se encuentra depositado ante las Autoridades de Trabajo del Estado de Tabasco y aceptando que su inobservancia al mismo podría hacerlo acreedor a sanciones.
         </p>
 
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XXII:</span> Patrón y trabajador están totalmente de acuerdo con el contenido del presente contrato y de que todo lo no previsto en el mismo, se esté a lo dispuesto en la Ley Federal del Trabajo.
+            <span class="clausula-numero">XXII:</span> Patrón y trabajador están totalmente de acuerdo con el contenido del presente contrato y de que todo lo no previsto en el mismo, se esté a lo dispuesto en la Ley Federal del Trabajo.
         </p>
 
         {{-- ✅ CLÁUSULA XXIII: DINÁMICA CON ANTIGÜEDAD REAL --}}
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XXIII:</span> Se reconoce al trabajador por parte del patrón una antigüedad a partir del día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->format('d') }} de {{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->locale('es')->monthName }} del año {{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->format('Y') }}</span>.
+            <span class="clausula-numero">XXIII:</span> Se reconoce al trabajador por parte del patrón una antigüedad a partir del día <span class="bold">{{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->format('d') }} de {{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->locale('es')->monthName }} del año {{ \Carbon\Carbon::parse($trabajador->fecha_ingreso)->format('Y') }}</span>.
         </p>
 
         {{-- ✅ CLÁUSULA XXIV: DINÁMICA CON BENEFICIARIO DE LA FICHA TÉCNICA --}}
         <p class="clausula">
-            <span class="clausula-numero">CLÁUSULA XXIV:</span> En cumplimiento con la fracción X del artículo 25 de la Ley Federal del Trabajo en este acto EL TRABAJADOR señala como su beneficiario 
+            <span class="clausula-numero">XXIV:</span> En cumplimiento con la fracción X del artículo 25 de la Ley Federal del Trabajo en este acto EL TRABAJADOR señala como su beneficiario 
             @if($trabajador->fichaTecnica && $trabajador->fichaTecnica->beneficiario_nombre)
                 a {{ $trabajador->fichaTecnica->beneficiario_parentesco === 'esposa' || $trabajador->fichaTecnica->beneficiario_parentesco === 'madre' || $trabajador->fichaTecnica->beneficiario_parentesco === 'hija' || $trabajador->fichaTecnica->beneficiario_parentesco === 'hermana' || $trabajador->fichaTecnica->beneficiario_parentesco === 'abuela' ? 'la C.' : 'el C.' }} <span class="bold uppercase">{{ $trabajador->fichaTecnica->beneficiario_nombre }}</span>, {{ $trabajador->fichaTecnica->beneficiario_parentesco ? 'la cual tiene como parentesco o filiación que es su ' . (\App\Models\FichaTecnica::PARENTESCOS_BENEFICIARIO[$trabajador->fichaTecnica->beneficiario_parentesco] ?? $trabajador->fichaTecnica->beneficiario_parentesco) : 'con parentesco por especificar' }},
             @else

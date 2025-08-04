@@ -25,14 +25,14 @@ class DatabaseSeeder extends Seeder
         // ✅ DESPUÉS: Crear Usuarios de prueba
         // Usuario de Recursos Humanos
         User::create([
-            'nombre' => 'Recursos Humanos',
-            'email' => 'rh@hotel.com',
+            'nombre' => 'Cecilia del Carmen Velazquez del Valle',
+            'email' => 'recursos_humanos@tabascoinn.com',
             'password' => Hash::make('password123'),
             'tipo' => 'Recursos_Humanos',
         ]);
 
         // Usuario de Gerencia
-        User::create([
+        User::create([  
             'nombre' => 'Gerencia',
             'email' => 'gerencia@hotel.com',
             'password' => Hash::make('password123'),
