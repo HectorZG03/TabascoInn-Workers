@@ -47,7 +47,6 @@ class Trabajador extends Model
         'correo',
         'direccion',
         'fecha_ingreso',
-        'antiguedad',
         'estatus',
     ];
 

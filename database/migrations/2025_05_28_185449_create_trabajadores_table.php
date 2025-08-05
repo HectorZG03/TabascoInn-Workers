@@ -49,7 +49,6 @@ return new class extends Migration
             
             // ✅ DATOS LABORALES
             $table->date('fecha_ingreso')->nullable();
-            $table->integer('antiguedad')->default(0); // Años de antigüedad (entero)
             
             // ✅ ESTADO DEL TRABAJADOR - 5 ESTADOS ÚNICAMENTE
             $table->enum('estatus', [
@@ -68,7 +67,6 @@ return new class extends Migration
             $table->index(['estatus', 'created_at'], 'idx_estatus_fecha');
             $table->index('fecha_ingreso', 'idx_fecha_ingreso');
             $table->index(['nombre_trabajador', 'ape_pat'], 'idx_nombres');
-            $table->index('antiguedad', 'idx_antiguedad');
             $table->index('curp', 'idx_curp');
             $table->index('rfc', 'idx_rfc');
             $table->index('correo', 'idx_correo');

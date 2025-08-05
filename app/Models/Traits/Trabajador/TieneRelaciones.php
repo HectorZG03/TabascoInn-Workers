@@ -269,7 +269,7 @@ trait TieneRelaciones
     /**
      * Compensar horas extra desde el modelo Trabajador
      */
-    public function compensarHorasExtra(float $horas, string $fecha, string $descripcion = null): HorasExtra
+    public function compensarHorasExtra(float $horas, string $fecha, ?string $descripcion = null): HorasExtra
     {
         if (!$this->puedeCompensarHorasExtra()) {
             throw new \Exception('Este trabajador no puede compensar horas extra en su estado actual o no tiene saldo disponible');
@@ -281,7 +281,7 @@ trait TieneRelaciones
     /**
      * Obtener historial de horas extra con filtros
      */
-    public function obtenerHistorialHorasExtra(string $tipo = null, int $limite = null)
+    public function obtenerHistorialHorasExtra(?string $tipo = null, ?int $limite = null)
     {
         $query = $this->horasExtra()
                      ->orderBy('fecha', 'desc')

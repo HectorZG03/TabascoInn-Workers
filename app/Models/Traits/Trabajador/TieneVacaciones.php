@@ -15,7 +15,7 @@ trait TieneVacaciones
     // ✅ CÁLCULOS PRINCIPALES CONSOLIDADOS
     public function getDiasVacacionesCorrespondientesAttribute(): int
     {
-        return VacacionesTrabajador::calcularDiasCorrespondientes($this->antiguedad ?? 0);
+        return VacacionesTrabajador::calcularDiasCorrespondientes($this->antiguedad);
     }
 
 
@@ -44,7 +44,7 @@ trait TieneVacaciones
             ->where('año_correspondiente', $añoActual)
             ->whereNotIn('estado', ['cancelada'])
             ->sum('dias_solicitados');
-
+            
         return max(0, $this->dias_vacaciones_correspondientes - $diasUsados);
     }
 
