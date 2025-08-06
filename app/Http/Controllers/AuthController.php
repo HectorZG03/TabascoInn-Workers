@@ -36,7 +36,18 @@ class AuthController extends Controller
 
         $credentials = $request->only('email', 'password');
 
+        // Verificar credenciales y que el usuario esté activo
         if (Auth::attempt($credentials)) {
+            $user = Auth::user();
+            
+            // Verificar si el usuario está activo (solo para operativos)
+            if ($user->tipo === 'Operativo' && !$user->activo) {
+                Auth::logout();
+                return back()->withErrors([
+                    'email' => 'Tu cuenta está desactivada. Contacta al administrador.',
+                ])->withInput();
+            }
+            
             $request->session()->regenerate();
             
             return redirect()->intended('/dashboard')->with('success', 'Bienvenido al sistema');

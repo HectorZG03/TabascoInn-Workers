@@ -79,9 +79,21 @@
                 </div>
             </div>
         </div>
+        @if(Auth::user()->esAdministrador())
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 card-hover" style="border-top: 3px solid #fd7e14;">
+                    <div class="card-body text-center" style="background-color: #FFFFFF;">
+                        <i class="bi bi-people-fill fs-1 mb-3" style="color: #fd7e14;"></i>
+                        <h5 class="card-title" style="color: #2F2F2F;">Usuarios Operativos</h5>
+                        <p class="card-text" style="color: #5D3A1A;">Gestión de usuarios y permisos del sistema</p>
+                        <a href="{{ route('usuarios.operativos.lista') }}" class="btn text-white" style="background-color: #fd7e14;">
+                            <i class="bi bi-person-gear"></i> Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
 
-
-
+        @endif
         <!-- Cerrar Sesión -->
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card shadow h-100 card-hover" style="border-top: 3px solid #dc3545;">

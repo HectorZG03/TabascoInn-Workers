@@ -20,6 +20,7 @@ class DatabaseSeeder extends Seeder
             AreaSeeder::class,              // 2️⃣ Áreas reales (necesitan departamentos)
             CategoriaSeeder::class,         // 3️⃣ Categorías reales (necesitan áreas)
             VariablesContratoSeeder::class, // 4️⃣ Variables de contrato corregidas
+            UserSeeder::class,              // 5️⃣ Usuarios operativos y gerencia
         ]);
 
         // ✅ DESPUÉS: Crear Usuarios de prueba
@@ -34,7 +35,7 @@ class DatabaseSeeder extends Seeder
         // Usuario de Gerencia
         User::create([  
             'nombre' => 'Gerencia',
-            'email' => 'gerencia@hotel.com',
+            'email' => 'gerencias@hotel.com',
             'password' => Hash::make('password123'),
             'tipo' => 'Gerencia',
         ]);
@@ -42,7 +43,7 @@ class DatabaseSeeder extends Seeder
         // ✅ Usuario Administrador adicional
         User::create([
             'nombre' => 'Administrador',
-            'email' => 'admin@hotel.com',
+            'email' => 'admis@hotel.com',
             'password' => Hash::make('password123'),
             'tipo' => 'Gerencia',
         ]);

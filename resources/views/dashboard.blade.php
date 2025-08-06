@@ -71,21 +71,23 @@
             </div>
         </div>
 
-        <!-- Configuración -->
-        <div class="function-card" data-category="config">
-            <div class="card-accent accent-neutral"></div>
-            <div class="card-content">
-                <div class="card-icon icon-neutral">
-                    <i class="bi bi-gear-fill"></i>
+        @if (Auth::user()->esAdministrador())
+            <!-- Configuración -->
+            <div class="function-card" data-category="config">
+                <div class="card-accent accent-neutral"></div>
+                <div class="card-content">
+                    <div class="card-icon icon-neutral">
+                        <i class="bi bi-gear-fill"></i>
+                    </div>
+                    <h3 class="card-title">Configuración</h3>
+                    <p class="card-description">Ajustes generales del sistema</p>
+                    <a href="{{ route('users.config') }}" class="btn-neutral">
+                        <span>Configurar</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <h3 class="card-title">Configuración</h3>
-                <p class="card-description">Ajustes generales del sistema</p>
-                <a href="{{ route('users.config') }}" class="btn-neutral">
-                    <span>Configurar</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
             </div>
-        </div>
+        @endif
     </div>
 </div>
 
