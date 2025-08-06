@@ -15,10 +15,6 @@
                     <p class="text-muted mb-0">Gestiona todos los empleados del hotel</p>
                 </div>
                 <div class="d-flex gap-2">
-                    {{-- Botón de Importación Masiva --}}
-                    <button type="button" class="btn btn-outline-primary" data-bs-toggle="modal" data-bs-target="#modalImportacion">
-                        <i class="bi bi-cloud-upload"></i> Importar Excel
-                    </button>
                     {{-- Botón existente --}}
                     <a href="{{ route('trabajadores.create') }}" class="btn btn-primary">
                         <i class="bi bi-person-plus"></i> Nuevo Trabajador
@@ -525,7 +521,6 @@
 {{-- ✅ INCLUIR MODALES PRINCIPALES --}}
 @include('trabajadores.modales.despidos')
 @include('trabajadores.modales.permisos')
-@include('trabajadores.modales.importacion')
 
 {{-- ✅ MODALES DE HORAS EXTRAS - Generados solo para trabajadores con acciones disponibles --}}
 @if($trabajadores->count() > 0)
@@ -545,31 +540,6 @@
 
 {{-- 2. SEGUNDO: Script de formato global para fechas y validaciones --}}
 <script src="{{ asset('js/formato-global.js') }}"></script>
-
-{{-- 3. TERCERO: Variables globales de configuración --}}
-<script>
-// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
-window.APP_DEBUG = @json(config('app.debug'));
-window.currentUser = @json([
-    'id' => Auth::id(),
-    'nombre' => Auth::user()->nombre,
-    'tipo' => Auth::user()->tipo
-]);
-
-// ✅ VERIFICAR QUE DEPENDENCIAS CRÍTICAS ESTÉN DISPONIBLES
-if (typeof AppRoutes === 'undefined') {
-    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
-} else {
-    console.log('✅ AppRoutes disponible para lista de trabajadores');
-}
-
-if (typeof FormatoGlobal === 'undefined') {
-    console.error('❌ CRÍTICO: formato-global.js no se cargó correctamente');
-} else {
-    console.log('✅ FormatoGlobal disponible para modales');
-}
-</script>
-
 {{-- 4. CUARTO: Scripts específicos de modales y funcionalidades --}}
 <script src="{{ asset('js/modales/permisos_modal.js') }}"></script>
 <script src="{{ asset('js/modales/despidos_modal.js') }}"></script>

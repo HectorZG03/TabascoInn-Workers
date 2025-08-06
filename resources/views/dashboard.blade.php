@@ -8,6 +8,8 @@
     <!-- Grid de funcionalidades -->
     <div class="functions-grid">
         <!-- Alta de Empleado -->
+    @if ($user->tienePermiso('trabajadores', 'crear'))
+        <!-- Alta de Empleado -->
         <div class="function-card" data-category="empleados">
             <div class="card-accent accent-primary"></div>
             <div class="card-content">
@@ -22,6 +24,7 @@
                 </a>
             </div>
         </div>
+    @endif
 
         <!-- Gestión de Trabajadores -->
         <div class="function-card" data-category="trabajadores">

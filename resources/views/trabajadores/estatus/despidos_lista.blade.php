@@ -435,24 +435,6 @@
 {{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
 
-{{-- 2. SEGUNDO: Variables globales de configuración --}}
-<script>
-// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
-window.APP_DEBUG = @json(config('app.debug'));
-window.currentUser = @json([
-    'id' => Auth::id(),
-    'nombre' => Auth::user()->nombre,
-    'tipo' => Auth::user()->tipo
-]);
-
-// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
-if (typeof AppRoutes === 'undefined') {
-    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
-} else {
-    console.log('✅ AppRoutes disponible para lista de despidos');
-}
-</script>
-
 {{-- 3. TERCERO: Script específico de lista de despidos --}}
 <script src="{{ asset('js/listas/despidos_lista.js') }}"></script>
 

@@ -141,8 +141,10 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px; border-radius: 50%; font-size: 12px;">
-                                                {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
+                                            <div class="flex-shrink-0 me-3">
+                                                <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
+                                                    {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
+                                                </div>
                                             </div>
                                             <div>
                                                 <div class="fw-medium">{{ $permiso->trabajador->nombre_completo }}</div>
@@ -418,21 +420,6 @@
 
 {{-- ✅ SCRIPTS ACTUALIZADOS --}}
 <script src="{{ asset('js/app-routes.js') }}"></script>
-
-<script>
-window.APP_DEBUG = @json(config('app.debug'));
-window.currentUser = @json([
-    'id' => Auth::id(),
-    'nombre' => Auth::user()->nombre,
-    'tipo' => Auth::user()->tipo
-]);
-
-if (typeof AppRoutes === 'undefined') {
-    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
-} else {
-    console.log('✅ AppRoutes disponible para lista de permisos');
-}
-</script>
 
 <script src="{{ asset('js/listas/permisos_lista.js') }}"></script>
 

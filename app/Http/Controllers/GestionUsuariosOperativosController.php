@@ -29,7 +29,7 @@ class GestionUsuariosOperativosController extends Controller
     public function formularioCrear()
     {
         $modulos = PermisoUsuario::getModulosDisponibles();
-        return view('users.configuracion.usuarios_operativos.crear_usuario', compact('modulos'));
+        return view('users.configuracion.usuarios_operativos.crear_usuarios', compact('modulos'));
     }
 
     /**
@@ -69,7 +69,7 @@ class GestionUsuariosOperativosController extends Controller
             }
         });
 
-        return redirect()->route('users.configuracionusuarios.operativos.lista')
+        return redirect()->route('users.configuracionusuarios.operativos.lista_usuarios')
             ->with('success', 'Usuario operativo creado correctamente');
     }
 

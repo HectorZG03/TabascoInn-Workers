@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             AreaSeeder::class,              // 2️⃣ Áreas reales (necesitan departamentos)
             CategoriaSeeder::class,         // 3️⃣ Categorías reales (necesitan áreas)
             VariablesContratoSeeder::class, // 4️⃣ Variables de contrato corregidas
-            UserSeeder::class,              // 5️⃣ Usuarios operativos y gerencia
         ]);
 
         // ✅ DESPUÉS: Crear Usuarios de prueba
@@ -66,11 +65,6 @@ class DatabaseSeeder extends Seeder
         $this->command->line('• COMPRAS → Almacén');
         $this->command->line('• ADMINISTRATIVO → Gerencia Administrativa');
         $this->command->line('');
-        
-        $this->command->info('👤 Usuarios de prueba:');
-        $this->command->line('• RH: rh@hotel.com / password123');
-        $this->command->line('• Gerencia: gerencia@hotel.com / password123');
-        $this->command->line('• Admin: admin@hotel.com / password123');
         
         $this->command->info('');
         $this->command->info('✅ Sistema inicializado con estructura REAL del Hotel Tabasco Inn:');

@@ -15,7 +15,6 @@ use App\Http\Controllers\PlantillaContratoController;
 use App\Http\Controllers\VariableContratoController;
 use App\Http\Controllers\DiasAntiguedadController;
 use App\Http\Controllers\ContratoController;
-use App\Http\Controllers\ImportController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\AdminContratosController; 
 use App\Http\Controllers\EstadisticasController;
@@ -28,7 +27,6 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return redirect('/login');
 });
-
 // Rutas de autenticación
 Route::get('/login', [AuthController::class, 'showLogin'])->name('login');
 Route::post('/login', [AuthController::class, 'login']);
@@ -36,7 +34,6 @@ Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
 
 // Rutas protegidas
 Route::middleware(['auth'])->group(function () {
- 
     // ✅ RUTAS DE CONFIGURACIÓN DE USUARIO
     Route::prefix('configuracion')->name('users.')->group(function () {
         Route::get('/', [UserController::class, 'configMenu'])->name('config');
@@ -174,55 +171,65 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard - accesible para todos los usuarios autenticados
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
-    // ✅ IMPORTACIÓN MASIVA CON PERMISOS
-    Route::prefix('import')->name('import.')->middleware('check.permiso:trabajadores,crear')->group(function () {
-        Route::get('/plantilla', [ImportController::class, 'descargarPlantilla'])->name('plantilla');
-        Route::post('/procesar', [ImportController::class, 'importarTrabajadores'])->name('procesar');
-    });
-
-    // ✅ TRABAJADORES CON PERMISOS
-    Route::prefix('trabajadores')->name('trabajadores.')->middleware('check.permiso:trabajadores')->group(function () {
-        // Ver - requiere permiso ver
-        Route::get('/', [TrabajadorController::class, 'index'])->name('index');
-        Route::get('/{trabajador}', [TrabajadorController::class, 'show'])->name('show');
-        Route::get('/{trabajador}/historial-promociones', [ActPerfilTrabajadorController::class, 'verHistorialCompleto'])
-            ->name('historial-promociones');
+    // ✅ TRABAJADORES CON PERMISOS REFINADOS Y ORDEN CORRECTO
+  // ✅ TRABAJADORES CON PERMISOS REFINADOS Y ORDEN CORRECTO
+    Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
         
-        // Crear - requiere permiso crear
-        Route::middleware('check.permiso:trabajadores,crear')->group(function () {
-            Route::get('/crear', [TrabajadorController::class, 'create'])->name('create');
-            Route::post('/', [TrabajadorController::class, 'store'])->name('store');
-        });
+        // ✅ 1. PRIMERO: RUTAS ESPECÍFICAS (sin parámetros dinámicos)
         
-        // Editar - requiere permiso editar
-        Route::middleware('check.permiso:trabajadores,editar')->group(function () {
-            Route::get('/{trabajador}/editar', [TrabajadorController::class, 'edit'])->name('edit');
-            Route::put('/{trabajador}', [TrabajadorController::class, 'update'])->name('update');
-        });
+        // Lista de trabajadores - requiere solo "ver"
+        Route::get('/', [TrabajadorController::class, 'index'])
+            ->middleware('check.permiso:trabajadores')
+            ->name('index');
         
-        // Eliminar - requiere permiso eliminar
-        Route::middleware('check.permiso:trabajadores,eliminar')->group(function () {
-            Route::delete('/{trabajador}', [TrabajadorController::class, 'destroy'])->name('destroy');
-        });
+        // Crear trabajador - requiere "crear" 
+        Route::get('/crear', [TrabajadorController::class, 'create'])
+            ->middleware('check.permiso:trabajadores,crear')
+            ->name('create');
+            
+        // Guardar trabajador - requiere "crear"
+        Route::post('/', [TrabajadorController::class, 'store'])
+            ->middleware('check.permiso:trabajadores,crear')
+            ->name('store');
+        
+        // Buscar trabajadores - requiere "ver"
+        Route::get('/buscar', [BusquedaTrabajadoresController::class, 'index'])
+            ->middleware('check.permiso:trabajadores')
+            ->name('buscar');
+        
+        // ✅ 2. SEGUNDO: RUTAS CON PARÁMETROS DINÁMICOS
+        
+        // Ver perfil de trabajador específico - requiere solo "ver"
+        Route::get('/{trabajador}', [TrabajadorController::class, 'show'])
+            ->middleware('check.permiso:trabajadores')
+            ->name('show');
+        
+        // Eliminar trabajador - requiere "eliminar"
+        Route::delete('/{trabajador}', [TrabajadorController::class, 'destroy'])
+            ->middleware('check.permiso:trabajadores,eliminar')
+            ->name('destroy');
 
-        // ✅ ACCIONES ESPECÍFICAS CON PERMISOS
-        Route::post('/{trabajador}/despedir', [DespidosController::class, 'store'])
-            ->middleware('check.permiso:despidos,crear')->name('despedir');
-        Route::post('/{trabajador}/permisos', [PermisosLaboralesController::class, 'store'])
-            ->middleware('check.permiso:permisos_laborales,crear')->name('permisos.store');
-
-        // ✅ PERFIL AVANZADO CON PERMISOS
-        Route::prefix('{trabajador}/perfil')->name('perfil.')->middleware('check.permiso:trabajadores,editar')->group(function () {
+        // ✅ 3. RUTAS DEL PERFIL - VISUALIZACIÓN (requiere solo "ver")
+        Route::prefix('{trabajador}/perfil')->name('perfil.')->middleware('check.permiso:trabajadores')->group(function () {
             Route::get('/', [ActPerfilTrabajadorController::class, 'show'])->name('show');
+            Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
+        });
+        
+        // ✅ 4. RUTAS DEL PERFIL - EDICIÓN (requieren "editar")
+        Route::prefix('{trabajador}/perfil')->name('perfil.')->middleware('check.permiso:trabajadores,editar')->group(function () {
             Route::put('/datos', [ActPerfilTrabajadorController::class, 'updateDatos'])->name('update-datos');
             Route::put('/ficha-tecnica', [ActPerfilTrabajadorController::class, 'updateFichaTecnica'])->name('update-ficha');
             Route::post('/documentos', [ActPerfilTrabajadorController::class, 'uploadDocument'])->name('upload-document');
             Route::delete('/documentos', [ActPerfilTrabajadorController::class, 'deleteDocument'])->name('delete-document');
-            Route::get('/areas/{area}/categorias', [ActPerfilTrabajadorController::class, 'getCategoriasPorArea'])->name('categorias');
             Route::put('/estatus', [ActPerfilTrabajadorController::class, 'updateEstatus'])->name('update-estatus');
         });
 
-        // ✅ HISTORIALES CON PERMISOS
+        // ✅ 5. HISTORIAL DE PROMOCIONES - requiere solo "ver"
+        Route::get('/{trabajador}/historial-promociones', [ActPerfilTrabajadorController::class, 'verHistorialCompleto'])
+            ->middleware('check.permiso:trabajadores')
+            ->name('historial-promociones');
+
+        // ✅ 6. HISTORIALES CON PERMISOS ESPECÍFICOS
         Route::prefix('{trabajador}')->name('perfil.')->group(function () {
             Route::get('/permisos/historial', [HistorialesPerfilController::class, 'permisos'])
                 ->middleware('check.permiso:permisos_laborales')->name('permisos.historial');
@@ -230,13 +237,33 @@ Route::middleware(['auth'])->group(function () {
                 ->middleware('check.permiso:despidos')->name('bajas.historial');
         });
 
-        // ✅ DETALLES CON PERMISOS
-        Route::get('/permisos/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
-            ->middleware('check.permiso:permisos_laborales')->name('permisos.detalle');
-        Route::get('/despidos/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
-            ->middleware('check.permiso:despidos')->name('despidos.detalle');
-        
-        // ✅ CONTRATOS CON PERMISOS
+        // ✅ 7. **AGREGAR ESTAS RUTAS AQUÍ** - PERMISOS LABORALES (CREAR)
+        Route::prefix('{trabajador}')->middleware('check.permiso:permisos_laborales')->group(function () {
+            // Mostrar formulario para crear permiso
+            Route::get('/permisos/crear', [PermisosLaboralesController::class, 'create'])
+                ->middleware('check.permiso:permisos_laborales,crear')
+                ->name('permisos.crear');
+                
+            // Procesar creación de permiso
+            Route::post('/permisos', [PermisosLaboralesController::class, 'store'])
+                ->middleware('check.permiso:permisos_laborales,crear')
+                ->name('permisos.store');
+        });
+
+        // ✅ 8. **AGREGAR ESTAS RUTAS AQUÍ** - DESPIDOS (CREAR)
+        Route::prefix('{trabajador}')->middleware('check.permiso:despidos')->group(function () {
+            // Mostrar formulario para crear despido
+            Route::get('/despedir', [DespidosController::class, 'create'])
+                ->middleware('check.permiso:despidos,crear')
+                ->name('despedir.crear');
+                
+            // Procesar creación de despido
+            Route::post('/despedir', [DespidosController::class, 'store'])
+                ->middleware('check.permiso:despidos,crear')
+                ->name('despedir.store');
+        });
+
+        // ✅ 9. CONTRATOS CON PERMISOS ESPECÍFICOS
         Route::prefix('{trabajador}/contratos')->name('contratos.')
             ->controller(AdminContratosController::class)
             ->middleware('check.permiso:contratos')->group(function () {
@@ -258,7 +285,7 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
-        // ✅ HORAS EXTRA CON PERMISOS
+        // ✅ 10. HORAS EXTRA CON PERMISOS ESPECÍFICOS
         Route::prefix('{trabajador}/horas-extra')->name('horas-extra.')
             ->controller(HorasExtraController::class)
             ->middleware('check.permiso:horas_extra')->group(function () {
@@ -272,7 +299,7 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
-        // ✅ VACACIONES CON PERMISOS
+        // ✅ 11. VACACIONES CON PERMISOS ESPECÍFICOS
         Route::prefix('{trabajador}/vacaciones')->name('vacaciones.')
             ->middleware('check.permiso:vacaciones')->group(function () {
                 Route::get('/', [VacacionesController::class, 'show'])->name('show');
@@ -295,7 +322,7 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
-        // ✅ DOCUMENTOS DE VACACIONES CON PERMISOS
+        // ✅ 12. DOCUMENTOS DE VACACIONES CON PERMISOS ESPECÍFICOS
         Route::prefix('{trabajador}/documentos-vacaciones')->name('documentos-vacaciones.')
             ->middleware('check.permiso:vacaciones')->group(function () {
                 Route::get('/', [DocumentosVacacionesController::class, 'index'])->name('index');
@@ -314,7 +341,22 @@ Route::middleware(['auth'])->group(function () {
         });
     });
 
-    // ✅ DESPIDOS CON PERMISOS
+    // ✅ RUTAS INDEPENDIENTES (fuera del prefix trabajadores)
+
+    // DETALLES CON PERMISOS ESPECÍFICOS
+    Route::get('/trabajadores/permisos/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
+        ->middleware('check.permiso:permisos_laborales')->name('trabajadores.permisos.detalle');
+    Route::get('/trabajadores/despidos/{despido}/detalle', [HistorialesPerfilController::class, 'detalleBaja'])
+        ->middleware('check.permiso:despidos')->name('trabajadores.despidos.detalle');
+
+    // ✅ BÚSQUEDA DE TRABAJADORES CON PERMISOS (APIs)
+    Route::middleware('check.permiso:trabajadores')->group(function () {
+        Route::get('/api/trabajadores/busqueda-rapida', [BusquedaTrabajadoresController::class, 'busquedaRapida'])->name('trabajadores.busqueda.rapida');
+        Route::get('/api/trabajadores/sugerencias', [BusquedaTrabajadoresController::class, 'sugerencias'])->name('trabajadores.sugerencias');
+        Route::get('/api/trabajadores/estadisticas', [BusquedaTrabajadoresController::class, 'estadisticas'])->name('trabajadores.estadisticas');
+    });
+
+    // ✅ DESPIDOS CON PERMISOS ESPECÍFICOS
     Route::prefix('despidos')->name('despidos.')
         ->controller(DespidosController::class)
         ->middleware('check.permiso:despidos')->group(function () {
@@ -329,7 +371,7 @@ Route::middleware(['auth'])->group(function () {
             });
     });
 
-    // ✅ PERMISOS LABORALES CON PERMISOS
+    // ✅ PERMISOS LABORALES CON PERMISOS ESPECÍFICOS
     Route::prefix('permisos')->name('permisos.')
         ->middleware('check.permiso:permisos_laborales')->group(function () {
             Route::get('/', [PermisosLaboralesController::class, 'index'])->name('index');
@@ -360,7 +402,7 @@ Route::middleware(['auth'])->group(function () {
             });
             Route::get('/{permiso}/pdf', [FormatoPermisosController::class, 'generarPDF'])->name('pdf');
     });
-    
+
     // ✅ DESCARGA DE ARCHIVOS DE PERMISOS
     Route::get('/permisos/{id}/descargar', [PermisosLaboralesController::class, 'descargar'])
         ->middleware('check.permiso:permisos_laborales')

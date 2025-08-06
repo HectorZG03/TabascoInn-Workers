@@ -84,11 +84,9 @@
         <div class="col-12">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="d-flex gap-2">
-                    @if(Auth::user()->esGerencia() || Auth::user()->esRecursosHumanos())
                         <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
                             <i class="bi bi-plus-lg"></i> Asignar Vacaciones
                         </button>
-                    @endif
                     <a href="{{ route('trabajadores.documentos-vacaciones.index', $trabajador) }}" class="btn btn-outline-success">
                         <i class="bi bi-file-earmark-pdf"></i> Documentos
                     </a>
@@ -169,11 +167,9 @@
         <i class="bi bi-calendar-heart text-muted mb-3" style="font-size: 4rem;"></i>
         <h4 class="text-muted">No hay vacaciones registradas</h4>
         <p class="text-muted mb-4">Este trabajador aún no tiene vacaciones asignadas.</p>
-        @if(Auth::user()->esGerencia() || Auth::user()->esRecursosHumanos())
             <button class="btn btn-primary" data-bs-toggle="modal" data-bs-target="#asignarVacacionesModal">
                 <i class="bi bi-plus-lg"></i> Asignar Primera Vacación
             </button>
-        @endif
     </div>
 
     <!-- Error State -->

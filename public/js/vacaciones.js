@@ -126,9 +126,7 @@ class VacacionesManager {
         const $acciones = $template.find('.acciones-vacacion');
         $acciones.empty();
         
-        const canManage = window.currentUser?.tipo === 'Gerencia' || window.currentUser?.tipo === 'Recursos_Humanos';
-        
-        if (canManage) {
+
             if (vacacion.estado === 'pendiente') {
                 $acciones.append(`
                     <button class="btn btn-success btn-sm" onclick="vacacionesApp.iniciarVacacion(${vacacion.id_vacacion})">
@@ -155,8 +153,6 @@ class VacacionesManager {
                     </button>
                 `);
             }
-        }
-        
         $acciones.append(`
             <button class="btn btn-outline-info btn-sm" onclick="vacacionesApp.verDetalles(${vacacion.id_vacacion})">
                 <i class="bi bi-eye"></i> Detalles
