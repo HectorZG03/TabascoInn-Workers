@@ -2,6 +2,7 @@
 
 namespace App\Models\Traits\Trabajador;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 use App\Models\{
     FichaTecnica, 
@@ -28,6 +29,12 @@ trait TieneRelaciones
         return $this->hasOne(Despidos::class, 'id_trabajador');
     }
 
+    // ✅ NUEVA RELACIÓN: Despido activo actual
+    public function despidoActivo(): HasOne
+    {
+        return $this->hasOne(Despidos::class, 'id_trabajador')->where('estado', 'activo');
+    }
+
     public function documentos()
     {
         return $this->hasOne(DocumentoTrabajador::class, 'id_trabajador');
@@ -51,6 +58,22 @@ trait TieneRelaciones
     public function permisosActivos()
     {
         return $this->hasMany(PermisosLaborales::class, 'id_trabajador')->where('estatus_permiso', 'activo');
+    }
+
+    // ✅ NUEVA RELACIÓN: Permiso activo actual (singular)
+    public function permisoActivo(): HasOne
+    {
+        return $this->hasOne(PermisosLaborales::class, 'id_trabajador')
+                    ->where('estatus_permiso', 'activo')
+                    ->latest('fecha_inicio');
+    }
+
+    // ✅ NUEVA RELACIÓN: Vacación activa actual (singular)
+    public function vacacionActiva(): HasOne
+    {
+        return $this->hasOne(VacacionesTrabajador::class, 'id_trabajador')
+                    ->where('estado', 'activa')
+                    ->latest('fecha_inicio');
     }
 
     public function contratos()
@@ -297,4 +320,5 @@ trait TieneRelaciones
 
         return $query->get();
     }
+
 }

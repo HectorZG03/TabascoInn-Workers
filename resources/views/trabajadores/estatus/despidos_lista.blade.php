@@ -174,9 +174,11 @@
                                             <!-- Información del trabajador -->
                                             <td>
                                                 <div class="d-flex align-items-center">
-                                                    <div class="avatar-circle me-2" 
-                                                        style="background-color: {{ $despido->es_cancelado ? '#f0ad4e' : '#be0b0b' }};">
-                                                        {{ substr($despido->trabajador->nombre_trabajador, 0, 1) }}{{ substr($despido->trabajador->ape_pat, 0, 1) }}
+                                                    <div class="flex-shrink-0 me-3">
+                                                        <div class="avatar-circle me-2" 
+                                                            style="background-color: {{ $despido->es_cancelado ? '#f0ad4e' : '#be0b0b' }};">
+                                                            {{ substr($despido->trabajador->nombre_trabajador, 0, 1) }}{{ substr($despido->trabajador->ape_pat, 0, 1) }}
+                                                        </div>
                                                     </div>
                                                     <div>
                                                         <strong>{{ $despido->trabajador->nombre_completo }}</strong>

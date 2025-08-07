@@ -32,4 +32,4 @@ class CheckUserType
         // Si no tiene permisos, devolver error 403
         abort(403, 'No tienes permisos para acceder a esta sección. Acceso restringido a: ' . implode(', ', $types));
     }
-}
+}   

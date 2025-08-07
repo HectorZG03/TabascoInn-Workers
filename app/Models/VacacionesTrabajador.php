@@ -146,6 +146,6 @@ class VacacionesTrabajador extends Model
 
     public static function generarPeriodoVacacional(int $año): string
     {
-        return $año . '-' . ($año + 1);
+        return ($año - 1 ) . '-' . ($año + 1);
     }
 }

@@ -100,14 +100,13 @@ class AsignarVacacionModal {
     // ✅ NUEVO: Configurar valores por defecto
     setupDefaultValues() {
         const añoActual = new Date().getFullYear();
-        const periodoDefault = `${añoActual}-${añoActual + 1}`;
+        const periodoDefault = `${añoActual - 1}-${añoActual}`;  // ✅ CORRECTO
         
         $('#año_correspondiente').val(añoActual);
         $('#periodo_vacacional').val(periodoDefault);
         
         console.log(`✅ Valores por defecto: Año ${añoActual}, Período ${periodoDefault}`);
     }
-
     resetForm() {
         $('#form-asignar-vacaciones')[0].reset();
         $('#form-asignar-vacaciones .is-invalid, #form-asignar-vacaciones .is-valid').removeClass('is-invalid is-valid');
@@ -207,7 +206,7 @@ class AsignarVacacionModal {
             return;
         }
         
-        const periodo = `${año}-${año + 1}`;
+        const periodo = `${año - 1}-${año}`;  // ✅ CORRECTO
         $('#periodo_vacacional').val(periodo);
         this.updateResumen();
         this.showAlert(`Período generado: ${periodo}`, 'success');

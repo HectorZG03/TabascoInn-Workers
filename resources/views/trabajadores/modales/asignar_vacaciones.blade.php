@@ -114,14 +114,15 @@
                                 <i class="bi bi-calendar-range"></i> Período Vacacional
                                 <span class="text-danger">*</span>
                             </label>
+                            {{-- ✅ CAMBIAR A (CORRECTO) --}}
                             <input type="text" 
-                                   class="form-control" 
-                                   id="periodo_vacacional" 
-                                   name="periodo_vacacional"
-                                   placeholder="2025-2026"
-                                   maxlength="30"
-                                   required
-                                   autocomplete="off">
+                                class="form-control" 
+                                id="periodo_vacacional" 
+                                name="periodo_vacacional"
+                                placeholder="2024-2025"  {{-- ✅ CORRECTO --}}
+                                maxlength="30"
+                                required
+                                autocomplete="off">
                             <div class="invalid-feedback"></div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> Período que abarca estas vacaciones (ej: "2025-2026", "Período 2024", etc.)

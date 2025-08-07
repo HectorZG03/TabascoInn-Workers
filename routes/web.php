@@ -13,6 +13,7 @@ use App\Http\Controllers\GerenteController;
 use App\Http\Controllers\BusquedaTrabajadoresController;
 use App\Http\Controllers\PlantillaContratoController;
 use App\Http\Controllers\VariableContratoController;
+use App\Http\Controllers\ExportacionController; 
 use App\Http\Controllers\DiasAntiguedadController;
 use App\Http\Controllers\ContratoController;
 use App\Http\Controllers\UserController;
@@ -171,8 +172,8 @@ Route::middleware(['auth'])->group(function () {
     // Dashboard - accesible para todos los usuarios autenticados
     Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
 
+        // ✅ TRABAJADORES CON PERMISOS REFINADOS Y ORDEN CORRECTO
     // ✅ TRABAJADORES CON PERMISOS REFINADOS Y ORDEN CORRECTO
-  // ✅ TRABAJADORES CON PERMISOS REFINADOS Y ORDEN CORRECTO
     Route::prefix('trabajadores')->name('trabajadores.')->group(function () {
         
         // ✅ 1. PRIMERO: RUTAS ESPECÍFICAS (sin parámetros dinámicos)
@@ -181,6 +182,10 @@ Route::middleware(['auth'])->group(function () {
         Route::get('/', [TrabajadorController::class, 'index'])
             ->middleware('check.permiso:trabajadores')
             ->name('index');
+        
+            Route::get('/exportar', [ExportacionController::class, 'exportar'])
+            ->middleware('check.permiso:trabajadores')
+            ->name('exportar');
         
         // Crear trabajador - requiere "crear" 
         Route::get('/crear', [TrabajadorController::class, 'create'])
@@ -339,10 +344,9 @@ Route::middleware(['auth'])->group(function () {
                     Route::delete('/{documento}/eliminar', [DocumentosVacacionesController::class, 'eliminarDocumento'])->name('eliminar');
                 });
         });
+
     });
-
-    // ✅ RUTAS INDEPENDIENTES (fuera del prefix trabajadores)
-
+        
     // DETALLES CON PERMISOS ESPECÍFICOS
     Route::get('/trabajadores/permisos/{permiso}/detalle', [HistorialesPerfilController::class, 'detallePermiso'])
         ->middleware('check.permiso:permisos_laborales')->name('trabajadores.permisos.detalle');

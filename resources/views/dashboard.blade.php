@@ -7,75 +7,80 @@
 <div class="dashboard-container">
     <!-- Grid de funcionalidades -->
     <div class="functions-grid">
-        <!-- Alta de Empleado -->
-    @if ($user->tienePermiso('trabajadores', 'crear'))
-        <!-- Alta de Empleado -->
-        <div class="function-card" data-category="empleados">
-            <div class="card-accent accent-primary"></div>
-            <div class="card-content">
-                <div class="card-icon icon-primary">
-                    <i class="bi bi-person-plus-fill"></i>
+        {{-- ✅ ALTA DE EMPLEADO - Corregir uso de Auth::user() --}}
+        @if (Auth::user()->tienePermiso('trabajadores', 'crear'))
+            <div class="function-card" data-category="empleados">
+                <div class="card-accent accent-primary"></div>
+                <div class="card-content">
+                    <div class="card-icon icon-primary">
+                        <i class="bi bi-person-plus-fill"></i>
+                    </div>
+                    <h3 class="card-title">Alta de Empleado</h3>
+                    <p class="card-description">Registro de nuevos empleados en el sistema</p>
+                    <a href="{{ route('trabajadores.create') }}" class="btn-primary">
+                        <span>Registrar</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <h3 class="card-title">Alta de Empleado</h3>
-                <p class="card-description">Registro de nuevos empleados en el sistema</p>
-                <a href="{{ route('trabajadores.create') }}" class="btn-primary">
-                    <span>Registrar</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
             </div>
-        </div>
-    @endif
+        @endif
 
-        <!-- Gestión de Trabajadores -->
-        <div class="function-card" data-category="trabajadores">
-            <div class="card-accent accent-secondary"></div>
-            <div class="card-content">
-                <div class="card-icon icon-secondary">
-                    <i class="bi bi-people-fill"></i>
+        {{-- ✅ GESTIÓN DE TRABAJADORES - Agregar verificación de permisos --}}
+        @if (Auth::user()->tienePermiso('trabajadores', 'ver'))
+            <div class="function-card" data-category="trabajadores">
+                <div class="card-accent accent-secondary"></div>
+                <div class="card-content">
+                    <div class="card-icon icon-secondary">
+                        <i class="bi bi-people-fill"></i>
+                    </div>
+                    <h3 class="card-title">Trabajadores Activos</h3>
+                    <p class="card-description">Consulta y gestión de empleados activos</p>
+                    <a href="{{ route('trabajadores.index') }}" class="btn-secondary">
+                        <span>Ver lista</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <h3 class="card-title">Trabajadores Activos</h3>
-                <p class="card-description">Consulta y gestión de empleados activos</p>
-                <a href="{{ route('trabajadores.index') }}" class="btn-secondary">
-                    <span>Ver lista</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
             </div>
-        </div>
+        @endif
 
-        <!-- Bajas de Empleados -->
-        <div class="function-card" data-category="bajas">
-            <div class="card-accent accent-warning"></div>
-            <div class="card-content">
-                <div class="card-icon icon-warning">
-                    <i class="bi bi-person-x-fill"></i>
+        {{-- ✅ BAJAS DE EMPLEADOS - Agregar verificación de permisos --}}
+        @if (Auth::user()->tienePermiso('despidos', 'ver'))
+            <div class="function-card" data-category="bajas">
+                <div class="card-accent accent-warning"></div>
+                <div class="card-content">
+                    <div class="card-icon icon-warning">
+                        <i class="bi bi-person-x-fill"></i>
+                    </div>
+                    <h3 class="card-title">Bajas de Empleados</h3>
+                    <p class="card-description">Gestión de trabajadores dados de baja</p>
+                    <a href="{{ route('despidos.index') }}" class="btn-warning">
+                        <span>Gestionar</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <h3 class="card-title">Bajas de Empleados</h3>
-                <p class="card-description">Gestión de trabajadores dados de baja</p>
-                <a href="{{ route('despidos.index') }}" class="btn-warning">
-                    <span>Gestionar</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
             </div>
-        </div>
+        @endif
 
-        <!-- Permisos Activos -->
-        <div class="function-card" data-category="permisos">
-            <div class="card-accent accent-info"></div>
-            <div class="card-content">
-                <div class="card-icon icon-info">
-                    <i class="bi bi-calendar-check-fill"></i>
+        {{-- ✅ PERMISOS ACTIVOS - Agregar verificación de permisos --}}
+        @if (Auth::user()->tienePermiso('permisos_laborales', 'ver'))
+            <div class="function-card" data-category="permisos">
+                <div class="card-accent accent-info"></div>
+                <div class="card-content">
+                    <div class="card-icon icon-info">
+                        <i class="bi bi-calendar-check-fill"></i>
+                    </div>
+                    <h3 class="card-title">Permisos Activos</h3>
+                    <p class="card-description">Supervisión de permisos laborales</p>
+                    <a href="{{ route('permisos.index') }}" class="btn-info">
+                        <span>Supervisar</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
-                <h3 class="card-title">Permisos Activos</h3>
-                <p class="card-description">Supervisión de permisos laborales</p>
-                <a href="{{ route('permisos.index') }}" class="btn-info">
-                    <span>Supervisar</span>
-                    <i class="bi bi-arrow-right"></i>
-                </a>
             </div>
-        </div>
+        @endif
 
+        {{-- ✅ CONFIGURACIÓN - Sin cambios, ya estaba bien --}}
         @if (Auth::user()->esAdministrador())
-            <!-- Configuración -->
             <div class="function-card" data-category="config">
                 <div class="card-accent accent-neutral"></div>
                 <div class="card-content">

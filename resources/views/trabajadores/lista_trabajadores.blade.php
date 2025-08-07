@@ -19,6 +19,9 @@
                     <a href="{{ route('trabajadores.create') }}" class="btn btn-primary">
                         <i class="bi bi-person-plus"></i> Nuevo Trabajador
                     </a>
+                    <button type="button" class="btn btn-success" data-bs-toggle="modal" data-bs-target="#modalExportacion">
+                        <i class="bi bi-file-earmark-spreadsheet"></i> Exportar
+                    </button>
                 </div>
             </div>
         </div>
@@ -129,43 +132,6 @@
             
             <div class="card-body p.0">
                 @if($trabajadores->count() > 0)
-                    <!-- Vista de Tarjetas (móvil) -->
-                    <div class="d-md-none">
-                        @foreach($trabajadores as $trabajador)
-                            <div class="border-bottom p-3">
-                                <div class="d-flex align-items-start">
-                                    <div class="flex-shrink-0 me-3">
-                                        <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
-                                            {{ substr($trabajador->nombre_trabajador, 0, 1) }}{{ substr($trabajador->ape_pat, 0, 1) }}
-                                        </div>
-                                    </div>
-                                    <div class="flex-grow-1">
-                                        <h6 class="mb-1">{{ $trabajador->nombre_completo }}</h6>
-                                        <p class="mb-1 text-muted small">
-                                            <i class="bi bi-briefcase"></i> 
-                                            {{ $trabajador->fichaTecnica->categoria->nombre_categoria ?? 'Sin categoría' }}
-                                        </p>
-                                        <p class="mb-1 text-muted small">
-                                            <i class="bi bi-building"></i> 
-                                            {{ $trabajador->fichaTecnica->categoria->area->nombre_area ?? 'Sin área' }}
-                                        </p>
-                                        <div class="d-flex justify-content-between align-items-center">
-                                            <div class="d-flex gap-2">
-                                                <span class="badge bg-success">
-                                                    ${{ number_format($trabajador->fichaTecnica->sueldo_diarios ?? 0, 2) }}
-                                                </span>
-                                                <span class="badge bg-{{ $trabajador->estatus_color }}">
-                                                    <i class="{{ $trabajador->estatus_icono }}"></i>
-                                                    {{ $trabajador->estatus_texto }}
-                                                </span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        @endforeach
-                    </div>
-
                 <!-- Vista de Tabla (escritorio) -->
                     <div class="d-none d-md-block table-responsive">
                         <table class="table table-hover mb-0">
@@ -279,68 +245,101 @@
                                                 <span class="text-muted small">Sin documentos</span>
                                             @endif
                                         </td>
+                                        {{-- ✅ SECCIÓN DE ACCIONES CON PERMISOS GRANULARES --}}
                                         <td>
                                             @php
                                                 // ✅ NUEVA LÓGICA: Permitir acciones a trabajadores activos y en prueba
                                                 // Solo excluir a los suspendidos
                                                 $puedeRealizarAcciones = !$trabajador->estaSuspendido();
+                                                
+                                                // ✅ VERIFICAR PERMISOS DEL USUARIO ACTUAL
+                                                $user = Auth::user();
+                                                $puedeVerPerfil = $user->tienePermiso('trabajadores', 'ver');
+                                                $puedeAsignarPermisos = $user->tienePermiso('permisos_laborales', 'crear');
+                                                $puedeDespedir = $user->tienePermiso('despidos', 'crear');
+                                                $puedeAsignarHoras = $user->tienePermiso('horas_extra', 'crear');
+                                                $puedeCompensarHoras = $user->tienePermiso('horas_extra', 'editar');
                                             @endphp
                                             
                                             <div class="d-flex flex-wrap gap-1">
-                                                <!-- Ver Perfil Completo - SIEMPRE DISPONIBLE -->
-                                                <a href="{{ route('trabajadores.perfil.show', $trabajador) }}" 
-                                                class="btn btn-outline-primary btn-sm" 
-                                                title="Ver Perfil Completo">
-                                                    <i class="bi bi-person-lines-fill"></i>
-                                                </a>
+                                                {{-- ✅ VER PERFIL COMPLETO - Solo si tiene permiso de ver trabajadores --}}
+                                                @if($puedeVerPerfil)
+                                                    <a href="{{ route('trabajadores.perfil.show', $trabajador) }}" 
+                                                    class="btn btn-outline-primary btn-sm" 
+                                                    title="Ver Perfil Completo">
+                                                        <i class="bi bi-person-lines-fill"></i>
+                                                    </a>
+                                                @endif
                                                 
                                                 @if($puedeRealizarAcciones)
-                                                    <!-- Asignar Permisos -->
-                                                    <button type="button" 
-                                                            class="btn btn-outline-info btn-sm btn-permisos" 
-                                                            title="Asignar Permisos"
-                                                            data-id="{{ $trabajador->id_trabajador }}"
-                                                            data-nombre="{{ $trabajador->nombre_completo }}">
-                                                        <i class="bi bi-file-earmark-plus"></i>
-                                                    </button>
+                                                    {{-- ✅ ASIGNAR PERMISOS - Solo si tiene permiso de crear permisos laborales --}}
+                                                    @if($puedeAsignarPermisos)
+                                                        <button type="button" 
+                                                                class="btn btn-outline-info btn-sm btn-permisos" 
+                                                                title="Asignar Permisos"
+                                                                data-id="{{ $trabajador->id_trabajador }}"
+                                                                data-nombre="{{ $trabajador->nombre_completo }}">
+                                                            <i class="bi bi-file-earmark-plus"></i>
+                                                        </button>
+                                                    @endif
                                                     
-                                                    <!-- Despedir -->
-                                                    <button type="button" 
-                                                            class="btn btn-outline-danger btn-sm btn-despedir" 
-                                                            title="Dar de baja al trabajador"
-                                                            data-id="{{ $trabajador->id_trabajador }}"
-                                                            data-nombre="{{ $trabajador->nombre_completo }}"
-                                                            data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
-                                                        <i class="bi bi-person-dash"></i>
-                                                    </button>
+                                                    {{-- ✅ DESPEDIR - Solo si tiene permiso de crear despidos/bajas --}}
+                                                    @if($puedeDespedir)
+                                                        <button type="button" 
+                                                                class="btn btn-outline-danger btn-sm btn-despedir" 
+                                                                title="Dar de baja al trabajador"
+                                                                data-id="{{ $trabajador->id_trabajador }}"
+                                                                data-nombre="{{ $trabajador->nombre_completo }}"
+                                                                data-fecha-ingreso="{{ $trabajador->fecha_ingreso->format('Y-m-d') }}">
+                                                            <i class="bi bi-person-dash"></i>
+                                                        </button>
+                                                    @endif
 
-                                                    {{-- Asignar Horas Extra --}}
-                                                    <a href="#" 
+                                                    {{-- ✅ ASIGNAR HORAS EXTRA - Solo si tiene permiso de crear horas extra --}}
+                                                    @if($puedeAsignarHoras)
+                                                        <a href="#" 
                                                         class="btn btn-outline-success btn-sm" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}"
                                                         title="Asignar Horas Extra">
-                                                        <i class="bi bi-clock">+</i>
-                                                    </a>
+                                                            <i class="bi bi-clock">+</i>
+                                                        </a>
+                                                    @endif
 
-                                                    @php
-                                                        $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
-                                                        $botonRestarDeshabilitado = $saldoActual <= 0;
-                                                    @endphp
+                                                    {{-- ✅ COMPENSAR HORAS EXTRA - Solo si tiene permiso de editar horas extra --}}
+                                                    @if($puedeCompensarHoras)
+                                                        @php
+                                                            $saldoActual = \App\Models\HorasExtra::calcularSaldo($trabajador->id_trabajador);
+                                                            $botonRestarDeshabilitado = $saldoActual <= 0;
+                                                        @endphp
 
-                                                    <!-- Compensar Horas Extra -->
-                                                    <a href="#" 
+                                                        <a href="#" 
                                                         class="btn btn-outline-warning btn-sm {{ $botonRestarDeshabilitado ? 'disabled' : '' }}" 
                                                         data-bs-toggle="modal" 
                                                         data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}"
                                                         title="Compensar Horas Extra (Saldo actual: {{ $saldoActual }}h)"
                                                         {{ $botonRestarDeshabilitado ? 'aria-disabled=true' : '' }}>
-                                                        <i class="bi bi-clock">-</i>
-                                                    </a>
+                                                            <i class="bi bi-clock">-</i>
+                                                        </a>
+                                                    @endif
+                                                    
+                                                    {{-- ✅ MENSAJE SI NO TIENE NINGÚN PERMISO DE ACCIÓN --}}
+                                                    @if(!$puedeAsignarPermisos && !$puedeDespedir && !$puedeAsignarHoras && !$puedeCompensarHoras)
+                                                        <span class="text-muted small fst-italic">
+                                                            <i class="bi bi-lock"></i> Sin permisos de acción
+                                                        </span>
+                                                    @endif
                                                 @else
-                                                    <!-- Mensaje para trabajadores suspendidos -->
+                                                    {{-- ✅ MENSAJE PARA TRABAJADORES SUSPENDIDOS --}}
                                                     <span class="text-muted small fst-italic">
                                                         <i class="bi bi-exclamation-circle"></i> Sin acciones disponibles
+                                                    </span>
+                                                @endif
+                                                
+                                                {{-- ✅ MENSAJE SI NO TIENE PERMISO DE VER PERFIL Y NO PUEDE REALIZAR ACCIONES --}}
+                                                @if(!$puedeVerPerfil && (!$puedeRealizarAcciones || (!$puedeAsignarPermisos && !$puedeDespedir && !$puedeAsignarHoras && !$puedeCompensarHoras)))
+                                                    <span class="text-muted small fst-italic">
+                                                        <i class="bi bi-eye-slash"></i> Sin permisos
                                                     </span>
                                                 @endif
                                             </div>
@@ -521,6 +520,7 @@
 {{-- ✅ INCLUIR MODALES PRINCIPALES --}}
 @include('trabajadores.modales.despidos')
 @include('trabajadores.modales.permisos')
+@include('trabajadores.modales.exportacion')
 
 {{-- ✅ MODALES DE HORAS EXTRAS - Generados solo para trabajadores con acciones disponibles --}}
 @if($trabajadores->count() > 0)
