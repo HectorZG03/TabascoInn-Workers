@@ -9,8 +9,7 @@
   --color-neutral: #D2B48C;
   --color-text: #5D3A1A;
   --color-text-light: #8B7355;
-  --color-background: #FAF9F6;
-  --color-surface: #FFFFFF;
+  --color-surface: #EDE8D0;
   --color-surface-alt: #F0F0E0;
   
   /* Sombras */
@@ -38,70 +37,12 @@
   --transition-slow: 0.5s ease;
 }
 
-body {
-  background-color: var(--color-background);
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  color: var(--color-text);
-  line-height: 1.6;
-}
 
 .dashboard-container {
   max-width: 1200px;
   margin: 0 auto;
   padding: var(--spacing-lg);
   min-height: 100vh;
-}
-
-/* Sección de bienvenida */
-.welcome-section {
-  margin-bottom: var(--spacing-xl);
-}
-
-.welcome-card {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
-  border-radius: var(--radius-xl);
-  overflow: hidden;
-  box-shadow: var(--shadow-lg);
-  position: relative;
-}
-
-.welcome-card::before {
-  content: '';
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  background: url('data:image/svg+xml,<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100"><defs><pattern id="grain" width="100" height="100" patternUnits="userSpaceOnUse"><circle cx="50" cy="50" r="1" fill="white" opacity="0.03"/></pattern></defs><rect width="100" height="100" fill="url(%23grain)"/></svg>');
-  pointer-events: none;
-}
-
-.welcome-header {
-  padding: var(--spacing-xl);
-  text-align: center;
-  position: relative;
-  z-index: 1;
-}
-
-.welcome-icon {
-  font-size: 3rem;
-  color: rgba(255, 255, 255, 0.9);
-  margin-bottom: var(--spacing-md);
-}
-
-.welcome-title {
-  font-size: 2.5rem;
-  font-weight: 700;
-  color: white;
-  margin: 0 0 var(--spacing-sm) 0;
-  letter-spacing: -0.02em;
-}
-
-.welcome-subtitle {
-  font-size: 1.1rem;
-  color: rgba(255, 255, 255, 0.8);
-  margin: 0 0 var(--spacing-lg) 0;
-  font-weight: 400;
 }
 
 .badge {
@@ -339,4 +280,40 @@ body {
 [class^="btn-"]:focus {
   outline: 2px solid currentColor;
   outline-offset: 2px;
+}
+
+/* 🕒 Widget del reloj */
+.clock-widget {
+  background-color: var(--color-surface);
+  border-radius: var(--radius-lg);
+  padding: var(--spacing-lg);
+  box-shadow: var(--shadow-md);
+  margin-bottom: var(--spacing-lg);
+  text-align: center;
+  animation: fadeInClock 1s ease-in-out;
+}
+
+#clock-time {
+  font-size: 2.5rem;
+  font-weight: bold;
+  color: var(--color-primary);
+  letter-spacing: 0.1rem;
+}
+
+#clock-date {
+  font-size: 1rem;
+  color: var(--color-text-light);
+  margin-top: var(--spacing-sm);
+}
+
+/* Animación de entrada para el reloj */
+@keyframes fadeInClock {
+  0% {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }

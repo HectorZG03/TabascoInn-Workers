@@ -105,27 +105,34 @@ Route::middleware(['auth'])->group(function () {
                 });
         });
 
-        // ✅ PLANTILLAS DE CONTRATO CON PERMISOS
+       // ✅ PLANTILLAS DE CONTRATO CON PERMISOS - ORDEN CORREGIDO
         Route::prefix('plantillas-contrato')->name('configuracion.plantillas.')
             ->controller(PlantillaContratoController::class)
             ->middleware('check.permiso:plantillas_contrato')->group(function () {
+                
+                // ✅ 1. PRIMERO: RUTAS ESPECÍFICAS (sin parámetros dinámicos)
                 Route::get('/', 'index')->name('index');
                 Route::get('/api/variables', 'obtenerVariables')->name('api.variables');
                 Route::get('/exportar/{tipo?}', 'exportar')->name('exportar');
-                Route::get('/{plantilla}', 'show')->name('show');
                 Route::post('/preview', 'preview')->name('preview');
                 
+                // ✅ 2. RUTAS DE CREACIÓN (requieren permisos específicos)
                 Route::middleware('check.permiso:plantillas_contrato,crear')->group(function () {
                     Route::get('/crear', 'create')->name('create');
                     Route::post('/', 'store')->name('store');
                 });
                 
+                // ✅ 3. DESPUÉS: RUTAS CON PARÁMETROS DINÁMICOS
+                Route::get('/{plantilla}', 'show')->name('show');
+                
+                // ✅ 4. RUTAS DE EDICIÓN (requieren permisos específicos)
                 Route::middleware('check.permiso:plantillas_contrato,editar')->group(function () {
                     Route::get('/{plantilla}/editar', 'edit')->name('edit');
                     Route::put('/{plantilla}', 'update')->name('update');
                     Route::patch('/{plantilla}/toggle', 'toggleActivacion')->name('toggle');
                 });
                 
+                // ✅ 5. RUTAS DE ELIMINACIÓN (requieren permisos específicos)
                 Route::middleware('check.permiso:plantillas_contrato,eliminar')->group(function () {
                     Route::delete('/{plantilla}', 'destroy')->name('destroy');
                 });

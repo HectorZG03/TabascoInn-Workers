@@ -3,31 +3,6 @@
 @section('title', 'Perfil de ' . $trabajador->nombre_completo . ' - Hotel')
 
 @section('content')
-<style>
-    /* Pestañas nav-pills con texto e iconos negros */
-    .nav-pills .nav-link {
-        color: black; /* texto negro */
-        font-weight: 600;
-        border-radius: 0.5rem;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .nav-pills .nav-link:hover {
-        background-color: #e7f1ff;
-        color: black;
-    }
-    .nav-pills .nav-link.active {
-        background-color: #0d6efd; /* azul bootstrap */
-        color: black; /* texto negro */
-        box-shadow: 0 0 8px rgb(13 110 253 / 0.5);
-    }
-    /* Iconos en pestañas (negros) */
-    .nav-pills .nav-link i {
-        margin-right: 6px;
-        font-size: 1.1rem;
-        vertical-align: middle;
-        color: inherit; /* hereda color del texto */
-    }
-</style>
 
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->

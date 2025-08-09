@@ -220,10 +220,10 @@ class VariablesContratoSeeder extends Seeder
             [
                 'nombre_variable' => 'salario_diario_texto',
                 'etiqueta' => 'Salario Diario (Texto)',
-                'descripcion' => 'Salario diario en palabras',
+                'descripcion' => 'Salario diario en palabras con centavos',
                 'categoria' => 'salariales',
                 'tipo_dato' => 'texto',
-                'formato_ejemplo' => 'CUATROCIENTOS CINCUENTA PESOS',
+                'formato_ejemplo' => 'CUATROCIENTOS CINCUENTA PESOS CON CERO CENTAVOS',
                 'origen_codigo' => '$salario_texto ?? "CANTIDAD A DETERMINAR"',
                 'obligatoria' => true
             ],
@@ -231,7 +231,7 @@ class VariablesContratoSeeder extends Seeder
             // ===== HORARIOS Y DÍAS LABORALES =====
             [
                 'nombre_variable' => 'horas_semanales',
-                'etiqueta' => 'Horas Semanales',
+                'etiqueta' => 'Horas Semanales',    
                 'descripcion' => 'Total de horas por semana',
                 'categoria' => 'horarios',
                 'tipo_dato' => 'numero',

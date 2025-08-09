@@ -5,9 +5,15 @@
 @section('content')
 
 <div class="dashboard-container">
+
+    <!-- 🕒 Reloj animado -->
+    <div class="clock-widget">
+        <div id="clock-time">00:00:00</div>
+        <div id="clock-date">Cargando fecha...</div>
+    </div>
+
     <!-- Grid de funcionalidades -->
     <div class="functions-grid">
-        {{-- ✅ ALTA DE EMPLEADO - Corregir uso de Auth::user() --}}
         @if (Auth::user()->tienePermiso('trabajadores', 'crear'))
             <div class="function-card" data-category="empleados">
                 <div class="card-accent accent-primary"></div>
@@ -25,7 +31,6 @@
             </div>
         @endif
 
-        {{-- ✅ GESTIÓN DE TRABAJADORES - Agregar verificación de permisos --}}
         @if (Auth::user()->tienePermiso('trabajadores', 'ver'))
             <div class="function-card" data-category="trabajadores">
                 <div class="card-accent accent-secondary"></div>
@@ -43,7 +48,6 @@
             </div>
         @endif
 
-        {{-- ✅ BAJAS DE EMPLEADOS - Agregar verificación de permisos --}}
         @if (Auth::user()->tienePermiso('despidos', 'ver'))
             <div class="function-card" data-category="bajas">
                 <div class="card-accent accent-warning"></div>
@@ -61,7 +65,6 @@
             </div>
         @endif
 
-        {{-- ✅ PERMISOS ACTIVOS - Agregar verificación de permisos --}}
         @if (Auth::user()->tienePermiso('permisos_laborales', 'ver'))
             <div class="function-card" data-category="permisos">
                 <div class="card-accent accent-info"></div>
@@ -79,7 +82,6 @@
             </div>
         @endif
 
-        {{-- ✅ CONFIGURACIÓN - Sin cambios, ya estaba bien --}}
         @if (Auth::user()->esAdministrador())
             <div class="function-card" data-category="config">
                 <div class="card-accent accent-neutral"></div>
@@ -100,4 +102,20 @@
 </div>
 
 <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+
+<script>
+    // Reloj digital animado
+    function updateClock() {
+        const now = new Date();
+        const time = now.toLocaleTimeString('es-MX', { hour12: false });
+        const date = now.toLocaleDateString('es-MX', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+
+        document.getElementById('clock-time').textContent = time;
+        document.getElementById('clock-date').textContent = date.charAt(0).toUpperCase() + date.slice(1);
+    }
+
+    setInterval(updateClock, 1000);
+    updateClock();
+</script>
+
 @endsection
