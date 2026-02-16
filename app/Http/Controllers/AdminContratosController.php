@@ -13,8 +13,7 @@ use Illuminate\Support\Facades\Auth;
 use Carbon\Carbon;
 
 /**
- * ✅ OPTIMIZADO: Solo se encarga de ADMINISTRAR contratos (CRUD)
- * La generación de PDFs se delega completamente a ContratoController
+ * ✅ ACTUALIZADO: AdminContratosController con validaciones para formato DD/MM/YYYY
  */
 class AdminContratosController extends Controller
 {
@@ -69,35 +68,140 @@ class AdminContratosController extends Controller
     }
 
     /**
-     * ✅ CREAR contrato nuevo
+     * ✅ MÉTODO STORE ACTUALIZADO - Con validaciones para formato DD/MM/YYYY
      */
     public function store(Request $request, Trabajador $trabajador)
     {
-        $validated = $request->validate([
-            'fecha_inicio_contrato' => 'required|date',
-            'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
-            'tipo_duracion' => 'required|in:dias,meses',
+        // ✅ VALIDACIÓN BASE CON FORMATO DD/MM/YYYY
+        $baseRules = [
+            'tipo_contrato' => 'required|in:determinado,indeterminado',
+            'fecha_inicio_contrato' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', function ($attribute, $value, $fail) {
+                if (!$this->validarFechaPersonalizada($value)) {
+                    $fail('La fecha de inicio del contrato no es válida. Use formato DD/MM/YYYY');
+                }
+            }],
             'observaciones' => 'nullable|string|max:500'
+        ];
+        
+        // ✅ VALIDACIÓN CONDICIONAL SEGÚN TIPO DE CONTRATO
+        $conditionalRules = [];
+        
+        if ($request->tipo_contrato === 'determinado') {
+            $conditionalRules = [
+                'fecha_fin_contrato' => [
+                    'required', 
+                    'string', 
+                    'regex:/^\d{2}\/\d{2}\/\d{4}$/',
+                    function ($attribute, $value, $fail) use ($request) {
+                        if (!$this->validarFechaPersonalizada($value)) {
+                            $fail('La fecha de fin del contrato no es válida. Use formato DD/MM/YYYY');
+                        }
+                        
+                        // Validar que sea posterior al inicio
+                        if ($request->filled('fecha_inicio_contrato')) {
+                            $fechaInicio = $this->convertirFechaACarbon($request->fecha_inicio_contrato);
+                            $fechaFin = $this->convertirFechaACarbon($value);
+                            
+                            if ($fechaInicio && $fechaFin && $fechaFin->lte($fechaInicio)) {
+                                $fail('La fecha de fin debe ser posterior a la fecha de inicio.');
+                            }
+                        }
+                    }
+                ],
+                'tipo_duracion' => 'nullable|in:dias,meses' // Se calcula automáticamente
+            ];
+        } elseif ($request->tipo_contrato === 'indeterminado') {
+            // Para indeterminados: campos opcionales que se forzarán a null
+            $conditionalRules = [
+                'fecha_fin_contrato' => 'nullable|string',
+                'tipo_duracion' => 'nullable'
+            ];
+        }
+        
+        $allRules = array_merge($baseRules, $conditionalRules);
+        
+        $validated = $request->validate($allRules, [
+            'tipo_contrato.required' => 'El tipo de contrato es obligatorio',
+            'tipo_contrato.in' => 'Tipo de contrato no válido',
+            'fecha_inicio_contrato.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio_contrato.regex' => 'La fecha de inicio debe tener el formato DD/MM/YYYY',
+            'fecha_fin_contrato.required' => 'La fecha de fin es obligatoria para contratos determinados',
+            'fecha_fin_contrato.regex' => 'La fecha de fin debe tener el formato DD/MM/YYYY',
+            'tipo_duracion.in' => 'Tipo de duración no válido'
         ]);
+
+        // ✅ PROCESAMIENTO ESPECÍFICO SEGÚN TIPO DE CONTRATO
+        if ($validated['tipo_contrato'] === 'indeterminado') {
+            // Forzar campos a null para indeterminados
+            $validated['fecha_fin_contrato'] = null;
+            $validated['tipo_duracion'] = null;
+        } else {
+            // Para determinados: calcular tipo_duracion automáticamente si no se proporcionó
+            if (empty($validated['tipo_duracion'])) {
+                $fechaInicio = $this->convertirFechaACarbon($validated['fecha_inicio_contrato']);
+                $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin_contrato']);
+                $diasTotales = $fechaInicio->diffInDays($fechaFin);
+                
+                // LÓGICA AUTOMÁTICA: > 30 días = meses, <= 30 días = días
+                $validated['tipo_duracion'] = $diasTotales > 30 ? 'meses' : 'dias';
+            }
+        }
 
         DB::beginTransaction();
         
         try {
-            // ✅ DELEGAR generación a ContratoController
-            $contrato = $this->contratoController->generarDefinitivo($trabajador, $validated);
+            $fechaInicio = $this->convertirFechaACarbon($validated['fecha_inicio_contrato']);
+            
+            // ✅ PREPARAR DATOS PARA EL CONTROLADOR DE CONTRATOS
+            $datosContrato = [
+                'tipo_contrato' => $validated['tipo_contrato'],
+                'fecha_inicio_contrato' => $fechaInicio->format('Y-m-d'), // Convertir a formato ISO para el controlador
+                'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios, // AÑADIR ESTA LÍNEA
+            ];
 
+            // Solo añadir datos de fin para contratos determinados
+            if ($validated['tipo_contrato'] === 'determinado') {
+                $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin_contrato']);
+                $datosContrato['fecha_fin_contrato'] = $fechaFin->format('Y-m-d');
+                $datosContrato['tipo_duracion'] = $validated['tipo_duracion'];
+            }
+
+            // DELEGAR generación a ContratoController
+            $contrato = $this->contratoController->generarDefinitivo($trabajador, $datosContrato);
+
+            // AGREGAR OBSERVACIONES SI EXISTEN
             if (!empty($validated['observaciones'])) {
                 $contrato->update(['observaciones' => $validated['observaciones']]);
             }
 
+            // ✅ GENERAR MENSAJE ESPECÍFICO SEGÚN TIPO
+            if ($validated['tipo_contrato'] === 'determinado') {
+                $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin_contrato']);
+                $tipoDuracionCalculado = $validated['tipo_duracion'];
+                
+                $mensaje = "Contrato determinado creado exitosamente para {$trabajador->nombre_completo}. ";
+                $mensaje .= "Vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+                $mensaje .= "Duración: " . ($tipoDuracionCalculado === 'meses' ? 'Por meses' : 'Por días') . ". ";
+                $mensaje .= "Estado: ACTIVO.";
+            } else {
+                $mensaje = "Contrato indeterminado creado exitosamente para {$trabajador->nombre_completo}. ";
+                $mensaje .= "Fecha de inicio: {$fechaInicio->format('d/m/Y')}. ";
+                $mensaje .= "Sin fecha de terminación. Estado: ACTIVO.";
+            }
+
             DB::commit();
 
-            $fechaInicio = Carbon::parse($validated['fecha_inicio_contrato']);
-            $fechaFin = Carbon::parse($validated['fecha_fin_contrato']);
-            
-            $mensaje = "Contrato creado exitosamente para {$trabajador->nombre_completo}. ";
-            $mensaje .= "Vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
-            $mensaje .= "Estado: ACTIVO.";
+            Log::info('Contrato creado exitosamente', [
+                'contrato_id' => $contrato->id_contrato,
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $validated['tipo_contrato'],
+                'fecha_inicio' => $fechaInicio->format('Y-m-d'),
+                'fecha_fin' => $validated['tipo_contrato'] === 'determinado' 
+                    ? $this->convertirFechaACarbon($validated['fecha_fin_contrato'])->format('Y-m-d') 
+                    : null,
+                'formato_entrada' => 'DD/MM/YYYY',
+                'usuario' => Auth::user()->email ?? 'Sistema'
+            ]);
 
             return redirect()->route('trabajadores.perfil.show', $trabajador)
                         ->with('success', $mensaje)
@@ -105,49 +209,124 @@ class AdminContratosController extends Controller
 
         } catch (\Exception $e) {
             DB::rollback();
-            Log::error('Error al crear contrato', ['error' => $e->getMessage()]);
-            return back()->withErrors(['error' => 'Error al crear el contrato'])->withInput();
+            Log::error('Error al crear contrato', [
+                'error' => $e->getMessage(),
+                'tipo_contrato' => $validated['tipo_contrato'] ?? 'No especificado',
+                'trabajador_id' => $trabajador->id_trabajador,
+                'fecha_inicio' => $validated['fecha_inicio_contrato'] ?? 'No especificada'
+            ]);
+            return back()->withErrors(['error' => 'Error al crear el contrato: ' . $e->getMessage()])->withInput();
         }
     }
 
     /**
-     * ✅ RENOVAR contrato existente
+     * ✅ RENOVAR contrato existente - ACTUALIZADO para tipos determinado/indeterminado
      */
     public function renovar(Request $request, Trabajador $trabajador, ContratoTrabajador $contrato)
     {
         if ($contrato->id_trabajador !== $trabajador->id_trabajador) {
             abort(403, 'No autorizado para renovar este contrato');
         }
-
         if (!$contrato->puedeRenovarse()) {
             return back()->withErrors([
                 'error' => 'Este contrato no puede renovarse. Debe estar en período vigente y próximo a vencer (30 días o menos).'
             ]);
         }
 
-        $validated = $request->validate([
+        // ✅ VALIDACIÓN SIMPLIFICADA - fecha_fin siempre opcional
+        $baseRules = [
+            'tipo_contrato_renovacion' => 'required|in:determinado,indeterminado',
             'fecha_inicio' => [
                 'required', 
-                'date', 
-                'after_or_equal:' . $contrato->fecha_fin_contrato->addDay()->format('Y-m-d')
+                'string', 
+                'regex:/^\d{2}\/\d{2}\/\d{4}$/',
+                function ($attribute, $value, $fail) use ($contrato) {
+                    if (!$this->validarFechaPersonalizada($value)) {
+                        $fail('La fecha de inicio no es válida. Use formato DD/MM/YYYY');
+                        return;
+                    }
+                    
+                    $fechaInicio = $this->convertirFechaACarbon($value);
+                    
+                    // ✅ MANEJAR CONTRATOS INDETERMINADOS (sin fecha fin)
+                    if ($contrato->tipo_contrato === 'indeterminado') {
+                        // Para contratos indeterminados, solo validar que sea posterior a la fecha de inicio del contrato actual
+                        if ($fechaInicio->lt($contrato->fecha_inicio_contrato)) {
+                            $fail('La fecha de inicio debe ser posterior a la fecha de inicio del contrato actual (' . $contrato->fecha_inicio_contrato->format('d/m/Y') . ')');
+                        }
+                    } else {
+                        // Para contratos determinados, validar que sea posterior al vencimiento
+                        $fechaFinContratoActual = $contrato->fecha_fin_contrato->copy()->addDay();
+                        if ($fechaInicio->lt($fechaFinContratoActual)) {
+                            $fail('La fecha de inicio debe ser posterior al vencimiento del contrato actual (' . $fechaFinContratoActual->format('d/m/Y') . ')');
+                        }
+                    }
+                }
             ],
-            'fecha_fin' => 'required|date|after:fecha_inicio',
-            'tipo_duracion' => 'required|in:dias,meses',
+            'fecha_fin' => 'nullable|string|regex:/^\d{2}\/\d{2}\/\d{4}$/',
+            'tipo_duracion' => 'nullable|in:dias,meses',
             'observaciones_renovacion' => 'nullable|string|max:500'
-        ], [
-            'fecha_inicio.after_or_equal' => 'La fecha de inicio debe ser posterior al vencimiento del contrato actual',
-            'fecha_fin.after' => 'La fecha de fin debe ser posterior a la fecha de inicio'
+        ];
+        
+        $validated = $request->validate($baseRules, [
+            'tipo_contrato_renovacion.required' => 'El tipo de contrato es obligatorio',
+            'tipo_contrato_renovacion.in' => 'Tipo de contrato no válido',
+            'fecha_inicio.required' => 'La fecha de inicio es obligatoria',
+            'fecha_inicio.regex' => 'La fecha de inicio debe tener el formato DD/MM/YYYY',
+            'fecha_fin.regex' => 'La fecha de fin debe tener el formato DD/MM/YYYY',
+            'tipo_duracion.in' => 'Tipo de duración no válido'
         ]);
+
+        // ✅ VALIDACIÓN MANUAL PARA CONTRATOS DETERMINADOS
+        if ($validated['tipo_contrato_renovacion'] === 'determinado') {
+            if (empty($validated['fecha_fin'])) {
+                return back()->withErrors(['fecha_fin' => 'La fecha de fin es obligatoria para contratos determinados'])->withInput();
+            }
+            
+            if (!$this->validarFechaPersonalizada($validated['fecha_fin'])) {
+                return back()->withErrors(['fecha_fin' => 'La fecha de fin no es válida. Use formato DD/MM/YYYY'])->withInput();
+            }
+            
+            $fechaInicio = $this->convertirFechaACarbon($validated['fecha_inicio']);
+            $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin']);
+            
+            if ($fechaFin->lte($fechaInicio)) {
+                return back()->withErrors(['fecha_fin' => 'La fecha de fin debe ser posterior a la fecha de inicio'])->withInput();
+            }
+        }
 
         DB::beginTransaction();
         
         try {
-            // ✅ DELEGAR generación del nuevo contrato
-            $nuevoContrato = $this->contratoController->generarDefinitivo($trabajador, [
-                'fecha_inicio_contrato' => $validated['fecha_inicio'],
-                'fecha_fin_contrato' => $validated['fecha_fin'],
-                'tipo_duracion' => $validated['tipo_duracion'],
-            ]);
+            // ✅ CONVERTIR FECHAS
+            $fechaInicio = $this->convertirFechaACarbon($validated['fecha_inicio']);
+            
+            // ✅ PREPARAR DATOS SEGÚN TIPO DE CONTRATO
+            $datosContrato = [
+                'tipo_contrato' => $validated['tipo_contrato_renovacion'],
+                'fecha_inicio_contrato' => $fechaInicio->format('Y-m-d'),
+                'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios,
+            ];
+
+            // ✅ PROCESAMIENTO ESPECÍFICO SEGÚN TIPO
+            if ($validated['tipo_contrato_renovacion'] === 'indeterminado') {
+                // Para indeterminados: forzar campos a null
+                $validated['fecha_fin'] = null;
+                $validated['tipo_duracion'] = null;
+            } else {
+                // Para determinados: calcular duración
+                $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin']);
+                $datosContrato['fecha_fin_contrato'] = $fechaFin->format('Y-m-d');
+                
+                if (empty($validated['tipo_duracion'])) {
+                    $diasTotales = $fechaInicio->diffInDays($fechaFin);
+                    $validated['tipo_duracion'] = $diasTotales > 30 ? 'meses' : 'dias';
+                }
+                $datosContrato['tipo_duracion'] = $validated['tipo_duracion'];
+            }
+            
+            // DELEGAR generación del nuevo contrato
+            $nuevoContrato = $this->contratoController->generarDefinitivo($trabajador, $datosContrato);
 
             // Configurar como renovación
             $observacionesRenovacion = "Renovación del contrato #{$contrato->id_contrato}";
@@ -168,20 +347,41 @@ class AdminContratosController extends Controller
                 throw new \Exception('No se pudo marcar el contrato anterior como renovado');
             }
 
-            DB::commit();
+            // ✅ NUEVA FUNCIONALIDAD: Cambiar status del trabajador si es indeterminado
+            if ($validated['tipo_contrato_renovacion'] === 'indeterminado' && $trabajador->estatus !== 'activo') {
+                $trabajador->update(['estatus' => 'activo']);
+                Log::info('Status del trabajador actualizado a activo por renovación con contrato indeterminado', [
+                    'trabajador_id' => $trabajador->id_trabajador,
+                    'status_anterior' => $trabajador->getOriginal('estatus'),
+                    'contrato_id' => $nuevoContrato->id_contrato
+                ]);
+            }
 
-            $fechaInicio = Carbon::parse($validated['fecha_inicio']);
-            $fechaFin = Carbon::parse($validated['fecha_fin']);
+            DB::commit();
             
             Log::info('Contrato renovado exitosamente', [
                 'contrato_anterior_id' => $contrato->id_contrato,
                 'contrato_nuevo_id' => $nuevoContrato->id_contrato,
                 'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $validated['tipo_contrato_renovacion'],
+                'cambio_status' => $validated['tipo_contrato_renovacion'] === 'indeterminado' && $trabajador->getOriginal('estatus') !== 'activo',
+                'formato_fechas' => 'DD/MM/YYYY',
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ]);
             
+            // ✅ MENSAJE ESPECÍFICO SEGÚN TIPO
             $mensaje = "✅ Contrato renovado exitosamente. ";
-            $mensaje .= "Nueva vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+            
+            if ($validated['tipo_contrato_renovacion'] === 'determinado') {
+                $fechaFin = $this->convertirFechaACarbon($validated['fecha_fin']);
+                $mensaje .= "Nueva vigencia: del {$fechaInicio->format('d/m/Y')} al {$fechaFin->format('d/m/Y')}. ";
+            } else {
+                $mensaje .= "Contrato indeterminado a partir del {$fechaInicio->format('d/m/Y')}. ";
+                if ($trabajador->getOriginal('estatus') !== 'activo') {
+                    $mensaje .= "Status del trabajador actualizado a ACTIVO. ";
+                }
+            }
+            
             $mensaje .= "Contrato anterior marcado como renovado.";
 
             return redirect()->route('trabajadores.perfil.show', $trabajador)
@@ -194,6 +394,7 @@ class AdminContratosController extends Controller
             Log::error('Error al renovar contrato', [
                 'contrato_id' => $contrato->id_contrato,
                 'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $validated['tipo_contrato_renovacion'] ?? 'No especificado',
                 'error' => $e->getMessage()
             ]);
             
@@ -202,7 +403,7 @@ class AdminContratosController extends Controller
     }
 
     /**
-     * ✅ ELIMINAR contrato permanentemente
+     * ✅ ELIMINAR contrato permanentemente (sin cambios)
      */
     public function eliminar(Request $request, Trabajador $trabajador, ContratoTrabajador $contrato)
     {
@@ -230,7 +431,9 @@ class AdminContratosController extends Controller
                 'trabajador_id' => $trabajador->id_trabajador,
                 'trabajador_nombre' => $trabajador->nombre_completo,
                 'fecha_inicio' => $contrato->fecha_inicio_contrato->format('Y-m-d'),
-                'fecha_fin' => $contrato->fecha_fin_contrato->format('Y-m-d'),
+                'fecha_fin' => $contrato->fecha_fin_contrato
+                    ? $contrato->fecha_fin_contrato->format('Y-m-d')
+                    : 'Sin fecha de vencimiento',
                 'motivo_eliminacion' => $validated['motivo_eliminacion'],
                 'usuario' => Auth::user()->email ?? 'Sistema'
             ];
@@ -268,9 +471,44 @@ class AdminContratosController extends Controller
         }
     }
 
+    // ========================================
+    // ✅ MÉTODOS AUXILIARES ACTUALIZADOS PARA FORMATO DD/MM/YYYY
+    // ========================================
+
     /**
-     * ✅ DESCARGAR contrato específico (ÚNICO método de descarga)
+     * ✅ NUEVO: Validar fecha personalizada DD/MM/YYYY
      */
+    private function validarFechaPersonalizada($fecha)
+    {
+        if (!$fecha) return false;
+        if (!preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $fecha, $matches)) return false;
+        
+        $dia = (int)$matches[1];
+        $mes = (int)$matches[2];
+        $año = (int)$matches[3];
+        
+        return checkdate($mes, $dia, $año);
+    }
+
+    /**
+     * ✅ NUEVO: Convertir fecha DD/MM/YYYY a Carbon
+     */
+    private function convertirFechaACarbon($fecha)
+    {
+        if (!$this->validarFechaPersonalizada($fecha)) return null;
+        
+        [$dia, $mes, $año] = explode('/', $fecha);
+        try {
+            return Carbon::create((int)$año, (int)$mes, (int)$dia);
+        } catch (\Exception $e) {
+            return null;
+        }
+    }
+
+    // ========================================
+    // 🔄 RESTO DE MÉTODOS SIN CAMBIOS
+    // ========================================
+
     public function descargar(Trabajador $trabajador, ContratoTrabajador $contrato)
     {
         try {
@@ -299,9 +537,6 @@ class AdminContratosController extends Controller
         }
     }
 
-    /**
-     * ✅ API: Obtener resumen de contratos
-     */
     public function obtenerResumen(Trabajador $trabajador)
     {
         $contratos = ContratoTrabajador::where('id_trabajador', $trabajador->id_trabajador)
@@ -327,35 +562,34 @@ class AdminContratosController extends Controller
         ]);
     }
 
-    /**
-     * ✅ API: Verificar si puede crear contrato
-     */
     public function verificarCreacion(Trabajador $trabajador)
     {
-        $contratosVigentes = ContratoTrabajador::where('id_trabajador', $trabajador->id_trabajador)
-            ->where('estatus', ContratoTrabajador::ESTATUS_ACTIVO)
-            ->whereDate('fecha_fin_contrato', '>=', now())
-            ->count();
+        $contratos = ContratoTrabajador::where('id_trabajador', $trabajador->id_trabajador)->get();
 
-        $puedeCrear = $contratosVigentes === 0;
+        // 🔥 Solo se toma en cuenta si REALMENTE está vigente
+        // Los renovados NO son vigentes
+        // Los expirados NO son vigentes
+        // Los eliminados NO están aquí porque ya fueron borrados
+        $tieneContratoVigente = $contratos->contains(function ($c) {
+            return $c->estaVigente();
+        });
 
         return response()->json([
             'success' => true,
-            'puede_crear' => $puedeCrear,
-            'motivo' => $puedeCrear ? 
-                'Sin contratos vigentes, puede crear nuevo contrato' : 
-                'Ya existe un contrato vigente, debe renovar o esperar a que expire'
+            'puede_crear' => !$tieneContratoVigente,
+            'motivo' => !$tieneContratoVigente
+                ? 'Sin contratos vigentes, puede crear nuevo contrato'
+                : 'Ya existe un contrato vigente'
         ]);
     }
 
+
+
     // ========================================
-    // MÉTODOS HELPER PRIVADOS
+    // MÉTODOS HELPER PRIVADOS (SIN CAMBIOS)
     // ========================================
 
-    /**
-     * ✅ Calcular estadísticas de contratos
-     */
-    private function calcularEstadisticasContratos($contratos): array
+   private function calcularEstadisticasContratos($contratos): array
     {
         $vigentes = $contratos->filter(fn($c) => $c->estaVigente())->count();
         $terminados = $contratos->filter(fn($c) => $c->estado_final === ContratoTrabajador::ESTADO_TERMINADO)->count();
@@ -364,6 +598,14 @@ class AdminContratosController extends Controller
         $expirados = $contratos->filter(fn($c) => $c->estaVigente() && $c->yaExpiro())->count();
         
         $contratoActual = $contratos->filter(fn($c) => $c->estaVigente())->first();
+        
+        // NUEVO: detectar si hay activo; si no, tomar el último renovado
+        $ultimoRenovado = $contratos
+            ->where('estatus', ContratoTrabajador::ESTATUS_RENOVADO)
+            ->sortByDesc('fecha_inicio_contrato')
+            ->first();
+
+        $tieneContratoVigente = $vigentes > 0;
 
         return [
             'total' => $contratos->count(),
@@ -373,17 +615,21 @@ class AdminContratosController extends Controller
             'proximos_vencer' => $proximosVencer,
             'expirados_pendientes' => $expirados,
             'contrato_actual' => $contratoActual,
-            'tiene_contrato_vigente' => $vigentes > 0,
+            'tiene_contrato_vigente' => $tieneContratoVigente,
             'renovables' => $contratos->filter(fn($c) => $c->puedeRenovarse())->count(),
-            'contratos_renovacion' => $contratos->filter(fn($c) => $c->esRenovacion())->count(),
+            
+            // 🔥 NUEVO - para que la vista sepa que permitir
+            'ultimo_renovado' => !$tieneContratoVigente ? $ultimoRenovado : null
         ];
     }
 
-    /**
-     * ✅ Formatear duración completa para mostrar
-     */
+
     private function formatearDuracionCompleta(ContratoTrabajador $contrato): string
     {
+        if($contrato->tipo_contrato === 'indeterminado'){
+            return 'Tiempo Indeterminado (sin fecha fin)';  
+        }
+
         $inicio = $contrato->fecha_inicio_contrato->format('d/m/Y');
         $fin = $contrato->fecha_fin_contrato->format('d/m/Y');
         $duracion = $contrato->duracion_texto;
@@ -391,9 +637,6 @@ class AdminContratosController extends Controller
         return "{$duracion} (del {$inicio} al {$fin})";
     }
 
-    /**
-     * ✅ Generar nombre para descarga
-     */
     private function generarNombreDescarga(Trabajador $trabajador, ContratoTrabajador $contrato): string
     {
         $nombreTrabajador = str_replace(' ', '_', $trabajador->nombre_completo);

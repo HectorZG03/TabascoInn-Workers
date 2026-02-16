@@ -40,6 +40,7 @@ class Categoria extends Model
     protected $fillable = [
         'id_area',
         'nombre_categoria',
+        'descripcion_funciones',
     ];
 
     /**

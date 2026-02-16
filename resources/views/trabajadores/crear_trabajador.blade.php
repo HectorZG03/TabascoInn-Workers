@@ -60,7 +60,8 @@
     </form>
 </div>
 
-<!-- ✅ SCRIPTS: PRIMERO EL GLOBAL, LUEGO EL ESPECÍFICO -->
+<!-- ✅ SCRIPTS: PRIMERO RUTAS, LUEGO FORMATO GLOBAL, FINALMENTE EL ESPECÍFICO -->
+<script src="{{ asset('js/app-routes.js') }}"></script>
 <script src="{{ asset('js/formato-global.js') }}"></script>
 <script src="{{ asset('js/crear_trabajador.js') }}"></script>
 

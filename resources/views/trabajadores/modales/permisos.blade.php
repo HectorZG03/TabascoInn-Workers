@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE PERMISOS LABORALES CON FORMATO PERSONALIZADO --}}
+{{-- ✅ MODAL DE PERMISOS LABORALES CON FORMATO PERSONALIZADO - SIN SCRIPT INTERNO --}}
 <div class="modal fade" id="modalPermisos" tabindex="-1" aria-labelledby="modalPermisosLabel" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -9,7 +9,7 @@
                 <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal" aria-label="Close"></button>
             </div>
 
-            <form id="formPermisos" method="POST"  enctype="multipart/form-data">
+            <form id="formPermisos" method="POST" enctype="multipart/form-data">
                 @csrf
                 <div class="modal-body">
                     <div class="alert alert-info">
@@ -179,7 +179,7 @@
 
                     <div class="mb-3">
                         <label for="archivo_permiso" class="form-label">
-                            <i class="bi bi-paperclip"></i>Archivo Adjunto (opcional)
+                            <i class="bi bi-paperclip"></i> Archivo Adjunto (opcional)
                         </label>
                         <input type="file"
                                class="form-control"
@@ -187,7 +187,7 @@
                                name="archivo_permiso"
                                accept=".pdf, .jpg, .png, .jpeg">
                         <small class="form-text text-muted">
-                            Formatos permitidos: PDF, JPG, PNG, JPEG
+                            Formatos permitidos: PDF, JPG, PNG, JPEG. Máximo 5MB.
                         </small>
                         <div class="invalid-feedback"></div>
                     </div>
@@ -206,7 +206,6 @@
                     </div>
                 </div>
 
-
                 <div class="modal-footer">
                     <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
                         <i class="bi bi-x"></i> Cancelar
@@ -219,4 +218,3 @@
         </div>
     </div>
 </div>
-<script src="{{ asset('js/modales/permisos_modal.js') }}"></script>

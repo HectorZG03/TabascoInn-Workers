@@ -28,6 +28,10 @@ class PermisosLaborales extends Model
         'observaciones',
         'estatus_permiso',
         'ruta_pdf',
+        // ✅ NUEVOS CAMPOS PARA CANCELACIÓN
+        'motivo_cancelacion',
+        'fecha_cancelacion',
+        'cancelado_por',
     ];
     
     protected $casts = [
@@ -38,9 +42,11 @@ class PermisosLaborales extends Model
         'es_por_horas' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
+        // ✅ CAST PARA FECHA DE CANCELACIÓN
+        'fecha_cancelacion' => 'datetime',
     ];
 
-    // ✅ CONSTANTES UTILIZADAS
+    // ✅ CONSTANTES ACTUALIZADAS
     const TIPOS_PERMISO = [
         'Vacaciones' => 'Vacaciones',
         'Licencia Médica' => 'Licencia Médica',
@@ -104,6 +110,17 @@ class PermisosLaborales extends Model
         return $this->motivo;
     }
 
+    // ✅ NUEVO ACCESSOR PARA CANCELACIÓN
+    public function getEstaCanceladoAttribute(): bool
+    {
+        return $this->estatus_permiso === 'cancelado';
+    }
+
+    public function getFechaCancelacionFormateadaAttribute(): ?string
+    {
+        return $this->fecha_cancelacion ? $this->fecha_cancelacion->format('d/m/Y H:i') : null;
+    }
+
     // ✅ ACCESSORS PARA PDF (UTILIZADOS)
     public function getTienePdfAttribute(): bool
     {
@@ -132,5 +149,20 @@ class PermisosLaborales extends Model
     public static function getTiposDisponibles(): array
     {
         return self::TIPOS_PERMISO;
+    }
+
+    // ✅ NUEVO MÉTODO PARA CANCELAR PERMISO
+    public function cancelarPermiso(string $motivo, string $canceladoPor): bool
+    {
+        if ($this->estatus_permiso !== 'activo') {
+            return false;
+        }
+
+        return $this->update([
+            'estatus_permiso' => 'cancelado',
+            'motivo_cancelacion' => $motivo,
+            'fecha_cancelacion' => now(),
+            'cancelado_por' => $canceladoPor,
+        ]);
     }
 }

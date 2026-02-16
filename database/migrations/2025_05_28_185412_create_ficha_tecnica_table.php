@@ -26,6 +26,8 @@ return new class extends Migration
             // ✅ CAMPOS DE HORARIO
             $table->time('hora_entrada')->nullable()->comment('Hora de entrada al trabajo');
             $table->time('hora_salida')->nullable()->comment('Hora de salida del trabajo');
+            // ✅ NUEVO: Horario de descanso (texto libre)
+            $table->string('horario_descanso', 100)->nullable()->comment('Horario de descanso durante la jornada (ej: 13:00 a 13:30 de la tarde)');
             
             // ✅ DATOS LABORALES CALCULADOS
             $table->decimal('horas_trabajo', 4, 2)->nullable()->comment('Horas de trabajo por día (ej: 8.00, 8.50)');
@@ -35,19 +37,19 @@ return new class extends Migration
                 'mixto'     // Turno mixto/rotativo
             ])->nullable()->comment('Turno de trabajo del empleado');
             
-            // ✅ NUEVOS: DÍAS LABORABLES Y DESCANSO
+            // ✅ DÍAS LABORABLES Y DESCANSO
             $table->json('dias_laborables')->nullable()->comment('Días de la semana que trabaja: ["lunes","martes","miercoles","jueves","viernes"]');
             $table->json('dias_descanso')->nullable()->comment('Días de descanso: ["sabado","domingo"]');
             $table->decimal('horas_semanales', 5, 2)->nullable()->comment('Total de horas por semana (calculado automáticamente)');
             
-            // ✅ NUEVOS: BENEFICIARIO PRINCIPAL (PARA CONTRATO) - SIMPLIFICADO
+            // ✅ BENEFICIARIO PRINCIPAL (PARA CONTRATO) - SIMPLIFICADO
             $table->string('beneficiario_nombre', 150)->nullable()->comment('Nombre completo del beneficiario de su seguro');
             $table->string('beneficiario_parentesco', 50)->nullable()->comment('Parentesco del beneficiario (esposa, hijo, padre, etc.)');
             
             // ✅ TIMESTAMPS: OBLIGATORIOS PARA LARAVEL
             $table->timestamps();
             
-            // ✅ ÍNDICES PARA OPTIMIZACIÓN DE CONSULTAS (sin foreign keys por ahora)
+            // ✅ ÍNDICES PARA OPTIMIZACIÓN DE CONSULTAS
             $table->index('id_trabajador', 'idx_ficha_trabajador');
             $table->index('id_categoria', 'idx_ficha_categoria');
             $table->index('turno', 'idx_ficha_turno');

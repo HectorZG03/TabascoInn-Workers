@@ -26,8 +26,5 @@ class ContactoEmergencia extends Model
         return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador');
     }
 
-    public function getNombreCompletoAttribute()
-    {
-        return trim($this->nombre_contacto . ' ' . $this->apellido_paterno . ' ' . $this->apellido_materno);
-    }
+
 }

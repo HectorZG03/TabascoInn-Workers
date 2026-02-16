@@ -35,7 +35,7 @@ class DespidosController extends Controller
      */
     public function store(Request $request, Trabajador $trabajador)
     {
-        // Validar que el trabajador esté activo
+        // Verificar que el trabajador esté activo
         if (!$trabajador->estaActivo()) {
             return back()->withErrors(['error' => 'Solo se pueden despedir trabajadores activos']);
         }
@@ -45,7 +45,7 @@ class DespidosController extends Controller
             return back()->withErrors(['error' => 'Este trabajador ya tiene un despido activo']);
         }
 
-        // ✅ VALIDACIÓN ACTUALIZADA PARA FORMATO DD/MM/YYYY
+        // ✅ VALIDACIÓN ACTUALIZADA - SIN RESTRICCIÓN DE FECHAS PASADAS
         $validated = $request->validate([
             'fecha_baja' => [
                 'required',
@@ -71,10 +71,9 @@ class DespidosController extends Controller
                     
                     try {
                         $fechaBaja = Carbon::createFromFormat('d/m/Y', $value);
-                        $hoy = Carbon::today();
                         $fechaIngreso = $trabajador->fecha_ingreso;
                         
-                        // No puede ser anterior a fecha de ingreso
+                        // ✅ SOLO VALIDAR QUE NO SEA ANTERIOR A FECHA DE INGRESO
                         if ($fechaBaja->lessThan($fechaIngreso)) {
                             $fail('La fecha de baja no puede ser anterior a la fecha de ingreso (' . $fechaIngreso->format('d/m/Y') . ')');
                             return;
@@ -86,17 +85,12 @@ class DespidosController extends Controller
             ],
             
             'motivo' => 'required|string|min:10|max:500',
-            
-            // ✅ CONDICIÓN DE SALIDA: Acepta opciones predefinidas + "OTRO"
-            'condicion_salida' => 'required|in:Voluntaria,Despido con Causa,Despido sin Causa,Castigo,Mutuo Acuerdo,Abandono de Trabajo,Fin de Contrato,Incapacidad Permanente,Jubilación,Defunción,OTRO',
-            
-            // ✅ CONDICIÓN PERSONALIZADA: Requerida solo cuando condicion_salida = "OTRO"
+            'condicion_salida' => 'required|in:Voluntaria,Despido con Causa,Despido sin Causa,Castigo,Mutuo Acuerdo,Abandon de Trabajo,Fin de Contrato,Incapacidad Permanente,Jubilación,Defunción,OTRO',
             'condicion_personalizada' => 'nullable|required_if:condicion_salida,OTRO|string|min:3|max:100',
-            
             'observaciones' => 'nullable|string|max:1000',
             'tipo_baja' => 'required|in:temporal,definitiva',
             
-            // ✅ VALIDACIÓN DE FECHA DE REINTEGRO CON FORMATO DD/MM/YYYY
+            // ✅ VALIDACIÓN DE FECHA DE REINTEGRO ACTUALIZADA - SIN RESTRICCIÓN TEMPORAL ESTRICTA
             'fecha_reintegro' => [
                 'nullable',
                 'string',
@@ -127,24 +121,10 @@ class DespidosController extends Controller
                         try {
                             $fechaReintegro = Carbon::createFromFormat('d/m/Y', $value);
                             $fechaBaja = Carbon::createFromFormat('d/m/Y', $request->fecha_baja);
-                            $hoy = Carbon::today();
                             
-                            // Debe ser posterior a hoy
-                            if ($fechaReintegro->lessThanOrEqualTo($hoy)) {
-                                $fail('La fecha de reintegro debe ser posterior a hoy');
-                                return;
-                            }
-                            
-                            // Debe ser posterior a la fecha de baja
+                            // ✅ SOLO VALIDAR: Debe ser posterior a la fecha de baja
                             if ($fechaReintegro->lessThanOrEqualTo($fechaBaja)) {
                                 $fail('La fecha de reintegro debe ser posterior a la fecha de baja');
-                                return;
-                            }
-                            
-                            // Validar que no sea muy lejana (máximo 2 años)
-                            $dosAñosDesdeHoy = $hoy->copy()->addYears(2);
-                            if ($fechaReintegro->greaterThan($dosAñosDesdeHoy)) {
-                                $fail('La fecha de reintegro no puede ser mayor a 2 años');
                                 return;
                             }
                             
@@ -155,7 +135,7 @@ class DespidosController extends Controller
                 }
             ],
         ], [
-            // ✅ MENSAJES DE ERROR PERSONALIZADOS
+            // ✅ MENSAJES DE ERROR ACTUALIZADOS
             'fecha_baja.required' => 'La fecha de baja es obligatoria',
             'fecha_baja.regex' => 'La fecha de baja debe tener el formato DD/MM/YYYY',
             'motivo.required' => 'El motivo es obligatorio',
@@ -163,12 +143,9 @@ class DespidosController extends Controller
             'motivo.max' => 'El motivo no puede exceder 500 caracteres',
             'condicion_salida.required' => 'La condición de salida es obligatoria',
             'condicion_salida.in' => 'La condición de salida seleccionada no es válida',
-            
-            // ✅ MENSAJES PARA CONDICIÓN PERSONALIZADA
             'condicion_personalizada.required_if' => 'Debe especificar la condición de salida cuando selecciona "Otro"',
             'condicion_personalizada.min' => 'La condición personalizada debe tener al menos 3 caracteres',
             'condicion_personalizada.max' => 'La condición personalizada no puede exceder 100 caracteres',
-            
             'observaciones.max' => 'Las observaciones no pueden exceder 1000 caracteres',
             'tipo_baja.required' => 'El tipo de baja es obligatorio',
             'tipo_baja.in' => 'El tipo de baja debe ser temporal o definitiva',

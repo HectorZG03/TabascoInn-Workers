@@ -1,7 +1,5 @@
-{{-- resources/views/trabajadores/secciones_perfil/horas_extra.blade.php --}}
-
 <div class="row">
-    {{-- ✅ RESUMEN DE HORAS EXTRA --}}
+    {{-- RESUMEN DE HORAS EXTRA ACTUALIZADO PARA DECIMALES --}}
     <div class="col-12 mb-4">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -14,24 +12,42 @@
                     <!-- Horas Acumuladas -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-success mb-1">{{ $stats_horas['total_acumuladas'] }}</div>
-                            <div class="text-muted">{{ $stats_horas['total_acumuladas'] == 1 ? 'Hora Acumulada' : 'Horas Acumuladas' }}</div>
+                            @php
+                                $totalAcumuladas = $stats_horas['total_acumuladas'];
+                                $formatoAcumuladas = $totalAcumuladas == floor($totalAcumuladas) ? 
+                                    number_format($totalAcumuladas, 0) : 
+                                    number_format($totalAcumuladas, 1);
+                            @endphp
+                            <div class="h3 text-success mb-1">{{ $formatoAcumuladas }}</div>
+                            <div class="text-muted">{{ $totalAcumuladas == 1 ? 'Hora Acumulada' : 'Horas Acumuladas' }}</div>
                         </div>
                     </div>
                     
                     <!-- Horas Compensadas -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-warning mb-1">{{ $stats_horas['total_devueltas'] }}</div>
-                            <div class="text-muted">{{ $stats_horas['total_devueltas'] == 1 ? 'Hora Compensada' : 'Horas Compensadas' }}</div>
+                            @php
+                                $totalDevueltas = $stats_horas['total_devueltas'];
+                                $formatoDevueltas = $totalDevueltas == floor($totalDevueltas) ? 
+                                    number_format($totalDevueltas, 0) : 
+                                    number_format($totalDevueltas, 1);
+                            @endphp
+                            <div class="h3 text-warning mb-1">{{ $formatoDevueltas }}</div>
+                            <div class="text-muted">{{ $totalDevueltas == 1 ? 'Hora Compensada' : 'Horas Compensadas' }}</div>
                         </div>
                     </div>
                     
                     <!-- Saldo Actual -->
                     <div class="col-md-3">
                         <div class="border-end">
-                            <div class="h3 text-primary mb-1">{{ $trabajador->saldo_horas_extra }}</div>
-                            <div class="text-muted">{{ $trabajador->saldo_horas_extra == 1 ? 'Hora Disponible' : 'Horas Disponibles' }}</div>
+                            @php
+                                $saldoActual = $trabajador->saldo_horas_extra;
+                                $formatoSaldo = $saldoActual == floor($saldoActual) ? 
+                                    number_format($saldoActual, 0) : 
+                                    number_format($saldoActual, 1);
+                            @endphp
+                            <div class="h3 text-primary mb-1">{{ $formatoSaldo }}</div>
+                            <div class="text-muted">{{ $saldoActual == 1 ? 'Hora Disponible' : 'Horas Disponibles' }}</div>
                         </div>
                     </div>
                     
@@ -45,7 +61,7 @@
         </div>
     </div>
 
-    {{-- ✅ ACCIONES RÁPIDAS --}}
+    {{-- ACCIONES RÁPIDAS --}}
     <div class="col-12 mb-4">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -62,6 +78,7 @@
                                     data-bs-toggle="modal" 
                                     data-bs-target="#modalAsignarHoras{{ $trabajador->id_trabajador }}">
                                 <i class="bi bi-plus-circle"></i> Asignar Horas Extra
+                                <br><small class="opacity-75">Admite decimales (ej: 1.5 hrs)</small>
                             </button>
                         @else
                             <button type="button" class="btn btn-success w-100 disabled" disabled>
@@ -77,6 +94,7 @@
                                     data-bs-toggle="modal" 
                                     data-bs-target="#modalRestarHoras{{ $trabajador->id_trabajador }}">
                                 <i class="bi bi-dash-circle"></i> Compensar Horas Extra
+                                <br><small class="opacity-75">Admite decimales (ej: 0.5 hrs)</small>
                             </button>
                         @else
                             <button type="button" class="btn btn-warning w-100 disabled" disabled>
@@ -96,7 +114,7 @@
         </div>
     </div>
 
-    {{-- ✅ HISTORIAL DE HORAS EXTRA --}}
+    {{-- HISTORIAL DE HORAS EXTRA --}}
     <div class="col-12">
         <div class="card shadow-sm">
             <div class="card-header bg-light">
@@ -107,7 +125,7 @@
                         </h6>
                     </div>
                     <div class="col-md-6">
-                        {{-- ✅ FILTROS SIMPLES --}}
+                        {{-- FILTROS SIMPLES --}}
                         <div class="d-flex gap-2 justify-content-end">
                             <select class="form-select form-select-sm" id="filtroTipo" style="width: auto;">
                                 <option value="">Todos los tipos</option>
@@ -136,6 +154,7 @@
                                     <th>Descripción</th>
                                     <th>Autorizado por</th>
                                     <th>Registro</th>
+                                    <th>Acciones</th>
                                 </tr>
                             </thead>
                             <tbody>
@@ -170,13 +189,71 @@
                                                 {{ $registro->created_at->format('d/m/Y H:i') }}
                                             </small>
                                         </td>
+                                        <td>
+                                            <div class="d-flex gap-1">
+                                                <button class="btn btn-sm btn-outline-primary" 
+                                                        data-bs-toggle="modal" 
+                                                        data-bs-target="#modalEditarHoras{{ $registro->id }}">
+                                                    <i class="bi bi-pencil"></i>
+                                                </button>
+                                                
+                                                {{-- Solo para horas devueltas --}}
+                                                @if($registro->tipo === 'devueltas')
+                                                    @if($registro->tiene_documento)
+                                                        {{-- Mostrar documentos disponibles --}}
+                                                        <div class="dropdown">
+                                                            <button class="btn btn-sm btn-success dropdown-toggle" 
+                                                                    type="button" 
+                                                                    data-bs-toggle="dropdown">
+                                                                <i class="bi bi-file-check"></i>
+                                                            </button>
+                                                            <ul class="dropdown-menu">
+                                                                @foreach($registro->documentos as $documento)
+                                                                    <li>
+                                                                        <a class="dropdown-item" 
+                                                                           href="{{ route('trabajadores.horas-extra.descargar-documento', [$trabajador, $registro, $documento]) }}">
+                                                                            <i class="{{ $documento->icono }}"></i>
+                                                                            {{ $documento->nombre_original }}
+                                                                            <small class="text-muted">({{ $documento->tamaño_formateado }})</small>
+                                                                        </a>
+                                                                    </li>
+                                                                @endforeach
+                                                            </ul>
+                                                        </div>
+                                                    @else
+                                                        <button class="btn btn-sm btn-outline-info" 
+                                                                data-bs-toggle="modal" 
+                                                                data-bs-target="#modalDocumento{{ $registro->id }}"
+                                                                title="Subir documento">
+                                                            <i class="bi bi-upload"></i>
+                                                        </button>
+                                                    @endif
+                                                @endif
+                                            </div>
+                                        </td>
                                     </tr>
                                 @endforeach
                             </tbody>
                         </table>
+                        
+                        {{-- Incluir modales --}}
+                        @foreach($historial_horas as $registro)
+                            @include('trabajadores.modales.editar_horas_extras', [
+                                'trabajador' => $trabajador,
+                                'registro' => $registro
+                            ])
+                            
+                            {{-- Modal para subir documento (solo para devueltas sin documento) --}}
+                            @if($registro->tipo === 'devueltas' && !$registro->tiene_documento)
+                                @include('trabajadores.modales.subir_documento_horas', [
+                                    'trabajador' => $trabajador,
+                                    'registro' => $registro
+                                ])
+                            @endif
+                        @endforeach
                     </div>
 
-                    {{-- ✅ INFORMACIÓN ADICIONAL --}}
+                    {{-- INFORMACIÓN ADICIONAL ACTUALIZADA --}}
                     <div class="card-footer bg-light">
                         <div class="row align-items-center">
                             <div class="col-md-8">
@@ -192,21 +269,25 @@
                                 <small class="text-muted">
                                     Balance neto: 
                                     <span class="fw-bold text-{{ $trabajador->saldo_horas_extra > 0 ? 'success' : 'secondary' }}">
-                                        {{ $trabajador->saldo_horas_extra }} {{ $trabajador->saldo_horas_extra == 1 ? 'hora' : 'horas' }}
+                                        {{ $trabajador->saldo_horas_extra == floor($trabajador->saldo_horas_extra) ? 
+                                            number_format($trabajador->saldo_horas_extra, 0) : 
+                                            number_format($trabajador->saldo_horas_extra, 1) }} 
+                                        {{ $trabajador->saldo_horas_extra == 1 ? 'hora' : 'horas' }}
                                     </span>
                                 </small>
                             </div>
                         </div>
                     </div>
                 @else
-                    {{-- ✅ ESTADO VACÍO --}}
+                    {{-- ESTADO VACÍO ACTUALIZADO --}}
                     <div class="text-center py-5">
                         <div class="mb-3">
                             <i class="bi bi-clock text-muted" style="font-size: 4rem;"></i>
                         </div>
                         <h5 class="text-muted">No hay registros de horas extra</h5>
                         <p class="text-muted mb-4">
-                            Este trabajador aún no tiene horas extra registradas.
+                            Este trabajador aún no tiene horas extra registradas.<br>
+                            <small class="opacity-75">Admite decimales para mayor precisión (ej: 1.5, 2.25 horas)</small>
                         </p>
                         @if(!$trabajador->estaSuspendido() && !$trabajador->estaInactivo())
                             <button type="button" 
@@ -223,7 +304,7 @@
     </div>
 </div>
 
-{{-- ✅ JAVASCRIPT PARA FILTROS --}}
+{{-- JAVASCRIPT PARA FILTROS --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const filtroTipo = document.getElementById('filtroTipo');
@@ -275,6 +356,6 @@ document.addEventListener('DOMContentLoaded', function() {
         filtroPeriodo.addEventListener('change', aplicarFiltros);
     }
     
-    console.log('✅ Sección horas extra inicializada correctamente');
+    console.log('✅ Sección horas extra inicializada correctamente (con soporte para decimales y documentos)');
 });
 </script>

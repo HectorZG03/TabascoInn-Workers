@@ -5,7 +5,9 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Carbon\Carbon;
+use App\Models\DiaAntiguedad; // ✅ NUEVO IMPORT
 
 class VacacionesTrabajador extends Model
 {
@@ -16,239 +18,287 @@ class VacacionesTrabajador extends Model
     public $timestamps = true;
 
     protected $fillable = [
-        'id_trabajador',
-        'creado_por',
-        'periodo_vacacional',
-        'año_correspondiente',
-        'dias_correspondientes',
-        'dias_solicitados',
-        'dias_disfrutados',
-        'dias_restantes',
-        'fecha_inicio',
-        'fecha_fin',
-        'fecha_reintegro',
-        'estado',
-        'observaciones',
-        'motivo_finalizacion'
+        'id_trabajador', 'creado_por', 'periodo_vacacional', 'año_correspondiente',
+        'dias_correspondientes', 'dias_solicitados', 'dias_disfrutados', 'dias_restantes',
+        'fecha_inicio', 'fecha_fin', 'fecha_reintegro', 'estado', 'observaciones',
+        'motivo_finalizacion', 'motivo_cancelacion', 'justificada_por_documento',
+        'cancelado_por', 'fecha_cancelacion',
     ];
 
     protected $casts = [
         'fecha_inicio' => 'date',
-        'fecha_fin' => 'date',
+        'fecha_fin' => 'date', 
         'fecha_reintegro' => 'date',
+        'fecha_cancelacion' => 'datetime',
         'año_correspondiente' => 'integer',
         'dias_correspondientes' => 'integer',
         'dias_solicitados' => 'integer',
         'dias_disfrutados' => 'integer',
         'dias_restantes' => 'integer',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'justificada_por_documento' => 'boolean',
     ];
 
-    // ✅ CONSTANTES
+    // ✅ CONSTANTES CONSOLIDADAS
     public const ESTADOS = [
-        'pendiente' => 'Pendiente',
-        'activa' => 'Activa',
-        'finalizada' => 'Finalizada'
+        'pendiente' => ['texto' => 'Pendiente', 'color' => 'warning', 'icono' => 'bi-clock-history'],
+        'activa' => ['texto' => 'Activa', 'color' => 'success', 'icono' => 'bi-calendar-check'],
+        'finalizada' => ['texto' => 'Finalizada', 'color' => 'secondary', 'icono' => 'bi-check-circle'],
+        'cancelada' => ['texto' => 'Cancelada', 'color' => 'danger', 'icono' => 'bi-x-circle']
     ];
 
-    public const ESTADOS_COLORES = [
-        'pendiente' => 'warning',
-        'activa' => 'success',
-        'finalizada' => 'secondary'
-    ];
+    // ✅ RELACIONES SIMPLIFICADAS
+    public function trabajador(): BelongsTo { return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador'); }
+    public function creadoPor(): BelongsTo { return $this->belongsTo(User::class, 'creado_por'); }
+    public function canceladoPor(): BelongsTo { return $this->belongsTo(User::class, 'cancelado_por'); }
 
-    public const ESTADOS_ICONOS = [
-        'pendiente' => 'bi-clock-history',
-        'activa' => 'bi-calendar-check',
-        'finalizada' => 'bi-check-circle'
-    ];
+    // ✅ ACCESSORS SIMPLIFICADOS
+    public function getEstadoInfoAttribute(): array { return self::ESTADOS[$this->estado] ?? self::ESTADOS['pendiente']; }
+    public function getEstadoTextoAttribute(): string { return $this->estado_info['texto']; }
+    public function getEstadoColorAttribute(): string { return $this->estado_info['color']; }
+    public function getEstadoIconoAttribute(): string { return $this->estado_info['icono']; }
+    public function getDuracionDiasAttribute(): int { return $this->fecha_inicio->diffInDays($this->fecha_fin) + 1; }
 
-    // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO
-    // ✅ DÍAS DE VACACIONES SEGÚN LFT MÉXICO (2023+)
-    public const DIAS_POR_ANTIGUEDAD = [
-        0  => 6,   // Menos de 1 año (se asignan manualmente si aplica)
-        1  => 12,
-        2  => 14,
-        3  => 16,
-        4  => 18,
-        5  => 20,
-        6  => 22,
-        11 => 24,
-        16 => 26,
-        21 => 28,
-        26 => 30,
-        31 => 32,
-    ];
+    // ✅ MÉTODOS DE ESTADO CONSOLIDADOS
+    public function esPendiente(): bool { return $this->estado === 'pendiente'; }
+    public function esActiva(): bool { return $this->estado === 'activa'; }
+    public function esFinalizada(): bool { return $this->estado === 'finalizada'; }
+    public function esCancelada(): bool { return $this->estado === 'cancelada'; }
 
+    public function puedeIniciar(): bool { return $this->esPendiente() && !$this->trabajador->tieneVacacionesActivas(); }
+    public function puedeFinalizarse(): bool { return $this->esActiva() && Carbon::today()->gte($this->fecha_fin); }
+    public function puedeCancelarse(): bool { return in_array($this->estado, ['pendiente', 'activa']); }
 
-    // ✅ RELACIONES
-    public function trabajador(): BelongsTo
-    {
-        return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador');
-    }
+    // ✅ SCOPES SIMPLIFICADOS
+    public function scopeEstado($query, string $estado) { return $query->where('estado', $estado); }
+    public function scopeActivas($query) { return $this->scopeEstado($query, 'activa'); }
+    public function scopePendientes($query) { return $this->scopeEstado($query, 'pendiente'); }
+    public function scopeFinalizadas($query) { return $this->scopeEstado($query, 'finalizada'); }
+    public function scopeCanceladas($query) { return $this->scopeEstado($query, 'cancelada'); }
 
-    public function creadoPor(): BelongsTo
-    {
-        return $this->belongsTo(User::class, 'creado_por');
-    }
-
-    // ✅ ACCESSORS
-    public function getEstadoTextoAttribute(): string
-    {
-        return self::ESTADOS[$this->estado] ?? 'Desconocido';
-    }
-
-    public function getEstadoColorAttribute(): string
-    {
-        return self::ESTADOS_COLORES[$this->estado] ?? 'secondary';
-    }
-
-    public function getEstadoIconoAttribute(): string
-    {
-        return self::ESTADOS_ICONOS[$this->estado] ?? 'bi-question';
-    }
-
-    public function getDuracionDiasAttribute(): int
-    {
-        return $this->fecha_inicio->diffInDays($this->fecha_fin) + 1;
-    }
-
-    public function getDiasTranscurridosAttribute(): int
-    {
-        if ($this->estado !== 'activa') {
-            return 0;
-        }
-        
-        $hoy = Carbon::today();
-        if ($hoy->lt($this->fecha_inicio)) {
-            return 0;
-        }
-        
-        $fechaFin = $hoy->gt($this->fecha_fin) ? $this->fecha_fin : $hoy;
-        return $this->fecha_inicio->diffInDays($fechaFin) + 1;
-    }
-
-    public function getPorcentajeCompletadoAttribute(): float
-    {
-        if ($this->dias_solicitados === 0) {
-            return 0;
-        }
-        
-        return ($this->dias_disfrutados / $this->dias_solicitados) * 100;
-    }
-
-    // ✅ MÉTODOS DE ESTADO
-    public function esPendiente(): bool
-    {
-        return $this->estado === 'pendiente';
-    }
-
-    public function esActiva(): bool
-    {
-        return $this->estado === 'activa';
-    }
-
-    public function esFinalizada(): bool
-    {
-        return $this->estado === 'finalizada';
-    }
-
-    public function puedeIniciar(): bool
-    {
-        return $this->esPendiente() && 
-               //arbon::today()->gte($this->fecha_inicio) &&
-               !$this->trabajador->tieneVacacionesActivas();
-    }
-
-    public function puedeFinalizarse(): bool
-    {
-        return $this->esActiva();
-    }
-
-    // ✅ MÉTODOS ESTÁTICOS
-    public static function calcularDiasCorrespondientes(int $antiguedadAños): int
-    {
-        foreach (array_reverse(self::DIAS_POR_ANTIGUEDAD, true) as $años => $dias) {
-            if ($antiguedadAños >= $años) {
-                return $dias;
-            }
-        }
-        
-        return 6; // Por defecto, 6 días
-    }
-
-    public static function generarPeriodoVacacional(int $año): string
-    {
-        return $año . '-' . ($año + 1);
-    }
-
-    // ✅ SCOPES
-    public function scopeActivas($query)
-    {
-        return $query->where('estado', 'activa');
-    }
-
-    public function scopePendientes($query)
-    {
-        return $query->where('estado', 'pendiente');
-    }
-
-    public function scopeFinalizadas($query)
-    {
-        return $query->where('estado', 'finalizada');
-    }
-
-    public function scopePorTrabajador($query, int $idTrabajador)
-    {
-        return $query->where('id_trabajador', $idTrabajador);
-    }
-
-    public function scopePorPeriodo($query, string $periodo)
-    {
-        return $query->where('periodo_vacacional', $periodo);
-    }
-
-    // ✅ MÉTODOS DE ACCIÓN
+    // ✅ MÉTODOS DE ACCIÓN SIMPLIFICADOS
     public function iniciar(int $usuarioId = null): bool
     {
-        if (!$this->puedeIniciar()) {
-            return false;
-        }
-
-        // Actualizar estado del trabajador
+        if (!$this->puedeIniciar()) return false;
+        
         $this->trabajador->update(['estatus' => 'vacaciones']);
-
-        // Actualizar vacación
-        $this->update([
-            'estado' => 'activa',
-            'fecha_inicio' => Carbon::today() // Ajustar si es necesario
-        ]);
-
+        $this->update(['estado' => 'activa']); // ✅ Solo cambiar estado, mantener fecha original
         return true;
     }
 
     public function finalizar(?string $motivo = null, int $usuarioId = null): bool
     {
-        if (!$this->puedeFinalizarse()) {
-            return false;
-        }
-
-        // Calcular días efectivamente disfrutados
-        $diasDisfrutados = $this->dias_transcurridos;
-
-        // Actualizar estado del trabajador a activo
+        if (!$this->puedeFinalizarse()) return false;
+        
         $this->trabajador->update(['estatus' => 'activo']);
-
-        // Actualizar vacación
+        
         $this->update([
             'estado' => 'finalizada',
-            'dias_disfrutados' => $diasDisfrutados,
-            'dias_restantes' => $this->dias_solicitados - $diasDisfrutados,
-            'fecha_reintegro' => Carbon::today(),
-            'motivo_finalizacion' => $motivo
+            'dias_disfrutados' => $this->dias_solicitados, // ✅ Si se finaliza normal, disfrutó todos los días
+            'fecha_reintegro' => $this->fecha_fin->copy()->addDay(), // ✅ Siempre fecha_fin + 1 día
+            'motivo_finalizacion' => $motivo ?? 'Finalización automática'
         ]);
-
         return true;
+    }
+
+    public function cancelar(string $motivo, int $usuarioId): bool
+    {
+        if (!$this->puedeCancelarse()) return false;
+        
+        if ($this->esActiva()) $this->trabajador->update(['estatus' => 'activo']);
+        
+        $this->update([
+            'estado' => 'cancelada',
+            'motivo_cancelacion' => $motivo,
+            'cancelado_por' => $usuarioId,
+            'fecha_cancelacion' => Carbon::now(),
+            'dias_disfrutados' => 0,
+            'dias_restantes' => $this->dias_solicitados,
+            'fecha_reintegro' => $this->esActiva() ? Carbon::today() : null
+        ]);
+        return true;
+    }
+
+    // ✅ MÉTODO ACTUALIZADO: Usa la tabla de configuración
+    public static function calcularDiasCorrespondientes(int $antiguedadAños): int
+    {
+        // Valor por defecto para 0 años
+        if ($antiguedadAños === 0) {
+            return 6;
+        }
+
+        $rango = DiaAntiguedad::where('antiguedad_min', '<=', $antiguedadAños)
+            ->where(function($query) use ($antiguedadAños) {
+                $query->where('antiguedad_max', '>=', $antiguedadAños)
+                      ->orWhereNull('antiguedad_max');
+            })
+            ->orderBy('antiguedad_min', 'desc')
+            ->first();
+
+        return $rango ? $rango->dias : 6;
+    }
+
+    // ✅ RELACIÓN CON DOCUMENTOS
+    public function documentos(): BelongsToMany
+    {
+        return $this->belongsToMany(DocumentoVacaciones::class, 'documento_vacacion_vacaciones', 'vacacion_id', 'documento_vacacion_id');
+    }
+
+
+    public static function generarPeriodoVacacional(int $año): string
+    {
+        return ($año - 1 ) . '-' . ($año + 1);
+    }
+    // Agregar estos métodos en el modelo VacacionesTrabajador
+
+    /**
+     * ✅ NUEVO: Calcular días disfrutados anteriormente en el mismo periodo
+     */
+    public function getDiasDisfrutadosAnterioresAttribute(): int
+    {
+        // Obtener todas las vacaciones anteriores del mismo periodo
+        $vacacionesAnteriores = $this->trabajador->vacaciones()
+            ->where('periodo_vacacional', $this->periodo_vacacional)
+            ->where('created_at', '<', $this->created_at)
+            ->whereIn('estado', ['pendiente', 'activa', 'finalizada'])
+            ->sum('dias_solicitados');
+        
+        return (int) $vacacionesAnteriores;
+    }
+
+    /**
+     * ✅ NUEVO: Calcular días pendientes del periodo actual
+     */
+    public function getDiasPendientesPeriodoAttribute(): int
+    {
+        // Obtener todas las vacaciones del mismo periodo (incluida esta)
+        $diasUsadosPeriodo = $this->trabajador->vacaciones()
+            ->where('periodo_vacacional', $this->periodo_vacacional)
+            ->whereIn('estado', ['pendiente', 'activa', 'finalizada'])
+            ->sum('dias_solicitados');
+        
+        // Calcular días pendientes
+        $diasPendientes = $this->dias_correspondientes - $diasUsadosPeriodo;
+        
+        return max(0, $diasPendientes);
+    }
+
+    /**
+     * ✅ NUEVO: Obtener resumen completo del periodo vacacional
+     */
+    public function getResumenPeriodoAttribute(): array
+    {
+        $todasVacacionesPeriodo = $this->trabajador->vacaciones()
+            ->where('periodo_vacacional', $this->periodo_vacacional)
+            ->whereIn('estado', ['pendiente', 'activa', 'finalizada'])
+            ->orderBy('created_at', 'asc')
+            ->get();
+        
+        $diasUsadosTotal = $todasVacacionesPeriodo->sum('dias_solicitados');
+        $diasDisfrutadosAntes = $todasVacacionesPeriodo
+            ->where('created_at', '<', $this->created_at)
+            ->sum('dias_solicitados');
+        
+        return [
+            'periodo' => $this->periodo_vacacional,
+            'dias_correspondientes' => $this->dias_correspondientes,
+            'dias_usados_total' => $diasUsadosTotal,
+            'dias_disfrutados_anteriormente' => $diasDisfrutadosAntes,
+            'dias_pendientes' => max(0, $this->dias_correspondientes - $diasUsadosTotal),
+            'total_vacaciones_periodo' => $todasVacacionesPeriodo->count(),
+            'posicion_en_periodo' => $todasVacacionesPeriodo->search(function ($item) {
+                return $item->id_vacacion === $this->id_vacacion;
+            }) + 1
+        ];
+    }
+
+    /**
+     * ✅ SCOPE: Obtener vacaciones por periodo
+     */
+    public function scopePorPeriodo($query, string $periodo)
+    {
+        return $query->where('periodo_vacacional', $periodo);
+    }
+
+    /**
+     * ✅ MÉTODO ESTÁTICO: Validar disponibilidad de días en periodo
+     */
+    public static function validarDisponibilidadPeriodo(Trabajador $trabajador, string $periodo, int $diasSolicitados): array
+    {
+        $errores = [];
+        
+        // Obtener todas las vacaciones del periodo
+        $vacacionesPeriodo = $trabajador->vacaciones()
+            ->where('periodo_vacacional', $periodo)
+            ->whereIn('estado', ['pendiente', 'activa', 'finalizada'])
+            ->get();
+        
+        $diasUsados = $vacacionesPeriodo->sum('dias_solicitados');
+        
+        // Obtener días correspondientes (usar el primero del periodo o calcular)
+        $diasCorrespondientes = $vacacionesPeriodo->first()->dias_correspondientes ?? 
+                            $trabajador->dias_vacaciones_correspondientes;
+        
+        $diasDisponibles = $diasCorrespondientes - $diasUsados;
+        
+        if ($diasSolicitados > $diasDisponibles) {
+            $errores[] = "Solo quedan {$diasDisponibles} días disponibles para el periodo {$periodo}";
+        }
+        
+        return $errores;
+    }
+
+    /**
+     * ✅ NUEVO: Calcular fecha de reintegro considerando días de descanso y festivos
+     */
+    // En App\Models\VacacionesTrabajador.php
+    public function calcularFechaReintegro()
+    {
+        if (!$this->fecha_fin) {
+            return null;
+        }
+        
+        // La fecha de reintegro inicial es el día siguiente a la fecha fin
+        $fechaReintegro = $this->fecha_fin->copy()->addDay();
+        
+        // Obtener días de descanso del trabajador
+        $diasDescanso = [];
+        if ($this->trabajador && $this->trabajador->fichaTecnica) {
+            $diasDescanso = $this->trabajador->fichaTecnica->dias_descanso ?? [];
+        }
+        
+        // Calcular el siguiente día hábil (considera festivos del año de la fecha fin)
+        $fechaReintegroHabil = \App\Models\DiaFestivo::siguienteDiaHabil($fechaReintegro, $diasDescanso);
+        
+        return $fechaReintegroHabil;
+    }
+
+    /**
+     * ✅ NUEVO: Accessor para obtener fecha de reintegro calculada
+     */
+    public function getFechaReintegroCalculadaAttribute()
+    {
+        return $this->calcularFechaReintegro();
+    }
+    // En VacacionesTrabajador.php - agregar estos métodos
+
+    protected static function boot()
+    {
+        parent::boot();
+
+        static::deleting(function ($vacacion) {
+            // Obtener documentos asociados
+            $documentos = $vacacion->documentos;
+            
+            // Eliminar relaciones en tabla pivote
+            $vacacion->documentos()->detach();
+            
+            // Eliminar documentos que ya no estén asociados a otras vacaciones
+            foreach ($documentos as $documento) {
+                if ($documento->vacaciones()->count() === 0) {
+                    $documento->eliminarArchivo();
+                    $documento->delete();
+                }
+            }
+        });
     }
 }

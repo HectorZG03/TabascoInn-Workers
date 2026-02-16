@@ -7,7 +7,8 @@ function cargarHistorialPermisos() {
     const contenedor = document.getElementById('permisos-content');
     const trabajadorId = document.querySelector('[data-trabajador-id]').getAttribute('data-trabajador-id');
     
-    fetch(`/trabajadores/${trabajadorId}/permisos/historial`)
+    // ✅ RUTA CORREGIDA: SIN /perfil/ según web.php
+    fetch(trabajadoresUrl(`${trabajadorId}/permisos/historial`))
         .then(response => response.json())
         .then(data => {
             contenedor.innerHTML = data.html;
@@ -52,7 +53,8 @@ function initPermisosEvents() {
                 </div>
             `;
             
-            fetch(`/trabajadores/${trabajadorId}/permisos/historial?${params}`)
+            // ✅ RUTA CORREGIDA: SIN /perfil/ según web.php
+            fetch(trabajadoresUrl(`${trabajadorId}/permisos/historial?${params}`))
                 .then(response => response.json())
                 .then(data => {
                     contenedor.innerHTML = data.html;
@@ -77,7 +79,8 @@ function verDetallePermiso(permisoId) {
     document.getElementById('permiso-content').style.display = 'none';
     document.getElementById('permiso-error').style.display = 'none';
     
-    fetch(`/permisos/${permisoId}/detalle`)
+    // ✅ USAR RUTA DINÁMICA
+    fetch(permisosUrl(`${permisoId}/detalle`))
         .then(response => response.json())
         .then(data => {
             const permiso = data.permiso;
@@ -127,7 +130,8 @@ function cargarHistorialBajas() {
     const contenedor = document.getElementById('bajas-content');
     const trabajadorId = document.querySelector('[data-trabajador-id]').getAttribute('data-trabajador-id');
     
-    fetch(`/trabajadores/${trabajadorId}/bajas/historial`)
+    // ✅ RUTA CORREGIDA: SIN /perfil/ según web.php
+    fetch(trabajadoresUrl(`${trabajadorId}/bajas/historial`))
         .then(response => response.json())
         .then(data => {
             contenedor.innerHTML = data.html;
@@ -174,7 +178,8 @@ function initBajasEvents() {
                 </div>
             `;
             
-            fetch(`/trabajadores/${trabajadorId}/bajas/historial?${params}`)
+            // ✅ RUTA CORREGIDA: SIN /perfil/ según web.php
+            fetch(trabajadoresUrl(`${trabajadorId}/bajas/historial?${params}`))
                 .then(response => response.json())
                 .then(data => {
                     contenedor.innerHTML = data.html;
@@ -199,7 +204,8 @@ function verDetalleBaja(bajaId) {
     document.getElementById('baja-content').style.display = 'none';
     document.getElementById('baja-error').style.display = 'none';
     
-    fetch(`/despidos/${bajaId}/detalle`)
+    // ✅ USAR RUTA DINÁMICA
+    fetch(despidosUrl(`${bajaId}/detalle`))
         .then(response => response.json())
         .then(data => {
             const baja = data.baja;

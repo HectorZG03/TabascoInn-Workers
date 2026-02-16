@@ -26,13 +26,13 @@ class HorasExtra extends Model
     ];
     
     protected $casts = [
-        'horas' => 'integer', // ✅ CAMBIO: Entero en lugar de decimal
+        'horas' => 'decimal:2', // Decimal con 2 decimales
         'fecha' => 'date',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
-    // ✅ CONSTANTES PARA TIPOS
+    // CONSTANTES PARA TIPOS
     const TIPO_ACUMULADAS = 'acumuladas';
     const TIPO_DEVUELTAS = 'devueltas';
     
@@ -41,13 +41,18 @@ class HorasExtra extends Model
         self::TIPO_DEVUELTAS => 'Horas Devueltas',
     ];
 
-    // ✅ RELACIONES
+    // RELACIONES
     public function trabajador(): BelongsTo
     {
         return $this->belongsTo(Trabajador::class, 'id_trabajador', 'id_trabajador');
     }
 
-    // ✅ SCOPES BÁSICOS
+    public function documentos()
+    {
+        return $this->hasMany(DocumentoHorasExtra::class, 'id_horas_extra');
+    }
+
+    // SCOPES BÁSICOS
     public function scopeAcumuladas($query)
     {
         return $query->where('tipo', self::TIPO_ACUMULADAS);
@@ -63,7 +68,7 @@ class HorasExtra extends Model
         return $query->where('id_trabajador', $trabajadorId);
     }
 
-    // ✅ ACCESSORS ACTUALIZADOS
+    // ACCESSORS ACTUALIZADOS PARA DECIMALES
     public function getTipoTextoAttribute(): string
     {
         return self::TIPOS_DISPONIBLES[$this->tipo] ?? 'Tipo Desconocido';
@@ -71,11 +76,21 @@ class HorasExtra extends Model
     
     public function getHorasFormateadasAttribute(): string
     {
-        if ($this->horas == 1) {
-            return '1 hora';
-        }
+        // ACTUALIZADO: Formatear decimales correctamente
+        $horas = (float) $this->horas;
         
-        return $this->horas . ' horas'; // ✅ Sin decimales
+        if ($horas == 1) {
+            return '1 hora';
+        } elseif ($horas < 1) {
+            // Para fracciones menores a 1 hora
+            $minutos = $horas * 60;
+            return number_format($horas, 1) . ' horas (' . round($minutos) . ' min)';
+        } else {
+            // Mostrar decimales solo si es necesario
+            return ($horas == floor($horas)) ? 
+                number_format($horas, 0) . ' horas' : 
+                number_format($horas, 1) . ' horas';
+        }
     }
     
     public function getColorTipoAttribute(): string
@@ -100,6 +115,11 @@ class HorasExtra extends Model
     {
         return $this->fecha->format('d/m/Y');
     }
+
+    public function getTieneDocumentoAttribute(): bool
+    {
+        return $this->documentos()->exists();
+    }
     
     public function getResumenAttribute(): array
     {
@@ -116,15 +136,16 @@ class HorasExtra extends Model
             'color_tipo' => $this->color_tipo,
             'icono_tipo' => $this->icono_tipo,
             'fecha_registro' => $this->created_at->format('d/m/Y H:i'),
+            'tiene_documento' => $this->tiene_documento,
         ];
     }
 
-    // ✅ MÉTODOS ESTÁTICOS ACTUALIZADOS
+    // MÉTODOS ESTÁTICOS ACTUALIZADOS PARA DECIMALES
     
     /**
      * Calcular saldo actual de horas extra de un trabajador
      */
-    public static function calcularSaldo(int $trabajadorId): int
+    public static function calcularSaldo(int $trabajadorId): float
     {
         $acumuladas = self::delTrabajador($trabajadorId)
                          ->acumuladas()
@@ -134,13 +155,13 @@ class HorasExtra extends Model
                         ->devueltas()
                         ->sum('horas');
                         
-        return (int) ($acumuladas - $devueltas); // ✅ Resultado entero
+        return round((float) ($acumuladas - $devueltas), 2); // Resultado decimal con 2 decimales
     }
     
     /**
      * Verificar si un trabajador puede devolver cierta cantidad de horas
      */
-    public static function puedeDevolver(int $trabajadorId, int $horas): bool
+    public static function puedeDevolver(int $trabajadorId, float $horas): bool
     {
         $saldoActual = self::calcularSaldo($trabajadorId);
         return $saldoActual >= $horas;
@@ -151,14 +172,14 @@ class HorasExtra extends Model
      */
     public static function registrarAcumuladas(
         int $trabajadorId, 
-        int $horas, // ✅ Entero
+        float $horas, // CAMBIO: Float en lugar de int
         string $fecha, 
-        string $descripcion = null
+        ?string $descripcion = null
     ): self {
         return self::create([
             'id_trabajador' => $trabajadorId,
             'tipo' => self::TIPO_ACUMULADAS,
-            'horas' => $horas,
+            'horas' => round($horas, 2), // Redondear a 2 decimales
             'fecha' => $fecha,
             'descripcion' => $descripcion,
             'autorizado_por' => Auth::user()->email ?? 'Sistema',
@@ -170,9 +191,9 @@ class HorasExtra extends Model
      */
     public static function registrarDevueltas(
         int $trabajadorId, 
-        int $horas, // ✅ Entero
+        float $horas, // CAMBIO: Float en lugar de int
         string $fecha, 
-        string $descripcion = null
+        ?string $descripcion = null
     ): self {
         if (!self::puedeDevolver($trabajadorId, $horas)) {
             throw new \Exception(
@@ -184,14 +205,14 @@ class HorasExtra extends Model
         return self::create([
             'id_trabajador' => $trabajadorId,
             'tipo' => self::TIPO_DEVUELTAS,
-            'horas' => $horas,
+            'horas' => round($horas, 2), // Redondear a 2 decimales
             'fecha' => $fecha,
             'descripcion' => $descripcion,
             'autorizado_por' => Auth::user()->email ?? 'Sistema',
         ]);
     }
 
-    // ✅ MÉTODOS DE UTILIDAD BÁSICOS
+    // MÉTODOS DE UTILIDAD BÁSICOS
     
     public function esAcumulada(): bool
     {
@@ -203,7 +224,7 @@ class HorasExtra extends Model
         return $this->tipo === self::TIPO_DEVUELTAS;
     }
 
-    // ✅ Validación automática antes de guardar el modelo
+    // VALIDACIÓN ACTUALIZADA PARA DECIMALES
     protected static function booted()
     {
         static::saving(function ($registro) {
@@ -211,8 +232,13 @@ class HorasExtra extends Model
                 throw new \InvalidArgumentException('La cantidad de horas debe ser mayor a 0');
             }
             
-            // ✅ Asegurar que sea entero
-            $registro->horas = (int) $registro->horas;
+            // CAMBIO: Redondear a 2 decimales en lugar de convertir a entero
+            $registro->horas = round((float) $registro->horas, 2);
+            
+            // VALIDACIÓN ADICIONAL: Máximo 24 horas por registro
+            if ($registro->horas > 24) {
+                throw new \InvalidArgumentException('No se pueden registrar más de 24 horas por día');
+            }
         });
     }
 }

@@ -26,6 +26,7 @@ class FichaTecnica extends Model
         'hora_entrada',
         'hora_salida',
         // ✅ CALCULADOS: Se llenan automáticamente
+        'horario_descanso',  // ✅ CAMPO AÑADIDO
         'horas_trabajo',
         'turno',
         // ✅ NUEVOS: Días laborables y descanso
@@ -355,4 +356,209 @@ class FichaTecnica extends Model
     {
         return $query->whereNotNull('beneficiario_nombre');
     }
+    
+    /**
+     * ✅ NUEVO: Calcular fecha fin de vacaciones considerando días laborables
+     */
+   public function calcularFechaFinVacaciones($fechaInicio, $diasSolicitados)
+    {
+        if (!$fechaInicio || $diasSolicitados <= 0) {
+            return null;
+        }
+
+        $diasLaborables = $this->dias_laborables ?? [];
+        
+        // Si no tiene días laborables definidos, usar cálculo tradicional (calendario)
+        if (empty($diasLaborables)) {
+            $fechaFin = Carbon::parse($fechaInicio)->addDays($diasSolicitados - 1);
+            return $fechaFin;
+        }
+
+        // Mapear días de la semana a números (0=domingo, 1=lunes, etc.)
+        $diasSemanaMap = [
+            'domingo' => 0, 'lunes' => 1, 'martes' => 2, 'miercoles' => 3,
+            'jueves' => 4, 'viernes' => 5, 'sabado' => 6
+        ];
+
+        // Convertir días laborables a números
+        $diasLaborablesNumeros = array_map(function($dia) use ($diasSemanaMap) {
+            return $diasSemanaMap[$dia] ?? null;
+        }, $diasLaborables);
+        
+        $diasLaborablesNumeros = array_filter($diasLaborablesNumeros, function($dia) {
+            return $dia !== null;
+        });
+
+        if (empty($diasLaborablesNumeros)) {
+            $fechaFin = Carbon::parse($fechaInicio)->addDays($diasSolicitados - 1);
+            return $fechaFin;
+        }
+
+        // ✅ CAMBIO PRINCIPAL: Calcular fecha fin excluyendo DESCANSOS Y FESTIVOS
+        $fechaActual = Carbon::parse($fechaInicio);
+        $diasContados = 0;
+        $maxIteraciones = 365; // Prevenir loops infinitos
+        $iteraciones = 0;
+
+        // Si la fecha inicio no es día hábil, avanzar al siguiente día hábil
+        while (!$this->esDiaHabilCompleto($fechaActual, $diasLaborablesNumeros) && $iteraciones < $maxIteraciones) {
+            $fechaActual->addDay();
+            $iteraciones++;
+        }
+
+        // Contar días hábiles hasta completar los días solicitados
+        while ($diasContados < $diasSolicitados && $iteraciones < $maxIteraciones) {
+            // ❌ LÍNEA ANTERIOR (solo verificaba días laborables):
+            // if (in_array($fechaActual->dayOfWeek, $diasLaborablesNumeros)) {
+            
+            // ✅ NUEVA LÍNEA (verifica laborables Y no festivos):
+            if ($this->esDiaHabilCompleto($fechaActual, $diasLaborablesNumeros)) {
+                $diasContados++;
+            }
+            
+            // Si aún no hemos completado los días, avanzar
+            if ($diasContados < $diasSolicitados) {
+                $fechaActual->addDay();
+            }
+            
+            $iteraciones++;
+        }
+
+        return $fechaActual;
+    }
+
+    private function esDiaHabilCompleto($fecha, $diasLaborablesNumeros)
+    {
+        $fechaCarbon = Carbon::parse($fecha);
+        
+        // 1. Debe ser día laborable para el trabajador
+        $esDiaLaborable = in_array($fechaCarbon->dayOfWeek, $diasLaborablesNumeros);
+        
+        // 2. NO debe ser día festivo oficial
+        $noEsFestivo = !\App\Models\DiaFestivo::esDiaFestivo($fechaCarbon);
+        
+        return $esDiaLaborable && $noEsFestivo;
+    }
+
+
+    /**
+     * ✅ NUEVO: Calcular días calendario que abarcan las vacaciones laborables
+     */
+    public function calcularDiasCalendarioVacaciones($fechaInicio, $diasLaborablesSolicitados)
+    {
+        $fechaFin = $this->calcularFechaFinVacaciones($fechaInicio, $diasLaborablesSolicitados);
+        
+        if (!$fechaFin) {
+            return 0;
+        }
+
+        return Carbon::parse($fechaInicio)->diffInDays($fechaFin) + 1;
+    }
+
+    /**
+     * ✅ NUEVO: Obtener resumen de vacaciones (días laborables vs calendario)
+     */
+    public function getResumenVacaciones($fechaInicio, $diasLaborablesSolicitados)
+    {
+        if (!$fechaInicio || $diasLaborablesSolicitados <= 0) {
+            return null;
+        }
+
+        $fechaFin = $this->calcularFechaFinVacaciones($fechaInicio, $diasLaborablesSolicitados);
+        $diasCalendario = $this->calcularDiasCalendarioVacaciones($fechaInicio, $diasLaborablesSolicitados);
+        
+        $diasLaborables = $this->dias_laborables ?? [];
+        $tieneHorarioDefinido = !empty($diasLaborables);
+
+        return [
+            'fecha_inicio' => Carbon::parse($fechaInicio),
+            'fecha_fin' => $fechaFin,
+            'dias_laborables_solicitados' => $diasLaborablesSolicitados,
+            'dias_calendario_total' => $diasCalendario,
+            'dias_fin_de_semana_incluidos' => $diasCalendario - $diasLaborablesSolicitados,
+            'horario_definido' => $tieneHorarioDefinido,
+            'dias_laborables_trabajador' => $this->dias_laborables_texto,
+            'explicacion' => $tieneHorarioDefinido 
+                ? "Se calculan {$diasLaborablesSolicitados} días laborables ({$this->dias_laborables_texto}), abarcando {$diasCalendario} días en el calendario"
+                : "Cálculo tradicional: {$diasLaborablesSolicitados} días calendario consecutivos"
+        ];
+    }
+
+
+    public function getTipoJornadaTextoAttribute()
+    {
+        return match($this->turno_calculado) {
+            'nocturno' => 'nocturna',
+            'diurno' => 'diurna',
+            default => 'mixta'
+        };
+    }
+
+    /**
+     * ✅ NUEVO: Obtener descripción completa del turno para contratos
+     */
+    public function getDescripcionTurnoAttribute()
+    {
+        return match ($this->turno) {
+            'diurno' => 'por tratarse de jornada Diurna',
+            'nocturno' => 'por tratarse de jornada Nocturna',
+            'mixto' => 'por tratarse de jornada Mixta',
+            default => 'por tratarse de jornada indefinida',
+        };
+    }
+
+
+    /**
+     * ✅ NUEVO: Obtener horario de descanso según el turno
+     */
+    public function getHorarioDescansoAttribute($value)
+    {
+        // Si hay un valor guardado en la BD, usarlo
+        if (!empty($value)) {
+            return $value;
+        }
+        
+        // Solo si está vacío, usar el valor predeterminado según turno
+        return $this->turno_calculado === 'nocturno' 
+            ? '02:00 horas a las 02:30 horas' 
+            : '12:30 horas a las 13:00 horas';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener hora de entrada formateada
+     */
+    public function getHoraEntradaFormateadaAttribute()
+    {
+        return $this->hora_entrada 
+            ? \Carbon\Carbon::parse($this->hora_entrada)->format('H:i') 
+            : '08:00';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener hora de salida formateada
+     */
+    public function getHoraSalidaFormateadaAttribute()
+    {
+        return $this->hora_salida 
+            ? \Carbon\Carbon::parse($this->hora_salida)->format('H:i') 
+            : '17:00';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto plural para días de descanso
+     */
+    public function getTextoDescansoPlural1Attribute()
+    {
+        return count($this->dias_descanso ?? []) === 1 ? 'el día' : 'los días';
+    }
+
+    /**
+     * ✅ NUEVO: Obtener texto plural para días de descanso (segunda parte)
+     */
+    public function getTextoDescansoPlural2Attribute()
+    {
+        return count($this->dias_descanso ?? []) === 1 ? 'el' : 'los';
+    }
+
+    
 }

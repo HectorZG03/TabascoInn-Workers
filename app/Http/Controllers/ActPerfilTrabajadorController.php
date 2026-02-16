@@ -1,14 +1,13 @@
 <?php
-
 namespace App\Http\Controllers;
-
 use App\Models\Area;
 use App\Models\Categoria;
 use App\Models\Trabajador;
 use App\Models\FichaTecnica;
 use App\Models\DocumentoTrabajador;
-use App\Models\HistorialPromocion; // ✅ NUEVA IMPORTACIÓN
-use App\Models\HorasExtra; // ✅ NUEVA IMPORTACIÓN
+use App\Models\HistorialPromocion;
+use App\Models\HorasExtra; 
+use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -19,21 +18,19 @@ use Carbon\Carbon;
 
 class ActPerfilTrabajadorController extends Controller
 {
-/**
-     * Mostrar perfil completo del trabajador ✅ CORREGIDO + HORAS EXTRA
-     */
+
     public function show(Trabajador $trabajador)
     {
-        // ✅ Una sola carga de relaciones optimizada + HORAS EXTRA
+        // ✅ Agregar contactosEmergencia a la carga de relaciones
         $trabajador->load([
             'fichaTecnica.categoria.area', 
             'documentos', 
             'despido',
+            'contactosEmergencia', // ✅ NUEVA RELACIÓN
             'historialPromociones' => function($query) {
                 $query->with(['categoriaAnterior', 'categoriaNueva'])
-                      ->latest('fecha_cambio');
+                    ->latest('fecha_cambio');
             },
-            // ✅ NUEVA: Cargar horas extra
             'horasExtra' => function($query) {
                 $query->orderBy('fecha', 'desc')->orderBy('created_at', 'desc');
             }
@@ -48,9 +45,13 @@ class ActPerfilTrabajadorController extends Controller
         
         if ($trabajador->fichaTecnica && $trabajador->fichaTecnica->categoria) {
             $categorias = Categoria::where('id_area', $trabajador->fichaTecnica->categoria->id_area)
-                                 ->orderBy('nombre_categoria')
-                                 ->get();
+                                ->orderBy('nombre_categoria')
+                                ->get();
         }
+
+        // ✅ NUEVO: Obtener historial completo para la pestaña de historial
+        $historialCompleto = HistorialPromocion::obtenerHistorialTrabajador($trabajador->id_trabajador);
+        $estadisticasHistorial = HistorialPromocion::obtenerEstadisticas($trabajador->id_trabajador);
 
         // ✅ Extraer datos específicos de las estadísticas
         $statsPromociones = $stats['promociones'];
@@ -60,6 +61,9 @@ class ActPerfilTrabajadorController extends Controller
         $stats_horas = $stats['horas_extra'];
         $historial_horas = $stats['historial_horas'];
 
+        // ✅ NUEVO: Obtener contacto de emergencia (el primero si hay varios)
+        $contactoEmergencia = $trabajador->contactosEmergencia->first();
+
         return view('trabajadores.perfil_trabajador', compact(
             'trabajador', 
             'areas', 
@@ -67,16 +71,103 @@ class ActPerfilTrabajadorController extends Controller
             'stats',
             'statsPromociones',
             'historialReciente',
-            // ✅ NUEVAS: Variables para horas extra
             'stats_horas',
-            'historial_horas'
+            'historial_horas',
+            'historialCompleto',
+            'estadisticasHistorial',
+            'contactoEmergencia' // ✅ NUEVA VARIABLE
         ));
     }
 
-    
-/**
-     * ✅ MÉTODO UNIFICADO - Reemplaza ambos métodos anteriores + HORAS EXTRA
+    // 2. AGREGAR NUEVO MÉTODO para actualizar contacto de emergencia
+    /**
+     * ✅ NUEVO MÉTODO: Actualizar o crear contacto de emergencia
      */
+    public function updateContactoEmergencia(Request $request, Trabajador $trabajador)
+    {
+        // Validación condicional: si algún campo está lleno, validar los requeridos
+        $hasContactData = $request->filled('contacto_nombre_completo') || 
+                        $request->filled('contacto_telefono_principal');
+        
+        if ($hasContactData) {
+            $validated = $request->validate([
+                'contacto_nombre_completo' => 'required|string|max:150',
+                'contacto_parentesco' => 'required|string|max:50',
+                'contacto_telefono_principal' => 'required|string|size:10|regex:/^[0-9]+$/',
+                'contacto_telefono_secundario' => 'nullable|string|size:10|regex:/^[0-9]+$/',
+                'contacto_direccion' => 'nullable|string|max:500',
+            ], [
+                'contacto_nombre_completo.required' => 'El nombre del contacto es obligatorio si agrega un contacto',
+                'contacto_parentesco.required' => 'El parentesco es obligatorio',
+                'contacto_telefono_principal.required' => 'El teléfono principal es obligatorio',
+                'contacto_telefono_principal.size' => 'El teléfono debe tener exactamente 10 dígitos',
+                'contacto_telefono_secundario.size' => 'El teléfono secundario debe tener exactamente 10 dígitos',
+            ]);
+        }
+
+        DB::beginTransaction();
+        
+        try {
+            // Buscar contacto existente
+            $contacto = $trabajador->contactosEmergencia()->first();
+            
+            if ($hasContactData) {
+                if ($contacto) {
+                    // Actualizar contacto existente
+                    $contacto->update([
+                        'nombre_completo' => $validated['contacto_nombre_completo'],
+                        'parentesco' => $validated['contacto_parentesco'],
+                        'telefono_principal' => $validated['contacto_telefono_principal'],
+                        'telefono_secundario' => $validated['contacto_telefono_secundario'],
+                        'direccion' => $validated['contacto_direccion'],
+                    ]);
+                    
+                    $mensaje = 'Contacto de emergencia actualizado exitosamente';
+                } else {
+                    // Crear nuevo contacto
+                    ContactoEmergencia::create([
+                        'id_trabajador' => $trabajador->id_trabajador,
+                        'nombre_completo' => $validated['contacto_nombre_completo'],
+                        'parentesco' => $validated['contacto_parentesco'],
+                        'telefono_principal' => $validated['contacto_telefono_principal'],
+                        'telefono_secundario' => $validated['contacto_telefono_secundario'],
+                        'direccion' => $validated['contacto_direccion'],
+                    ]);
+                    
+                    $mensaje = 'Contacto de emergencia agregado exitosamente';
+                }
+            } else {
+                // Si no hay datos y existe un contacto, eliminarlo
+                if ($contacto) {
+                    $contacto->delete();
+                    $mensaje = 'Contacto de emergencia eliminado';
+                } else {
+                    $mensaje = 'No se realizaron cambios en el contacto de emergencia';
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Contacto de emergencia actualizado', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'accion' => $hasContactData ? ($contacto ? 'actualizado' : 'creado') : 'eliminado',
+                'usuario' => Auth::user()->email ?? 'Sistema',
+            ]);
+            
+            return back()->with('success', $mensaje);
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error al actualizar contacto de emergencia', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'error' => $e->getMessage(),
+            ]);
+
+            return back()->withErrors(['error' => 'Error al actualizar el contacto de emergencia: ' . $e->getMessage()]);
+        }
+    }
+    
     private function calcularTodasLasEstadisticas(Trabajador $trabajador): array
     {
         // ✅ Cálculos básicos (sin cambios)
@@ -178,55 +269,126 @@ class ActPerfilTrabajadorController extends Controller
         ];
     }
 
-
+    private function convertirFecha($fecha)
+    {
+        if (!$fecha) return null;
+        
+        // Si ya está en formato Y-m-d, devolverla tal como está
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $fecha)) {
+            return $fecha;
+        }
+        
+        // Convertir de DD/MM/YYYY a Y-m-d
+        if (preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $fecha, $matches)) {
+            $dia = $matches[1];
+            $mes = $matches[2];
+            $año = $matches[3];
+            
+            // Validar fecha válida
+            if (checkdate($mes, $dia, $año)) {
+                return sprintf('%04d-%02d-%02d', $año, $mes, $dia);
+            }
+        }
+        
+        return null;
+    }
 
     /**
-     * Actualizar datos básicos del trabajador
+     * ✅ VALIDAR FECHA EN FORMATO DD/MM/YYYY
+     */
+    private function validarFechaFormato($fecha, $request, $campo)
+    {
+        // Validar formato básico
+        if (!preg_match('/^(\d{2})\/(\d{2})\/(\d{4})$/', $fecha)) {
+            $request->merge([$campo => null]);
+            return false;
+        }
+        
+        // Convertir y validar
+        $fechaConvertida = $this->convertirFecha($fecha);
+        if (!$fechaConvertida) {
+            $request->merge([$campo => null]);
+            return false;
+        }
+        
+        // Reemplazar en el request con la fecha convertida para Laravel
+        $request->merge([$campo => $fechaConvertida]);
+        return true;
+    }
+
+    /**
+     * ✅ ACTUALIZAR SOLO EL MÉTODO updateDatos - REEMPLAZAR EL EXISTENTE
      */
     public function updateDatos(Request $request, Trabajador $trabajador)
     {
-        $validated = $request->validate([
-            // Datos personales
-            'nombre_trabajador' => 'required|string|max:50',
-            'ape_pat' => 'required|string|max:50',
-            'ape_mat' => 'nullable|string|max:50',
-            'fecha_nacimiento' => 'required|date|before:-18 years',
+        // ✅ PROCESAR FECHAS ANTES DE VALIDACIÓN
+        $fechaNacimientoOriginal = $request->get('fecha_nacimiento');
+        $fechaIngresoOriginal = $request->get('fecha_ingreso');
+        
+        // Validar y convertir fecha de nacimiento
+        if ($fechaNacimientoOriginal && !$this->validarFechaFormato($fechaNacimientoOriginal, $request, 'fecha_nacimiento')) {
+            return back()->withErrors([
+                'fecha_nacimiento' => 'Formato de fecha inválido. Use DD/MM/YYYY'
+            ])->withInput();
+        }
+        
+        // Validar y convertir fecha de ingreso
+        if ($fechaIngresoOriginal && !$this->validarFechaFormato($fechaIngresoOriginal, $request, 'fecha_ingreso')) {
+            return back()->withErrors([
+                'fecha_ingreso' => 'Formato de fecha inválido. Use DD/MM/YYYY'
+            ])->withInput();
+        }
+
+    $validated = $request->validate([
+        // Datos personales
+        'nombre_trabajador' => 'required|string|max:50',
+        'ape_pat' => 'required|string|max:50',
+        'ape_mat' => 'nullable|string|max:50',
+        'fecha_nacimiento' => 'required|date|before:-18 years',
+
+        'estado_civil' => 'required|in:' . implode(',', array_keys(\App\Models\Trabajador::ESTADOS_CIVILES)),
+        
+        // ✅ CAMPOS DE UBICACIÓN
+        'lugar_nacimiento' => 'nullable|string|max:100',
+        'estado_actual' => 'nullable|string|max:50',
+        'ciudad_actual' => 'nullable|string|max:50',
+        // ✅ NUEVO: Código postal
+        'codigo_postal' => 'required|string|max:5|regex:/^\d{5}$/',
+        
+        // Identificadores
+        'curp' => ['required', 'string', 'size:18', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'rfc' => ['required', 'string', 'size:13', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'no_nss' => 'nullable|string|max:11',
+        
+        // Contacto
+        'telefono' => 'required|string|size:10',
+        'correo' => ['nullable', 'email', 'max:55', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
+        'direccion' => 'nullable|string|max:255',
+        'fecha_ingreso' => 'required|date|before_or_equal:today',
+    ], [
+        'nombre_trabajador.required' => 'El nombre es obligatorio',
+        'ape_pat.required' => 'El apellido paterno es obligatorio',
+        'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
+
+        'estado_civil.required' => 'El estado civil es obligatorio',
+        'estado_civil.in' => 'El estado civil seleccionado no es válido',
+        
+        'lugar_nacimiento.max' => 'El lugar de nacimiento no puede exceder 100 caracteres',
+        'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
+        'ciudad_actual.max' => 'La ciudad no puede exceder 50 caracteres',
+        'codigo_postal.required' => 'El código postal es obligatorio',
+        'codigo_postal.regex' => 'El código postal debe contener exactamente 5 dígitos',
+        'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
             
-            // ✅ NUEVOS CAMPOS DE UBICACIÓN
-            'lugar_nacimiento' => 'nullable|string|max:100',
-            'estado_actual' => 'nullable|string|max:50|in:' . implode(',', array_keys(Trabajador::ESTADOS_MEXICO)),
-            'ciudad_actual' => 'nullable|string|max:50',
-            
-            // Identificadores
-            'curp' => ['required', 'string', 'size:18', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'rfc' => ['required', 'string', 'size:13', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'no_nss' => 'nullable|string|max:11',
-            
-            // Contacto
-            'telefono' => 'required|string|size:10',
-            'correo' => ['nullable', 'email', 'max:55', Rule::unique('trabajadores')->ignore($trabajador->id_trabajador, 'id_trabajador')],
-            'direccion' => 'nullable|string|max:255',
-            'fecha_ingreso' => 'required|date|before_or_equal:today',
-        ], [
-            'nombre_trabajador.required' => 'El nombre es obligatorio',
-            'ape_pat.required' => 'El apellido paterno es obligatorio',
-            'fecha_nacimiento.before' => 'El trabajador debe ser mayor de 18 años',
-            
-            // ✅ MENSAJES PARA NUEVOS CAMPOS
-            'lugar_nacimiento.max' => 'El lugar de nacimiento no puede exceder 100 caracteres',
-            'estado_actual.in' => 'El estado seleccionado no es válido',
-            'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
-            'ciudad_actual.max' => 'La ciudad no puede exceder 50 caracteres',
-            
-            'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
-            'curp.unique' => 'Este CURP ya está registrado',
-            'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
-            'rfc.unique' => 'Este RFC ya está registrado',
-            'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos',
-            'correo.unique' => 'Este correo ya está registrado',
-            'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
-            'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
-        ]);
+        'curp.size' => 'El CURP debe tener exactamente 18 caracteres',
+        'curp.unique' => 'Este CURP ya está registrado',
+        'rfc.size' => 'El RFC debe tener exactamente 13 caracteres',
+        'rfc.unique' => 'Este RFC ya está registrado',
+        'telefono.size' => 'El teléfono debe tener exactamente 10 dígitos',
+        'correo.unique' => 'Este correo ya está registrado',
+        'fecha_ingreso.required' => 'La fecha de ingreso es obligatoria',
+        'fecha_ingreso.before_or_equal' => 'La fecha de ingreso no puede ser futura',
+    ]);
 
         DB::beginTransaction();
         
@@ -240,10 +402,14 @@ class ActPerfilTrabajadorController extends Controller
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $validated['fecha_nacimiento'],
                 
-                // ✅ INCLUIR NUEVOS CAMPOS
+                // ✅ INCLUIR ESTADO CIVIL
+                'estado_civil' => $validated['estado_civil'],
+                
+                // ✅ INCLUIR CAMPOS DE UBICACIÓN
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
+                'codigo_postal' => $validated['codigo_postal'],
                 
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
@@ -260,9 +426,13 @@ class ActPerfilTrabajadorController extends Controller
             Log::info('Datos personales actualizados', [
                 'trabajador_id' => $trabajador->id_trabajador,
                 'usuario' => Auth::user()->email ?? 'Sistema',
-                'campos_actualizados' => array_keys($validated)
+                'fecha_nacimiento_original' => $fechaNacimientoOriginal,
+                'fecha_nacimiento_procesada' => $validated['fecha_nacimiento'],
+                'fecha_ingreso_original' => $fechaIngresoOriginal,
+                'fecha_ingreso_procesada' => $validated['fecha_ingreso'],
+                'estado_civil' => $validated['estado_civil'], // ✅ LOG DEL NUEVO CAMPO
             ]);
-
+            
             return back()->with('success', 'Datos personales actualizados exitosamente');
 
         } catch (\Exception $e) {
@@ -270,16 +440,15 @@ class ActPerfilTrabajadorController extends Controller
             
             Log::error('Error al actualizar datos personales', [
                 'trabajador_id' => $trabajador->id_trabajador,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
 
             return back()->withErrors(['error' => 'Error al actualizar los datos: ' . $e->getMessage()]);
         }
     }
 
-public function updateFichaTecnica(Request $request, Trabajador $trabajador)
-{
-    // ✅ ACTUALIZAR VALIDACIÓN CON NUEVOS CAMPOS
+    public function updateFichaTecnica(Request $request, Trabajador $trabajador)
+    {
     $validated = $request->validate([
         'id_area' => 'required|exists:area,id_area',
         'id_categoria' => 'required|exists:categoria,id_categoria',
@@ -288,9 +457,11 @@ public function updateFichaTecnica(Request $request, Trabajador $trabajador)
         'grado_estudios' => 'nullable|string|max:50',
         'motivo_cambio' => 'nullable|string|max:255',
         'tipo_cambio' => 'nullable|in:promocion,transferencia,aumento_sueldo,reclasificacion,ajuste_salarial',
-        // ✅ NUEVOS CAMPOS
+        // ✅ CAMPOS EXISTENTES
         'hora_entrada' => 'nullable|date_format:H:i',
         'hora_salida' => 'nullable|date_format:H:i',
+        // ✅ NUEVO: Horario de descanso
+        'horario_descanso' => 'required|string|max:100',
         'dias_laborables' => 'nullable|array',
         'dias_laborables.*' => 'string|in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA)),
         'beneficiario_nombre' => 'nullable|string|max:150',
@@ -301,129 +472,183 @@ public function updateFichaTecnica(Request $request, Trabajador $trabajador)
         'sueldo_diarios.required' => 'El sueldo diario es obligatorio',
         'sueldo_diarios.min' => 'El sueldo debe ser mayor a 0',
         'tipo_cambio.in' => 'El tipo de cambio seleccionado no es válido',
-        // Mensajes para nuevos campos
+        // Mensajes para campos existentes
         'hora_entrada.date_format' => 'Formato de hora inválido (HH:MM)',
         'hora_salida.date_format' => 'Formato de hora inválido (HH:MM)',
+        // ✅ NUEVO: Mensaje para horario de descanso
+        'horario_descanso.required' => 'El horario de descanso es obligatorio',
+        'horario_descanso.max' => 'El horario de descanso no puede exceder 100 caracteres',
         'dias_laborables.array' => 'Los días laborables deben ser una lista',
         'dias_laborables.*.in' => 'Día laborable no válido',
         'beneficiario_parentesco.in' => 'Parentesco no válido',
     ]);
 
-    // Validar que la categoría pertenezca al área
-    $categoria = Categoria::where('id_categoria', $validated['id_categoria'])
-                         ->where('id_area', $validated['id_area'])
-                         ->first();
-                         
-    if (!$categoria) {
-        return back()->withErrors(['id_categoria' => 'La categoría no pertenece al área seleccionada']);
-    }
-
-    // ✅ CALCULAR DÍAS DE DESCANSO
-    $diasLaborables = $validated['dias_laborables'] ?? [];
-    $diasDescanso = FichaTecnica::calcularDiasDescanso($diasLaborables);
-
-    DB::beginTransaction();
-    
-    try {
-        // ✅ OBTENER DATOS ANTERIORES PARA EL HISTORIAL
-        $datosAnteriores = null;
-        if ($trabajador->fichaTecnica) {
-            $datosAnteriores = [
-                'id_categoria' => $trabajador->fichaTecnica->id_categoria,
-                'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios,
-                'formacion' => $trabajador->fichaTecnica->formacion,
-                'grado_estudios' => $trabajador->fichaTecnica->grado_estudios,
-            ];
+        // Validar que la categoría pertenezca al área
+        $categoria = Categoria::where('id_categoria', $validated['id_categoria'])
+                            ->where('id_area', $validated['id_area'])
+                            ->first();
+                            
+        if (!$categoria) {
+            return back()->withErrors(['id_categoria' => 'La categoría no pertenece al área seleccionada']);
         }
 
-        // ✅ PREPARAR DATOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
-        $datosFicha = [
-            'id_categoria' => $validated['id_categoria'],
-            'sueldo_diarios' => $validated['sueldo_diarios'],
-            'formacion' => $validated['formacion'],
-            'grado_estudios' => $validated['grado_estudios'],
-            // ✅ NUEVOS CAMPOS
-            'hora_entrada' => $validated['hora_entrada'],
-            'hora_salida' => $validated['hora_salida'],
-            'dias_laborables' => $diasLaborables,
-            'dias_descanso' => $diasDescanso,
-            'beneficiario_nombre' => $validated['beneficiario_nombre'],
-            'beneficiario_parentesco' => $validated['beneficiario_parentesco'],
-        ];
+        // ✅ CALCULAR DÍAS DE DESCANSO
+        $diasLaborables = $validated['dias_laborables'] ?? [];
+        $diasDescanso = FichaTecnica::calcularDiasDescanso($diasLaborables);
 
-        // Actualizar o crear ficha técnica
-        if ($trabajador->fichaTecnica) {
-            $trabajador->fichaTecnica->update($datosFicha);
-            $fichaTecnica = $trabajador->fichaTecnica;
-        } else {
-            $datosFicha['id_trabajador'] = $trabajador->id_trabajador;
-            $fichaTecnica = FichaTecnica::create($datosFicha);
-        }
+        // ✅ NUEVA LÓGICA: CALCULAR TURNO Y HORAS AUTOMÁTICAMENTE
+        $horasCalculadas = 0;
+        $horasSemanales = 0;
+        $turnoCalculado = 'mixto';
 
-        // ✅ REGISTRAR EN HISTORIAL DE PROMOCIONES
-        $usuarioActual = Auth::user()->email ?? 'Sistema';
-        
-        if ($datosAnteriores === null) {
-            // Es la primera vez que se crea la ficha técnica
-            HistorialPromocion::registrarInicial($trabajador, $fichaTecnica, $usuarioActual);
-        } else {
-            // Verificar si hubo cambios significativos
-            $huboCambio = $this->verificarCambiosSignificativos($datosAnteriores, $validated);
+        if (!empty($validated['hora_entrada']) && !empty($validated['hora_salida'])) {
+            // Calcular horas de trabajo
+            $entrada = Carbon::parse($validated['hora_entrada']);
+            $salida = Carbon::parse($validated['hora_salida']);
             
-            if ($huboCambio) {
-                // ✅ PREPARAR DATOS PARA EL HISTORIAL
-                $datosHistorial = [
-                    'id_trabajador' => $trabajador->id_trabajador,
-                    'id_categoria_anterior' => $datosAnteriores['id_categoria'],
-                    'id_categoria_nueva' => $validated['id_categoria'],
-                    'sueldo_anterior' => $datosAnteriores['sueldo_diarios'],
-                    'sueldo_nuevo' => $validated['sueldo_diarios'],
-                    'motivo' => $validated['motivo_cambio'] ?? 'Actualización de datos laborales',
-                    'usuario_cambio' => $usuarioActual,
-                    'datos_adicionales' => [
-                        'formacion_anterior' => $datosAnteriores['formacion'],
-                        'formacion_nueva' => $validated['formacion'],
-                        'grado_estudios_anterior' => $datosAnteriores['grado_estudios'],
-                        'grado_estudios_nuevo' => $validated['grado_estudios'],
-                    ]
-                ];
-
-                // ✅ USAR TIPO DE CAMBIO MANUAL O AUTOMÁTICO
-                if (!empty($validated['tipo_cambio'])) {
-                    $datosHistorial['tipo_cambio'] = $validated['tipo_cambio'];
-                }
-
-                HistorialPromocion::registrarCambio($datosHistorial);
+            // Si la salida es menor o igual que la entrada, asumimos que cruza medianoche
+            if ($salida->lte($entrada)) {
+                $salida->addDay();
+            }
+            
+            $horasCalculadas = round($entrada->diffInMinutes($salida) / 60, 2);
+            $horasSemanales = round($horasCalculadas * count($diasLaborables), 2);
+            
+            // Calcular turno basado en las horas
+            $horaEntradaStr = $entrada->format('H:i');
+            $horaSalidaOriginal = Carbon::parse($validated['hora_salida'])->format('H:i');
+            
+            // Usar las constantes de FichaTecnica para determinar el turno
+            if ($horaEntradaStr >= FichaTecnica::HORARIO_DIURNO_INICIO && $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
+                $turnoCalculado = 'diurno';
+            } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                $turnoCalculado = 'nocturno';
+            } else {
+                $turnoCalculado = 'mixto';
             }
         }
 
-        DB::commit();
-
-        Log::info('Ficha técnica actualizada', [
-            'trabajador_id' => $trabajador->id_trabajador,
-            'categoria_anterior' => $datosAnteriores['id_categoria'] ?? null,
-            'categoria_nueva' => $validated['id_categoria'],
-            'sueldo_anterior' => $datosAnteriores['sueldo_diarios'] ?? null,
-            'sueldo_nuevo' => $validated['sueldo_diarios'],
-            'usuario' => $usuarioActual
-        ]);
-
-        return back()->with('success', 'Datos laborales actualizados exitosamente');
-
-    } catch (\Exception $e) {
-        DB::rollback();
+        DB::beginTransaction();
         
-        Log::error('Error al actualizar ficha técnica', [
-            'trabajador_id' => $trabajador->id_trabajador,
-            'error' => $e->getMessage()
-        ]);
+        try {
+            // ✅ OBTENER DATOS ANTERIORES PARA EL HISTORIAL
+            $datosAnteriores = null;
+            if ($trabajador->fichaTecnica) {
+                $datosAnteriores = [
+                    'id_categoria' => $trabajador->fichaTecnica->id_categoria,
+                    'sueldo_diarios' => $trabajador->fichaTecnica->sueldo_diarios,
+                    'formacion' => $trabajador->fichaTecnica->formacion,
+                    'grado_estudios' => $trabajador->fichaTecnica->grado_estudios,
+                    'turno' => $trabajador->fichaTecnica->turno,
+                    'horas_trabajo' => $trabajador->fichaTecnica->horas_trabajo,
+                    'horas_semanales' => $trabajador->fichaTecnica->horas_semanales,
+                ];
+            }
 
-        return back()->withErrors(['error' => 'Error al actualizar los datos laborales: ' . $e->getMessage()]);
+            // ✅ PREPARAR DATOS COMPLETOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
+            // ✅ PREPARAR DATOS COMPLETOS PARA ACTUALIZAR/CREAR FICHA TÉCNICA
+            $datosFicha = [
+                'id_categoria' => $validated['id_categoria'],
+                'sueldo_diarios' => $validated['sueldo_diarios'],
+                'formacion' => $validated['formacion'],
+                'grado_estudios' => $validated['grado_estudios'],
+                // ✅ CAMPOS CON CÁLCULOS AUTOMÁTICOS
+                'hora_entrada' => $validated['hora_entrada'],
+                'hora_salida' => $validated['hora_salida'],
+                // ✅ NUEVO: Incluir horario de descanso
+                'horario_descanso' => $validated['horario_descanso'],
+                'horas_trabajo' => $horasCalculadas,
+                'turno' => $turnoCalculado,
+                'dias_laborables' => $diasLaborables,
+                'dias_descanso' => $diasDescanso,
+                'horas_semanales' => $horasSemanales,
+                'beneficiario_nombre' => $validated['beneficiario_nombre'],
+                'beneficiario_parentesco' => $validated['beneficiario_parentesco'],
+            ];
+
+            // Actualizar o crear ficha técnica
+            if ($trabajador->fichaTecnica) {
+                $trabajador->fichaTecnica->update($datosFicha);
+                $fichaTecnica = $trabajador->fichaTecnica;
+            } else {
+                $datosFicha['id_trabajador'] = $trabajador->id_trabajador;
+                $fichaTecnica = FichaTecnica::create($datosFicha);
+            }
+
+            // ✅ REGISTRAR EN HISTORIAL DE PROMOCIONES
+            $usuarioActual = Auth::user()->email ?? 'Sistema';
+            
+            if ($datosAnteriores === null) {
+                // Es la primera vez que se crea la ficha técnica
+                HistorialPromocion::registrarInicial($trabajador, $fichaTecnica, $usuarioActual);
+            } else {
+                // Verificar si hubo cambios significativos
+                $huboCambio = $this->verificarCambiosSignificativos($datosAnteriores, $validated);
+                
+                if ($huboCambio) {
+                    // ✅ PREPARAR DATOS PARA EL HISTORIAL
+                    $datosHistorial = [
+                        'id_trabajador' => $trabajador->id_trabajador,
+                        'id_categoria_anterior' => $datosAnteriores['id_categoria'],
+                        'id_categoria_nueva' => $validated['id_categoria'],
+                        'sueldo_anterior' => $datosAnteriores['sueldo_diarios'],
+                        'sueldo_nuevo' => $validated['sueldo_diarios'],
+                        'motivo' => $validated['motivo_cambio'] ?? 'Actualización de datos laborales',
+                        'usuario_cambio' => $usuarioActual,
+                        'datos_adicionales' => [
+                            'formacion_anterior' => $datosAnteriores['formacion'],
+                            'formacion_nueva' => $validated['formacion'],
+                            'grado_estudios_anterior' => $datosAnteriores['grado_estudios'],
+                            'grado_estudios_nuevo' => $validated['grado_estudios'],
+                            // ✅ NUEVOS DATOS ADICIONALES
+                            'turno_anterior' => $datosAnteriores['turno'],
+                            'turno_nuevo' => $turnoCalculado,
+                            'horas_trabajo_anterior' => $datosAnteriores['horas_trabajo'],
+                            'horas_trabajo_nuevo' => $horasCalculadas,
+                            'horas_semanales_anterior' => $datosAnteriores['horas_semanales'],
+                            'horas_semanales_nuevo' => $horasSemanales,
+                        ]
+                    ];
+
+                    // ✅ USAR TIPO DE CAMBIO MANUAL O AUTOMÁTICO
+                    if (!empty($validated['tipo_cambio'])) {
+                        $datosHistorial['tipo_cambio'] = $validated['tipo_cambio'];
+                    }
+
+                    HistorialPromocion::registrarCambio($datosHistorial);
+                }
+            }
+
+            DB::commit();
+
+            Log::info('Ficha técnica actualizada con cálculos automáticos', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'categoria_anterior' => $datosAnteriores['id_categoria'] ?? null,
+                'categoria_nueva' => $validated['id_categoria'],
+                'sueldo_anterior' => $datosAnteriores['sueldo_diarios'] ?? null,
+                'sueldo_nuevo' => $validated['sueldo_diarios'],
+                'turno_calculado' => $turnoCalculado,
+                'horas_calculadas' => $horasCalculadas,
+                'horas_semanales' => $horasSemanales,
+                'usuario' => $usuarioActual
+            ]);
+
+            return back()->with('success', 'Datos laborales actualizados exitosamente con cálculos automáticos');
+
+        } catch (\Exception $e) {
+            DB::rollback();
+            
+            Log::error('Error al actualizar ficha técnica', [
+                'trabajador_id' => $trabajador->id_trabajador,
+                'error' => $e->getMessage()
+            ]);
+
+            return back()->withErrors(['error' => 'Error al actualizar los datos laborales: ' . $e->getMessage()]);
+        }
     }
-}
 
     /**
-     * ✅ NUEVO MÉTODO: Verificar si hubo cambios significativos
+     * ✅ MÉTODO ACTUALIZADO: Verificar si hubo cambios significativos
      */
     private function verificarCambiosSignificativos(array $datosAnteriores, array $datosNuevos): bool
     {
@@ -436,9 +661,51 @@ public function updateFichaTecnica(Request $request, Trabajador $trabajador)
         if (abs($datosAnteriores['sueldo_diarios'] - $datosNuevos['sueldo_diarios']) > 0.01) {
             return true;
         }
+
+        // ✅ NUEVOS: Cambios en formación y grado de estudios
+        if ($datosAnteriores['formacion'] != $datosNuevos['formacion']) {
+            return true;
+        }
+
+        if ($datosAnteriores['grado_estudios'] != $datosNuevos['grado_estudios']) {
+            return true;
+        }
+
+        // ✅ NUEVOS: Cambios en horarios y turnos
+        if (!empty($datosNuevos['hora_entrada']) && !empty($datosNuevos['hora_salida'])) {
+            // Calcular el turno nuevo para comparar
+            $entrada = Carbon::parse($datosNuevos['hora_entrada']);
+            $salida = Carbon::parse($datosNuevos['hora_salida']);
+            
+            if ($salida->lte($entrada)) {
+                $salida->addDay();
+            }
+            
+            $horasNuevas = round($entrada->diffInMinutes($salida) / 60, 2);
+            $horaEntradaStr = $entrada->format('H:i');
+            $horaSalidaOriginal = Carbon::parse($datosNuevos['hora_salida'])->format('H:i');
+            
+            $turnoNuevo = 'mixto';
+            if ($horaEntradaStr >= FichaTecnica::HORARIO_DIURNO_INICIO && $horaSalidaOriginal <= FichaTecnica::HORARIO_DIURNO_FIN) {
+                $turnoNuevo = 'diurno';
+            } elseif ($horaEntradaStr >= FichaTecnica::HORARIO_NOCTURNO_INICIO || $horaSalidaOriginal <= FichaTecnica::HORARIO_NOCTURNO_FIN) {
+                $turnoNuevo = 'nocturno';
+            }
+            
+            // Comparar turno
+            if (($datosAnteriores['turno'] ?? 'mixto') != $turnoNuevo) {
+                return true;
+            }
+            
+            // Comparar horas de trabajo (diferencia mayor a 0.1 horas)
+            if (abs(($datosAnteriores['horas_trabajo'] ?? 0) - $horasNuevas) > 0.1) {
+                return true;
+            }
+        }
         
         return false;
     }
+
 
     /**
      * Subir o actualizar documento
@@ -632,7 +899,7 @@ public function updateFichaTecnica(Request $request, Trabajador $trabajador)
     public function updateEstatus(Request $request, Trabajador $trabajador)
     {
         $request->validate([
-            'estatus' => 'required|in:' . implode(',', array_keys(Trabajador::TODOS_ESTADOS)),
+            'estatus' => 'required|in:activo,prueba', // Solo permitir estos dos valores
         ]);
 
         $estatusAnterior = $trabajador->estatus;

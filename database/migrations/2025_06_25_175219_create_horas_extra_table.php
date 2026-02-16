@@ -21,9 +21,9 @@ return new class extends Migration
             $table->enum('tipo', ['acumuladas', 'devueltas'])
                   ->comment('acumuladas: horas trabajadas extra | devueltas: horas compensadas');
 
-            // ✅ Cantidad de horas (entero positivo, máx. 999)
-            $table->unsignedInteger('horas')
-                  ->comment('Cantidad de horas enteras positivas');
+            // ✅ MODIFICADO: Cantidad de horas (decimal con 2 decimales, máx. 999.99)
+            $table->decimal('horas', 5, 2)->unsigned()
+                  ->comment('Cantidad de horas con decimales (ej: 1.5, 2.25)');
 
             // ✅ Fecha del registro
             $table->date('fecha')
@@ -48,8 +48,9 @@ return new class extends Migration
                   ->on('trabajadores')
                   ->onDelete('cascade');
 
-            // ✅ Índices útiles
+            // ✅ Índices útiles ACTUALIZADOS
             $table->index(['id_trabajador', 'tipo'], 'idx_trabajador_tipo');
+            $table->index(['id_trabajador', 'fecha'], 'idx_trabajador_fecha');
             $table->index(['fecha'], 'idx_fecha');
             $table->index(['tipo', 'fecha'], 'idx_tipo_fecha');
         });

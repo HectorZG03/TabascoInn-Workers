@@ -1,10 +1,10 @@
 @extends('layouts.app')
 
-@section('title', 'Áreas y Categorías')
+@section('title', 'Departamentos, Áreas y Categorías')
 
 @section('content')
 <div class="container">
-    <h4><i class="bi bi-diagram-3"></i> Administración de Áreas y Categorías</h4>
+    <h4><i class="bi bi-diagram-3"></i> Administración de Departamentos, Áreas y Categorías</h4>
 
     {{-- Alertas de éxito o error --}}
     @if(session('success'))
@@ -20,8 +20,33 @@
     @endif
 
     <div class="row mt-4">
-        <!-- Crear Área -->
-        <div class="col-md-6">
+        <!-- ✅ NUEVO: Crear Departamento -->
+        <div class="col-md-4">
+            <div class="card border-warning">
+                <div class="card-header bg-warning text-dark">
+                    <strong><i class="bi bi-building"></i> Nuevo Departamento</strong>
+                </div>
+                <div class="card-body">
+                    <form method="POST" action="{{ route('departamentos.store') }}">
+                        @csrf
+                        <div class="mb-3">
+                            <label for="nombre_departamento" class="form-label">Nombre del Departamento</label>
+                            <input type="text" class="form-control" id="nombre_departamento" name="nombre_departamento" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descripcion" class="form-label">Descripción (Opcional)</label>
+                            <textarea class="form-control" id="descripcion" name="descripcion" rows="2"></textarea>
+                        </div>
+                        <button type="submit" class="btn btn-warning">
+                            <i class="bi bi-plus-lg"></i> Crear Departamento
+                        </button>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <!-- ✅ ACTUALIZADO: Crear Área -->
+        <div class="col-md-4">
             <div class="card border-success">
                 <div class="card-header bg-success text-white">
                     <strong><i class="bi bi-building-add"></i> Nueva Área</strong>
@@ -29,6 +54,15 @@
                 <div class="card-body">
                     <form method="POST" action="{{ route('areas.store') }}">
                         @csrf
+                        <div class="mb-3">
+                            <label for="id_departamento_area" class="form-label">Departamento</label>
+                            <select class="form-select" id="id_departamento_area" name="id_departamento" required>
+                                <option value="">-- Selecciona un Departamento --</option>
+                                @foreach ($departamentos as $departamento)
+                                    <option value="{{ $departamento->id_departamento }}">{{ $departamento->nombre_departamento }}</option>
+                                @endforeach
+                            </select>
+                        </div>
                         <div class="mb-3">
                             <label for="nombre_area" class="form-label">Nombre del Área</label>
                             <input type="text" class="form-control" id="nombre_area" name="nombre_area" required>
@@ -41,8 +75,8 @@
             </div>
         </div>
 
-        <!-- Crear Categoría -->
-        <div class="col-md-6">
+        <!-- Crear Categoría (sin cambios) -->
+        <div class="col-md-4">
             <div class="card border-primary">
                 <div class="card-header bg-primary text-white">
                     <strong><i class="bi bi-tags"></i> Nueva Categoría</strong>
@@ -55,13 +89,22 @@
                             <select class="form-select" id="id_area" name="id_area" required>
                                 <option value="">-- Selecciona un Área --</option>
                                 @foreach ($todasLasAreas as $area)
-                                    <option value="{{ $area->id_area }}">{{ $area->nombre_area }}</option>
+                                    <option value="{{ $area->id_area }}">
+                                        {{ $area->departamento->nombre_departamento }} - {{ $area->nombre_area }}
+                                    </option>
                                 @endforeach
                             </select>
                         </div>
                         <div class="mb-3">
                             <label for="nombre_categoria" class="form-label">Nombre de la Categoría</label>
                             <input type="text" class="form-control" id="nombre_categoria" name="nombre_categoria" required>
+                        </div>
+                        <div class="mb-3">
+                            <label for="descripcion_funciones" class="form-label">Descripción de Funciones</label>
+                            <textarea class="form-control" id="descripcion_funciones" name="descripcion_funciones" 
+                                    rows="3" maxlength="1000" 
+                                    placeholder="Describa las funciones principales de este puesto..."></textarea>
+                            <div class="form-text">Opcional - Máximo 1000 caracteres</div>
                         </div>
                         <button type="submit" class="btn btn-primary">
                             <i class="bi bi-plus-lg"></i> Crear Categoría
@@ -77,13 +120,13 @@
         <div class="card-header bg-light">
             <div class="row align-items-center">
                 <div class="col-md-6">
-                    <strong><i class="bi bi-list-ul"></i> Áreas y Categorías Registradas</strong>
+                    <strong><i class="bi bi-list-ul"></i> Departamentos, Áreas y Categorías Registradas</strong>
                 </div>
                 <div class="col-md-6">
                     <form method="GET" action="{{ route('areas.categorias.index') }}">
                         <div class="input-group">
                             <input type="text" class="form-control" name="busqueda" 
-                                   placeholder="Buscar área o categoría..." 
+                                   placeholder="Buscar departamento, área o categoría..." 
                                    value="{{ $busqueda }}">
                             <button class="btn btn-outline-secondary" type="submit">
                                 <i class="bi bi-search"></i>
@@ -99,7 +142,7 @@
             </div>
         </div>
 
-        {{-- ✅ CONTROLES DE SELECCIÓN MÚLTIPLE --}}
+        {{-- Controles de selección múltiple --}}
         <div class="card-header bg-light border-top">
             <div class="d-flex justify-content-between align-items-center">
                 <div class="form-check">
@@ -118,7 +161,7 @@
         </div>
         
         <div class="card-body">
-            {{-- ✅ FORMULARIO PARA ELIMINACIÓN MÚLTIPLE --}}
+            {{-- Formulario para eliminación múltiple --}}
             <form id="deleteMultipleForm" method="POST" action="{{ route('categorias.multiple.destroy') }}" style="display: none;">
                 @csrf
                 @method('DELETE')
@@ -126,97 +169,207 @@
             </form>
 
             @forelse ($areas as $area)
-                <h6 class="d-flex justify-content-between align-items-center mt-3">
-                    <span><i class="bi bi-building"></i> {{ $area->nombre_area }}</span>
-                    <span>
-                        <form action="{{ route('areas.destroy', $area) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta área y TODAS sus categorías?')">
-                            @csrf @method('DELETE')
-                            <button type="submit" class="btn btn-sm btn-outline-danger">
-                                <i class="bi bi-trash"></i>
+                {{-- ✅ NUEVO: Mostrar departamento --}}
+                <div class="mb-4 border rounded p-3">
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <h5 class="text-warning mb-0">
+                            <i class="bi bi-building"></i> {{ $area->departamento->nombre_departamento }}
+                        </h5>
+                        <span>
+                            <button class="btn btn-sm btn-outline-warning" data-bs-toggle="modal" data-bs-target="#editarDepartamentoModal{{ $area->departamento->id_departamento }}">
+                                <i class="bi bi-pencil"></i> Editar Depto.
                             </button>
-                        </form>
-                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarAreaModal{{ $area->id_area }}">
-                            <i class="bi bi-pencil"></i>
-                        </button>
-                    </span>
-                </h6>
-
-                <!-- Modal editar área -->
-                <div class="modal fade" id="editarAreaModal{{ $area->id_area }}" tabindex="-1">
-                  <div class="modal-dialog">
-                    <form method="POST" action="{{ route('areas.update', $area) }}">
-                        @csrf @method('PUT')
-                        <div class="modal-content">
-                            <div class="modal-header bg-success text-white">
-                                <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Área</h5>
-                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
-                            </div>
-                            <div class="modal-body">
-                                <input type="text" name="nombre_area" class="form-control" value="{{ $area->nombre_area }}" required>
-                            </div>
-                            <div class="modal-footer">
-                                <button type="submit" class="btn btn-success">Guardar cambios</button>
-                            </div>
-                        </div>
-                    </form>
-                  </div>
-                </div>
-
-                {{-- ✅ LISTA DE CATEGORÍAS CON CHECKBOXES --}}
-                <ul class="ms-3">
-                    @foreach ($area->categorias as $categoria)
-                        <li class="d-flex justify-content-between align-items-center py-1">
-                            <div class="d-flex align-items-center">
-                                <input class="form-check-input me-2 categoria-checkbox" 
-                                       type="checkbox" 
-                                       value="{{ $categoria->id_categoria }}" 
-                                       id="categoria{{ $categoria->id_categoria }}">
-                                <label class="form-check-label" for="categoria{{ $categoria->id_categoria }}">
-                                    {{ $categoria->nombre_categoria }}
-                                </label>
-                            </div>
-                            <span>
-                                <form action="{{ route('categorias.destroy', $categoria) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta categoría?')">
-                                    @csrf @method('DELETE')
-                                    <button type="submit" class="btn btn-sm btn-outline-danger">
-                                        <i class="bi bi-trash"></i>
-                                    </button>
-                                </form>
-                                <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarCategoriaModal{{ $categoria->id_categoria }}">
-                                    <i class="bi bi-pencil"></i>
+                            <form action="{{ route('departamentos.destroy', $area->departamento) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar este departamento y TODAS sus áreas y categorías?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i> Eliminar Depto.
                                 </button>
-                            </span>
-                        </li>
+                            </form>
+                        </span>
+                    </div>
 
-                        <!-- Modal editar categoría -->
-                        <div class="modal fade" id="editarCategoriaModal{{ $categoria->id_categoria }}" tabindex="-1">
-                          <div class="modal-dialog">
-                            <form method="POST" action="{{ route('categorias.update', $categoria) }}">
-                                @csrf @method('PUT')
-                                <div class="modal-content">
-                                    <div class="modal-header bg-primary text-white">
-                                        <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Categoría</h5>
-                                        <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                    {{-- ✅ ACTUALIZADO: Mostrar área con departamento --}}
+                    <h6 class="d-flex justify-content-between align-items-center mt-3 ms-3">
+                        <span><i class="bi bi-building-add"></i> {{ $area->nombre_area }}</span>
+                        <span>
+                            <form action="{{ route('areas.destroy', $area) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta área y TODAS sus categorías?')">
+                                @csrf @method('DELETE')
+                                <button type="submit" class="btn btn-sm btn-outline-danger">
+                                    <i class="bi bi-trash"></i>
+                                </button>
+                            </form>
+                            <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarAreaModal{{ $area->id_area }}">
+                                <i class="bi bi-pencil"></i>
+                            </button>
+                        </span>
+                    </h6>
+
+                    {{-- ✅ CORREGIDO: Lista de categorías con checkboxes únicos y descripción --}}
+                    <div class="ms-5">
+                        @foreach ($area->categorias as $categoria)
+                            <div class="border-bottom py-2 mb-2" data-categoria-id="{{ $categoria->id_categoria }}">
+                                <div class="d-flex justify-content-between align-items-start">
+                                    <div class="d-flex align-items-start flex-grow-1">
+                                        <input class="form-check-input me-3 categoria-checkbox mt-1" 
+                                               type="checkbox" 
+                                               value="{{ $categoria->id_categoria }}" 
+                                               id="checkbox_cat_{{ $categoria->id_categoria }}_area_{{ $area->id_area }}">
+                                        <div class="flex-grow-1">
+                                            <label class="form-check-label fw-bold d-block" for="checkbox_cat_{{ $categoria->id_categoria }}_area_{{ $area->id_area }}">
+                                                {{ $categoria->nombre_categoria }}
+                                                <small class="text-muted">(ID: {{ $categoria->id_categoria }})</small>
+                                            </label>
+                                            @if($categoria->descripcion_funciones)
+                                                <div class="text-muted small mt-1">
+                                                    <i class="bi bi-info-circle"></i> {{ $categoria->descripcion_funciones }}
+                                                </div>
+                                            @endif
+                                        </div>
                                     </div>
-                                    <div class="modal-body">
-                                        <select name="id_area" class="form-select mb-2" required>
-                                            @foreach ($todasLasAreas as $areaOption)
-                                                <option value="{{ $areaOption->id_area }}" {{ $categoria->id_area == $areaOption->id_area ? 'selected' : '' }}>
-                                                    {{ $areaOption->nombre_area }}
+                                    <div class="ms-2 flex-shrink-0">
+                                        <form action="{{ route('categorias.destroy', $categoria) }}" method="POST" class="d-inline" onsubmit="return confirm('¿Eliminar esta categoría? ID: {{ $categoria->id_categoria }} - {{ $categoria->nombre_categoria }}')">
+                                            @csrf @method('DELETE')
+                                            <button type="submit" class="btn btn-sm btn-outline-danger">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+                                        </form>
+                                        <button class="btn btn-sm btn-outline-primary" data-bs-toggle="modal" data-bs-target="#editarCategoriaModal{{ $categoria->id_categoria }}">
+                                            <i class="bi bi-pencil"></i>
+                                        </button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            {{-- ✅ CORREGIDO: Modal editar categoría con nombres únicos --}}
+                            <div class="modal fade" id="editarCategoriaModal{{ $categoria->id_categoria }}" tabindex="-1">
+                                <div class="modal-dialog modal-lg">
+                                    <form method="POST" action="{{ route('categorias.update', $categoria) }}">
+                                        @csrf @method('PUT')
+                                        <div class="modal-content">
+                                            <div class="modal-header bg-primary text-white">
+                                                <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Categoría: {{ $categoria->nombre_categoria }} (ID: {{ $categoria->id_categoria }})</h5>
+                                                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                            </div>
+                                            <div class="modal-body">
+                                                <div class="mb-3">
+                                                    <label for="id_area_cat_{{ $categoria->id_categoria }}" class="form-label">Área</label>
+                                                    <select name="id_area" id="id_area_cat_{{ $categoria->id_categoria }}" class="form-select" required>
+                                                        @foreach ($todasLasAreas as $areaOption)
+                                                            <option value="{{ $areaOption->id_area }}" 
+                                                                    {{ $categoria->id_area == $areaOption->id_area ? 'selected' : '' }}>
+                                                                {{ $areaOption->departamento->nombre_departamento }} - {{ $areaOption->nombre_area }}
+                                                            </option>
+                                                        @endforeach
+                                                    </select>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="nombre_categoria_{{ $categoria->id_categoria }}" class="form-label">Nombre de la Categoría</label>
+                                                    <input type="text" 
+                                                           name="nombre_categoria" 
+                                                           id="nombre_categoria_{{ $categoria->id_categoria }}" 
+                                                           class="form-control" 
+                                                           value="{{ $categoria->nombre_categoria }}" 
+                                                           required>
+                                                </div>
+                                                <div class="mb-3">
+                                                    <label for="descripcion_funciones_{{ $categoria->id_categoria }}" class="form-label">Descripción de Funciones</label>
+                                                    <textarea name="descripcion_funciones" 
+                                                              id="descripcion_funciones_{{ $categoria->id_categoria }}" 
+                                                              class="form-control" 
+                                                              rows="4" 
+                                                              maxlength="1000">{{ $categoria->descripcion_funciones }}</textarea>
+                                                    <div class="form-text">Opcional - Máximo 1000 caracteres</div>
+                                                </div>
+                                            </div>
+                                            <div class="modal-footer">
+                                                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                                                <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                                            </div>
+                                        </div>
+                                    </form>
+                                </div>
+                            </div>
+                        @endforeach
+                    </div>
+
+                    {{-- ✅ NUEVO: Modal editar departamento --}}
+                    <div class="modal fade" id="editarDepartamentoModal{{ $area->departamento->id_departamento }}" tabindex="-1">
+                      <div class="modal-dialog">
+                        <form method="POST" action="{{ route('departamentos.update', $area->departamento) }}">
+                            @csrf @method('PUT')
+                            <div class="modal-content">
+                                <div class="modal-header bg-warning text-dark">
+                                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Departamento: {{ $area->departamento->nombre_departamento }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="nombre_departamento_{{ $area->departamento->id_departamento }}" class="form-label">Nombre del Departamento</label>
+                                        <input type="text" 
+                                               name="nombre_departamento" 
+                                               id="nombre_departamento_{{ $area->departamento->id_departamento }}" 
+                                               class="form-control" 
+                                               value="{{ $area->departamento->nombre_departamento }}" 
+                                               required>
+                                    </div>
+                                    <div class="mb-3">
+                                        <label for="descripcion_dept_{{ $area->departamento->id_departamento }}" class="form-label">Descripción</label>
+                                        <textarea name="descripcion" 
+                                                  id="descripcion_dept_{{ $area->departamento->id_departamento }}" 
+                                                  class="form-control" 
+                                                  rows="2">{{ $area->departamento->descripcion }}</textarea>
+                                    </div>
+                                </div>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-warning">Guardar cambios</button>
+                                </div>
+                            </div>
+                        </form>
+                      </div>
+                    </div>
+
+                    {{-- ✅ ACTUALIZADO: Modal editar área --}}
+                    <div class="modal fade" id="editarAreaModal{{ $area->id_area }}" tabindex="-1">
+                      <div class="modal-dialog">
+                        <form method="POST" action="{{ route('areas.update', $area) }}">
+                            @csrf @method('PUT')
+                            <div class="modal-content">
+                                <div class="modal-header bg-success text-white">
+                                    <h5 class="modal-title"><i class="bi bi-pencil"></i> Editar Área: {{ $area->nombre_area }}</h5>
+                                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                                </div>
+                                <div class="modal-body">
+                                    <div class="mb-3">
+                                        <label for="id_departamento_area_{{ $area->id_area }}" class="form-label">Departamento</label>
+                                        <select name="id_departamento" 
+                                                id="id_departamento_area_{{ $area->id_area }}" 
+                                                class="form-select" 
+                                                required>
+                                            @foreach ($departamentos as $departamentoOption)
+                                                <option value="{{ $departamentoOption->id_departamento }}" {{ $area->id_departamento == $departamentoOption->id_departamento ? 'selected' : '' }}>
+                                                    {{ $departamentoOption->nombre_departamento }}
                                                 </option>
                                             @endforeach
                                         </select>
-                                        <input type="text" name="nombre_categoria" class="form-control" value="{{ $categoria->nombre_categoria }}" required>
                                     </div>
-                                    <div class="modal-footer">
-                                        <button type="submit" class="btn btn-primary">Guardar cambios</button>
+                                    <div class="mb-3">
+                                        <label for="nombre_area_edit_{{ $area->id_area }}" class="form-label">Nombre del Área</label>
+                                        <input type="text" 
+                                               name="nombre_area" 
+                                               id="nombre_area_edit_{{ $area->id_area }}" 
+                                               class="form-control" 
+                                               value="{{ $area->nombre_area }}" 
+                                               required>
                                     </div>
                                 </div>
-                            </form>
-                          </div>
-                        </div>
-                    @endforeach
-                </ul>
+                                <div class="modal-footer">
+                                    <button type="submit" class="btn btn-success">Guardar cambios</button>
+                                </div>
+                            </div>
+                        </form>
+                      </div>
+                    </div>
+                </div>
             @empty
                 <div class="text-center py-4">
                     @if($busqueda)
@@ -225,7 +378,7 @@
                             <i class="bi bi-arrow-left"></i> Mostrar todos
                         </a>
                     @else
-                        <p>No hay áreas registradas.</p>
+                        <p>No hay departamentos, áreas ni categorías registradas.</p>
                     @endif
                 </div>
             @endforelse
@@ -291,6 +444,17 @@
 
         // Inicializar UI
         updateSelectionUI();
+
+        // Debugging: Mostrar información cuando se hace clic en un checkbox
+        categoriaCheckboxes.forEach(checkbox => {
+            checkbox.addEventListener('click', function() {
+                console.log('Checkbox clickeado:', {
+                    id: this.id,
+                    value: this.value,
+                    checked: this.checked
+                });
+            });
+        });
     });
 
     function eliminarSeleccionadas() {
@@ -304,7 +468,10 @@
         const selectedIds = Array.from(selectedCheckboxes).map(cb => cb.value);
         const count = selectedIds.length;
 
-        if (confirm(`¿Estás seguro de eliminar ${count} categoría(s) seleccionada(s)?`)) {
+        // Mostrar los IDs que se van a eliminar para verificar
+        console.log('IDs a eliminar:', selectedIds);
+
+        if (confirm(`¿Estás seguro de eliminar ${count} categoría(s) seleccionada(s)?\nIDs: ${selectedIds.join(', ')}`)) {
             document.getElementById('categoriasToDelete').value = JSON.stringify(selectedIds);
             document.getElementById('deleteMultipleForm').submit();
         }

@@ -18,18 +18,6 @@
                         </a>
                     </div>
                 </div>
-                <div class="card-body text-center py-4" style="background-color: #E6F2ED;">
-                    <h4 class="mb-3" style="color: #007A4D;">
-                        <i class="bi bi-person-circle"></i> {{ $user->nombre }}
-                    </h4>
-                    <p class="lead mb-2" style="color: #5D3A1A;">
-                        Configuraciones del sistema
-                    </p>
-                    <div class="badge text-white fs-6 px-3 py-2" style="background-color: {{ $user->esGerencia() ? '#007A4D' : '#D2B48C' }};">
-                        <i class="bi bi-{{ $user->esGerencia() ? 'person-gear' : 'people' }}"></i>
-                        {{ $user->tipo ?? 'Usuario' }}
-                    </div>
-                </div>
             </div>
         </div>
     </div>
@@ -40,33 +28,101 @@
         <div class="col-md-6 col-lg-4 mb-4">
             <div class="card shadow h-100 card-hover" style="border-top: 3px solid #007A4D;">
                 <div class="card-body text-center" style="background-color: #FFFFFF;">
-                    <i class="bi bi-person-fill fs-1 mb-3" style="color: #007A4D;"></i>
-                    <h5 class="card-title" style="color: #2F2F2F;">Areas y Categorias</h5>
-                    <p class="card-text" style="color: #5D3A1A;">Administracion de Areas y Categorias</p>
+                    <i class="bi bi-folder-fill fs-1 mb-3" style="color: #007A4D;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Áreas y Categorías</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Administración de Áreas y Categorías</p>
                     <a href="{{ route('areas.categorias.index') }}" class="btn text-white" style="background-color: #007A4D;">
-                        <i class="bi bi-pencil-square"></i> Editar Perfil
+                        <i class="bi bi-pencil-square"></i> Editar
                     </a>
                 </div>
             </div>
         </div>
 
-        <!-- Cerrar Sesión -->
+        <!-- Botón para vista de gerentes -->
         <div class="col-md-6 col-lg-4 mb-4">
-            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #dc3545;">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #0d6efd;">
                 <div class="card-body text-center" style="background-color: #FFFFFF;">
-                    <i class="bi bi-box-arrow-right fs-1 mb-3" style="color: #dc3545;"></i>
-                    <h5 class="card-title" style="color: #2F2F2F;">Cerrar Sesión</h5>
-                    <p class="card-text" style="color: #5D3A1A;">Salir de forma segura del sistema</p>
-                    <form method="POST" action="{{ route('logout') }}" class="d-inline">
-                        @csrf
-                        <button type="submit" class="btn text-white" style="background-color: #dc3545;" 
-                                onclick="return confirm('¿Estás seguro de que quieres cerrar sesión?')">
-                            <i class="bi bi-power"></i> Cerrar Sesión
-                        </button>
-                    </form>
+                    <i class="bi bi-person-badge-fill fs-1 mb-3" style="color: #0d6efd;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Gerentes</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Administración del personal gerencial</p>
+                    <a href="{{ route('gerentes.index') }}" class="btn text-white" style="background-color: #0d6efd;">
+                        <i class="bi bi-eye-fill"></i> Ver Gerentes
+                    </a>
                 </div>
             </div>
         </div>
+
+        <!-- Botón para Plantillas de Contrato -->
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #6f42c1;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-file-earmark-text-fill fs-1 mb-3" style="color: #6f42c1;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Plantillas de Contrato</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Editor de plantillas de contratos laborales</p>
+                    <a href="{{ route('configuracion.plantillas.index') }}" class="btn text-white" style="background-color: #6f42c1;">
+                        <i class="bi bi-file-earmark-edit"></i> Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {{-- Agregar este botón en la sección de tarjetas --}}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #20c997;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-calendar-range fs-1 mb-3" style="color: #20c997;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Días por Antigüedad</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Configurar días de vacaciones según antigüedad</p>
+                    <a href="{{ route('configuracion.dias_antiguedad.index') }}" class="btn text-white" style="background-color: #20c997;">
+                        <i class="bi bi-gear"></i> Configurar
+                    </a>
+                </div>
+            </div>
+        </div>
+        @if(Auth::user()->esAdministrador())
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 card-hover" style="border-top: 3px solid #fd7e14;">
+                    <div class="card-body text-center" style="background-color: #FFFFFF;">
+                        <i class="bi bi-people-fill fs-1 mb-3" style="color: #fd7e14;"></i>
+                        <h5 class="card-title" style="color: #2F2F2F;">Usuarios Operativos</h5>
+                        <p class="card-text" style="color: #5D3A1A;">Gestión de usuarios y permisos del sistema</p>
+                        <a href="{{ route('usuarios.operativos.lista') }}" class="btn text-white" style="background-color: #fd7e14;">
+                            <i class="bi bi-person-gear"></i> Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        @if(Auth::user()->email === 'superadmin@sistema.com')
+            <div class="col-md-6 col-lg-4 mb-4">
+                <div class="card shadow h-100 card-hover" style="border-top: 3px solid #dc3545;">
+                    <div class="card-body text-center" style="background-color: #FFFFFF;">
+                        <i class="bi bi-shield-lock-fill fs-1 mb-3" style="color: #dc3545;"></i>
+                        <h5 class="card-title" style="color: #2F2F2F;">Usuarios Administrativos</h5>
+                        <p class="card-text" style="color: #5D3A1A;">Gestión de usuarios Gerencia y RRHH</p>
+                        <a href="{{ route('usuarios.admin.lista') }}" class="btn text-white" style="background-color: #dc3545;">
+                            <i class="bi bi-person-badge"></i> Gestionar
+                        </a>
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        {{-- Botón para Días Festivos --}}
+        <div class="col-md-6 col-lg-4 mb-4">
+            <div class="card shadow h-100 card-hover" style="border-top: 3px solid #dc3545;">
+                <div class="card-body text-center" style="background-color: #FFFFFF;">
+                    <i class="bi bi-calendar-event-fill fs-1 mb-3" style="color: #dc3545;"></i>
+                    <h5 class="card-title" style="color: #2F2F2F;">Días Festivos</h5>
+                    <p class="card-text" style="color: #5D3A1A;">Gestión de días festivos por año</p>
+                    <a href="{{ route('configuracion.dias_festivos.index') }}" class="btn text-white" style="background-color: #dc3545;">
+                        <i class="bi bi-calendar3"></i> Administrar
+                    </a>
+                </div>
+            </div>
+        </div>
+      
     </div>
 
 <!-- CSS para efectos de hover -->

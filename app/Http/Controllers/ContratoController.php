@@ -4,105 +4,21 @@ namespace App\Http\Controllers;
 
 use App\Models\Trabajador;
 use App\Models\ContratoTrabajador;
+use App\Models\PlantillaContrato;
+use App\Models\VariableContrato;
 use App\Models\FichaTecnica;
 use Illuminate\Http\Request;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 /**
- * ✅ OPTIMIZADO: Solo se encarga de GENERAR contratos y PDFs
- * No maneja CRUD ni descargas de contratos existentes
+ * ✅ ACTUALIZADO: ContratoController con sistema de plantillas dinámicas
  */
 class ContratoController extends Controller
 {
     /**
-     * ✅ GENERAR PREVIEW del contrato (sin crear registro en BD)
-     */
-    public function generarPreview(Request $request)
-    {
-        $request->validate([
-            // Datos del trabajador
-            'nombre_trabajador' => 'required|string|max:50',
-            'ape_pat' => 'required|string|max:50',
-            'ape_mat' => 'nullable|string|max:50',
-            'fecha_nacimiento' => 'required|date',
-            'fecha_ingreso' => 'required|date',
-            'direccion' => 'nullable|string|max:255',
-            'curp' => 'nullable|string|max:18',
-            'rfc' => 'nullable|string|max:13',
-            'telefono' => 'nullable|string|max:15',
-            'correo' => 'nullable|email|max:100',
-            'no_nss' => 'nullable|string|max:20',
-            'lugar_nacimiento' => 'nullable|string|max:100',
-            'estado_actual' => 'nullable|string|max:50',
-            'ciudad_actual' => 'nullable|string|max:50',
-            
-            // Datos laborales
-            'sueldo_diarios' => 'nullable|numeric|min:0',
-            'categoria_nombre' => 'nullable|string|max:100',
-            'area_nombre' => 'nullable|string|max:100',
-            'horas_trabajo' => 'nullable|numeric|min:1|max:24',
-            'horas_semanales' => 'nullable|numeric|min:1|max:168',
-            'turno' => 'nullable|in:diurno,nocturno,mixto',
-            'hora_entrada' => 'nullable|date_format:H:i',
-            'hora_salida' => 'nullable|date_format:H:i',
-            'formacion' => 'nullable|string|max:100',
-            'grado_estudios' => 'nullable|string|max:100',
-            'beneficiario_nombre' => 'nullable|string|max:100',
-            'beneficiario_parentesco' => 'nullable|string|max:50',
-            'dias_laborables' => 'nullable|array',
-            'dias_laborables.*' => 'string|in:lunes,martes,miercoles,jueves,viernes,sabado,domingo',
-            
-            // Datos del contrato
-            'fecha_inicio_contrato' => 'required|date|after_or_equal:today',
-            'fecha_fin_contrato' => 'required|date|after:fecha_inicio_contrato',
-            'tipo_duracion' => 'required|in:dias,meses',
-        ]);
-
-        try {
-            $trabajadorTemp = $this->crearTrabajadorTemporal($request);
-            $datosContrato = $this->procesarDatosContrato($request);
-            
-            $pdf = $this->generarPDF($trabajadorTemp, $datosContrato);
-            $hash = $this->guardarArchivoTemporal($pdf);
-
-            Log::info('✅ Contrato preview generado', [
-                'hash' => $hash,
-                'trabajador' => $trabajadorTemp->nombre_completo,
-                'duracion' => $datosContrato['duracion_texto']
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'message' => 'Contrato generado exitosamente',
-                'data' => [
-                    'hash' => $hash,
-                    'download_url' => route('ajax.contratos.preview.download', $hash),
-                    'trabajador_nombre' => $trabajadorTemp->nombre_completo,
-                    'fecha_inicio' => $datosContrato['fecha_inicio']->format('d/m/Y'),
-                    'fecha_fin' => $datosContrato['fecha_fin']->format('d/m/Y'),
-                    'duracion_texto' => $datosContrato['duracion_texto']
-                ]
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('💥 Error al generar contrato preview', [
-                'error' => $e->getMessage(),
-                'trabajador' => $request->nombre_trabajador . ' ' . $request->ape_pat
-            ]);
-
-            return response()->json([
-                'success' => false,
-                'message' => 'Error al generar el contrato: ' . $e->getMessage()
-            ], 500);
-        }
-    }
-
-    /**
-     * ✅ GENERAR CONTRATO DEFINITIVO (crea registro en BD)
-     * Este método es llamado por AdminContratosController
+     * ✅ ACTUALIZADO: GENERAR CONTRATO DEFINITIVO usando plantillas dinámicas
      */
     public function generarDefinitivo(Trabajador $trabajador, array $datosContrato): ContratoTrabajador
     {
@@ -112,28 +28,38 @@ class ContratoController extends Controller
             $this->completarDatosFichaTecnica($trabajador);
 
             $datosContratoProcesados = $this->procesarDatosContrato((object) $datosContrato);
-            $pdf = $this->generarPDF($trabajador, $datosContratoProcesados);
+            
+            // ✅ NUEVO: Generar PDF usando plantilla dinámica
+            $pdf = $this->generarPDFConPlantilla($trabajador, $datosContratoProcesados);
             
             // Guardar archivo definitivo
             $nombreArchivo = 'contrato_' . $trabajador->id_trabajador . '_' . time() . '.pdf';
             $ruta = 'contratos/' . $nombreArchivo;
             Storage::disk('public')->put($ruta, $pdf->output());
 
-            // Crear registro en BD
-            $contrato = ContratoTrabajador::create([
+            // ✅ CREAR REGISTRO CON DATOS CONDICIONALES
+            $datosContratoDB = [
                 'id_trabajador' => $trabajador->id_trabajador,
+                'tipo_contrato' => $datosContratoProcesados['tipo_contrato'],
                 'fecha_inicio_contrato' => $datosContratoProcesados['fecha_inicio'],
-                'fecha_fin_contrato' => $datosContratoProcesados['fecha_fin'],
-                'tipo_duracion' => $datosContratoProcesados['tipo_duracion'],
-                'duracion' => $datosContratoProcesados['duracion'],
-                'duracion_meses' => $datosContratoProcesados['tipo_duracion'] === 'meses' ? $datosContratoProcesados['duracion'] : null,
                 'estatus' => ContratoTrabajador::ESTATUS_ACTIVO,
                 'ruta_archivo' => $ruta
-            ]);
+            ];
 
-            Log::info('✅ Contrato definitivo creado', [
+            // Solo añadir datos de duración para contratos determinados
+            if ($datosContratoProcesados['tipo_contrato'] === 'determinado') {
+                $datosContratoDB['fecha_fin_contrato'] = $datosContratoProcesados['fecha_fin'];
+                $datosContratoDB['tipo_duracion'] = $datosContratoProcesados['tipo_duracion'];
+                $datosContratoDB['duracion'] = $datosContratoProcesados['duracion'];
+                $datosContratoDB['duracion_meses'] = $datosContratoProcesados['tipo_duracion'] === 'meses' ? $datosContratoProcesados['duracion'] : null;
+            }
+
+            $contrato = ContratoTrabajador::create($datosContratoDB);
+
+            Log::info('✅ Contrato definitivo creado con plantilla dinámica', [
                 'contrato_id' => $contrato->id_contrato,
-                'trabajador_id' => $trabajador->id_trabajador
+                'trabajador_id' => $trabajador->id_trabajador,
+                'tipo_contrato' => $datosContratoProcesados['tipo_contrato']
             ]);
 
             return $contrato;
@@ -148,119 +74,146 @@ class ContratoController extends Controller
         }
     }
 
+    // ========================================
+    // ✅ NUEVOS MÉTODOS PARA PLANTILLAS DINÁMICAS
+    // ========================================
+
     /**
-     * ✅ DESCARGAR PREVIEW TEMPORAL
+     * ✅ NUEVO: Generar PDF usando plantilla dinámica
      */
-    public function descargarPreview($hash)
+    private function generarPDFConPlantilla($trabajador, array $datosContrato)
     {
-        try {
-            $nombreArchivo = 'preview_contrato_' . $hash . '.pdf';
-            $rutaTemporal = 'temp/contratos/' . $nombreArchivo;
-
-            if (!Storage::disk('public')->exists($rutaTemporal)) {
-                abort(404, 'Archivo de contrato no encontrado o expirado');
-            }
-
-            $rutaCompleta = Storage::disk('public')->path($rutaTemporal);
-            
-            return response()->download($rutaCompleta, 'Contrato_Preview.pdf', [
-                'Content-Type' => 'application/pdf',
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error('💥 Error al descargar contrato preview', [
-                'error' => $e->getMessage(),
-                'hash' => $hash
+        // Obtener plantilla activa para el tipo de contrato
+        $tipoContrato = $datosContrato['tipo_contrato'];
+        $plantilla = PlantillaContrato::obtenerActiva($tipoContrato);
+        
+        if (!$plantilla) {
+            Log::warning('⚠️ No se encontró plantilla activa, usando plantilla por defecto', [
+                'tipo_contrato' => $tipoContrato
             ]);
             
-            abort(500, 'Error al procesar la descarga del contrato');
+            // Fallback a la plantilla blade original
+            return $this->generarPDFOriginal($trabajador, $datosContrato);
         }
+
+        // Obtener valores de todas las variables
+        $valoresVariables = $this->obtenerValoresVariables($trabajador, $datosContrato);
+        
+        // Reemplazar variables en la plantilla
+        $contenidoFinal = $plantilla->reemplazarVariables($valoresVariables);
+        
+        // Agregar imagen de empresa si existe
+        $contenidoFinal = $this->procesarImagenEmpresa($contenidoFinal);
+        
+        Log::info('📄 Generando PDF con plantilla dinámica', [
+            'plantilla_id' => $plantilla->id_plantilla,
+            'plantilla_version' => $plantilla->version,
+            'variables_utilizadas' => count($valoresVariables)
+        ]);
+
+        return PDF::loadHTML($contenidoFinal);
     }
 
     /**
-     * ✅ LIMPIAR ARCHIVOS TEMPORALES (método utilitario)
+     * ✅ NUEVO: Obtener valores de todas las variables
      */
-    public function limpiarArchivosTemporales(): int
+    private function obtenerValoresVariables($trabajador, array $datosContrato): array
     {
-        try {
-            $archivosTemporales = Storage::disk('public')->allFiles('temp/contratos');
-            $archivosEliminados = 0;
+        // ✅ DEBUG TEMPORAL - Agregar estas líneas al inicio del método
+        Log::info('🔍 DEBUG: Datos que llegan a obtenerValoresVariables', [
+            'datos_keys' => array_keys($datosContrato),
+            'tipo_contrato' => $datosContrato['tipo_contrato'] ?? 'NO EXISTE',
+            'fecha_inicio_type' => gettype($datosContrato['fecha_inicio'] ?? null),
+            'fecha_inicio_value' => isset($datosContrato['fecha_inicio']) ? $datosContrato['fecha_inicio']->format('Y-m-d H:i:s') : 'NO EXISTE',
+            'fecha_fin_type' => gettype($datosContrato['fecha_fin'] ?? null),
+            'fecha_fin_value' => isset($datosContrato['fecha_fin']) ? $datosContrato['fecha_fin']->format('Y-m-d H:i:s') : 'NO EXISTE',
+        ]);
 
-            foreach ($archivosTemporales as $archivo) {
-                if (Storage::disk('public')->lastModified($archivo) < now()->subHours(2)->timestamp) {
-                    Storage::disk('public')->delete($archivo);
-                    $archivosEliminados++;
+        $variables = VariableContrato::activas()->get();
+        $valores = [];
+        
+        foreach ($variables as $variable) {
+            // ✅ DEBUG ESPECÍFICO PARA VARIABLES DE FECHA
+            if (in_array($variable->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+                Log::info("🎯 Procesando variable de fecha: {$variable->nombre_variable}", [
+                    'datos_disponibles' => array_keys($datosContrato),
+                    'fecha_inicio_disponible' => isset($datosContrato['fecha_inicio']),
+                    'fecha_fin_disponible' => isset($datosContrato['fecha_fin'])
+                ]);
+            }
+            
+            try {
+                $valor = $variable->obtenerValor($trabajador, $datosContrato);
+                $valores[$variable->nombre_variable] = $valor;
+                
+                // ✅ DEBUG RESULTADO PARA VARIABLES DE FECHA
+                if (in_array($variable->nombre_variable, ['contrato_fecha_inicio', 'contrato_fecha_fin'])) {
+                    Log::info("✅ Resultado variable {$variable->nombre_variable}: '{$valor}'");
                 }
+                
+            } catch (\Exception $e) {
+                Log::warning('⚠️ Error obteniendo valor de variable', [
+                    'variable' => $variable->nombre_variable,
+                    'error' => $e->getMessage()
+                ]);
+                
+                // Usar valor de ejemplo en caso de error
+                $valores[$variable->nombre_variable] = $variable->formato_ejemplo ?? '';
             }
-
-            Log::info("🧹 Limpieza completada: {$archivosEliminados} archivos eliminados");
-            return $archivosEliminados;
-
-        } catch (\Exception $e) {
-            Log::error('Error al limpiar archivos temporales', ['error' => $e->getMessage()]);
-            return 0;
         }
+        
+        return $valores;
     }
-
-    // ========================================
-    // MÉTODOS PRIVADOS DE PROCESAMIENTO
-    // ========================================
 
     /**
-     * ✅ Crear objeto trabajador temporal para preview
+     * ✅ NUEVO: Procesar imagen de empresa en el contenido HTML
      */
-    private function crearTrabajadorTemporal(Request $request): object
+    private function procesarImagenEmpresa(string $contenidoHtml): string
     {
-        $diasLaborables = $request->dias_laborables ?? ['lunes', 'martes', 'miercoles', 'jueves', 'viernes'];
-        $todosLosDias = ['lunes', 'martes', 'miercoles', 'jueves', 'viernes', 'sabado', 'domingo'];
-        $diasDescanso = array_diff($todosLosDias, $diasLaborables);
+        $imagenPath = public_path('image/estaticas/images.png');
         
-        $horasPorDia = $request->horas_trabajo ?? 8;
-        $horasSemanales = $request->horas_semanales ?? (count($diasLaborables) * $horasPorDia);
-        
-        return (object) [
-            'nombre_trabajador' => $request->nombre_trabajador,
-            'ape_pat' => $request->ape_pat,
-            'ape_mat' => $request->ape_mat,
-            'nombre_completo' => trim($request->nombre_trabajador . ' ' . $request->ape_pat . ' ' . ($request->ape_mat ?? '')),
-            'fecha_nacimiento' => \Carbon\Carbon::parse($request->fecha_nacimiento),
-            'fecha_ingreso' => \Carbon\Carbon::parse($request->fecha_ingreso),
-            'direccion' => $request->direccion,
-            'curp' => $request->curp,
-            'rfc' => $request->rfc,
-            'telefono' => $request->telefono,
-            'correo' => $request->correo,
-            'no_nss' => $request->no_nss,
-            'lugar_nacimiento' => $request->lugar_nacimiento,
-            'estado_actual' => $request->estado_actual,
-            'ciudad_actual' => $request->ciudad_actual,
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
             
-            'fichaTecnica' => (object) [
-                'categoria' => (object) [
-                    'nombre_categoria' => $request->categoria_nombre ?? 'CATEGORÍA PREVIEW',
-                    'area' => (object) [
-                        'nombre_area' => $request->area_nombre ?? 'ÁREA PREVIEW'
-                    ]
-                ],
-                'sueldo_diarios' => $request->sueldo_diarios ?? 0,
-                'horas_trabajo' => $horasPorDia,
-                'horas_semanales' => $horasSemanales,
-                'horas_trabajadas_calculadas' => $horasPorDia,
-                'horas_semanales_calculadas' => $horasSemanales,
-                'turno' => $request->turno ?? 'diurno',
-                'turno_calculado' => $request->turno ?? 'diurno',
-                'turno_texto' => $this->getTurnoTexto($request->turno ?? 'diurno'),
-                'hora_entrada' => $request->hora_entrada ?? '08:00',
-                'hora_salida' => $request->hora_salida ?? '17:00',
-                'formacion' => $request->formacion ?? 'No Especificada',
-                'grado_estudios' => $request->grado_estudios ?? 'No Especificado',
-                'beneficiario_nombre' => $request->beneficiario_nombre,
-                'beneficiario_parentesco' => $request->beneficiario_parentesco,
-                'dias_laborables' => $diasLaborables,
-                'dias_descanso' => array_values($diasDescanso)
-            ]
-        ];
+            // Reemplazar placeholders de imagen si existen
+            $contenidoHtml = str_replace('{{imagen_empresa}}', $imagenBase64, $contenidoHtml);
+            $contenidoHtml = str_replace('{{logo_empresa}}', $imagenBase64, $contenidoHtml);
+        }
+        
+        return $contenidoHtml;
     }
+
+    /**
+     * ✅ FALLBACK: Generar PDF con plantilla original (por compatibilidad)
+     */
+    private function generarPDFOriginal($trabajador, array $datosContrato)
+    {
+        // ✅ CONVERTIR IMAGEN LOGO A BASE64 PARA DOMPDF
+        $imagenPath = public_path('image/estaticas/images.png');
+        $imagenBase64 = null;
+        
+        if (file_exists($imagenPath)) {
+            $imagenData = file_get_contents($imagenPath);
+            $imagenBase64 = 'data:image/png;base64,' . base64_encode($imagenData);
+        }
+
+        return PDF::loadView('Formatos.contrato', [
+            'trabajador' => $trabajador,
+            'tipo_contrato' => $datosContrato['tipo_contrato'],
+            'fecha_inicio' => $datosContrato['fecha_inicio'],
+            'fecha_fin' => $datosContrato['fecha_fin'], // Puede ser null para indeterminados
+            'duracion' => $datosContrato['duracion'],
+            'tipo_duracion' => $datosContrato['tipo_duracion'],
+            'duracion_texto' => $datosContrato['duracion_texto'],
+            'salario_texto' => $datosContrato['salario_texto'],
+            'imagen_empresa' => $imagenBase64 // ✅ NUEVO: Pasar imagen como base64
+        ]);
+    }
+
+    // ========================================
+    // MÉTODOS PRIVADOS DE PROCESAMIENTO (SIN CAMBIOS)
+    // ========================================
 
     /**
      * ✅ Procesar datos del contrato y calcular duración
@@ -268,50 +221,35 @@ class ContratoController extends Controller
     private function procesarDatosContrato($request): array
     {
         $fechaInicio = \Carbon\Carbon::parse($request->fecha_inicio_contrato);
-        $fechaFin = \Carbon\Carbon::parse($request->fecha_fin_contrato);
-        $tipoDuracion = $request->tipo_duracion;
+        $tipoContrato = $request->tipo_contrato;
         
-        $duracion = $this->calcularDuracion($fechaInicio, $fechaFin, $tipoDuracion);
-        $duracionTexto = $this->formatearDuracion($duracion, $tipoDuracion);
-        $salarioTexto = $this->numeroATexto($request->sueldo_diarios ?? 0);
-
-        return [
+        $datos = [
+            'tipo_contrato' => $tipoContrato,
             'fecha_inicio' => $fechaInicio,
-            'fecha_fin' => $fechaFin,
-            'tipo_duracion' => $tipoDuracion,
-            'duracion' => $duracion,
-            'duracion_texto' => $duracionTexto,
-            'salario_texto' => $salarioTexto
+            'salario_texto' => $this->numeroATexto($request->sueldo_diarios ?? 0)
         ];
-    }
 
-    /**
-     * ✅ Generar PDF del contrato (método central)
-     */
-    private function generarPDF($trabajador, array $datosContrato)
-    {
-        return PDF::loadView('Formatos.contrato', [
-            'trabajador' => $trabajador,
-            'fecha_inicio' => $datosContrato['fecha_inicio'],
-            'fecha_fin' => $datosContrato['fecha_fin'],
-            'duracion' => $datosContrato['duracion'],
-            'tipo_duracion' => $datosContrato['tipo_duracion'],
-            'duracion_texto' => $datosContrato['duracion_texto'],
-            'salario_texto' => $datosContrato['salario_texto']
-        ]);
-    }
+        // ✅ PROCESAR DATOS SEGÚN TIPO DE CONTRATO
+        if ($tipoContrato === 'determinado') {
+            $fechaFin = \Carbon\Carbon::parse($request->fecha_fin_contrato);
+            $tipoDuracion = $request->tipo_duracion;
+            
+            $duracion = $this->calcularDuracion($fechaInicio, $fechaFin, $tipoDuracion);
+            $duracionTexto = $this->formatearDuracion($duracion, $tipoDuracion);
 
-    /**
-     * ✅ Guardar archivo temporal y retornar hash
-     */
-    private function guardarArchivoTemporal($pdf): string
-    {
-        $hash = Str::random(32);
-        $nombreArchivo = 'preview_contrato_' . $hash . '.pdf';
-        $rutaTemporal = 'temp/contratos/' . $nombreArchivo;
-        Storage::disk('public')->put($rutaTemporal, $pdf->output());
-        
-        return $hash;
+            $datos['fecha_fin'] = $fechaFin;
+            $datos['tipo_duracion'] = $tipoDuracion;
+            $datos['duracion'] = $duracion;
+            $datos['duracion_texto'] = $duracionTexto;
+        } else {
+            // Para contratos indeterminados
+            $datos['fecha_fin'] = null;
+            $datos['tipo_duracion'] = null;
+            $datos['duracion'] = null;
+            $datos['duracion_texto'] = 'Tiempo Indeterminado';
+        }
+
+        return $datos;
     }
 
     /**
@@ -385,63 +323,92 @@ class ContratoController extends Controller
     }
 
     /**
-     * ✅ Convertir número a texto para el salario
+     * ✅ ACTUALIZADO: Convertir número a texto para el salario
      */
     private function numeroATexto($numero): string
     {
         if (!$numero || $numero == 0) {
-            return 'CERO PESOS';
+            return 'CERO';
+        }
+
+        // Separar pesos y centavos
+        $partes = explode('.', number_format($numero, 2, '.', ''));
+        $pesos = intval($partes[0]);
+        $centavos = intval($partes[1] ?? 0);
+
+        // Convertir pesos a texto
+        $textoPesos = $this->convertirNumeroATexto($pesos);
+        
+        // Solo agregar centavos si son mayores a cero
+        if ($centavos > 0) {
+            $textoCentavos = $this->convertirNumeroATexto($centavos);
+            return $textoPesos . ' CON ' . $textoCentavos;
+        }
+        
+        // Si no hay centavos, solo devolver los pesos
+        return $textoPesos;
+    }
+
+    /**
+     * ✅ ACTUALIZADO: Método auxiliar para convertir solo números enteros a texto
+     */
+    private function convertirNumeroATexto($numero): string
+    {
+        if (!$numero || $numero == 0) {
+            return 'CERO';
         }
 
         $unidades = [
-            '', 'UNO', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
+            '', 'UN', 'DOS', 'TRES', 'CUATRO', 'CINCO', 'SEIS', 'SIETE', 'OCHO', 'NUEVE',
             'DIEZ', 'ONCE', 'DOCE', 'TRECE', 'CATORCE', 'QUINCE', 'DIECISÉIS', 'DIECISIETE', 'DIECIOCHO', 'DIECINUEVE'
         ];
 
         $decenas = [
-            '', '', 'VEINTE', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'
+            '', '', 'VEINTI', 'TREINTA', 'CUARENTA', 'CINCUENTA', 'SESENTA', 'SETENTA', 'OCHENTA', 'NOVENTA'
         ];
 
         $centenas = [
-            '', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS', 
+            '', 'CIENTO', 'DOSCIENTOS', 'TRESCIENTOS', 'CUATROCIENTOS', 'QUINIENTOS',
             'SEISCIENTOS', 'SETECIENTOS', 'OCHOCIENTOS', 'NOVECIENTOS'
         ];
 
         $numero = intval($numero);
 
+        // Manejo de números menores a 20
         if ($numero < 20) {
-            return ($unidades[$numero] ?: 'CERO') . ' PESOS';
-        } elseif ($numero < 100) {
+            return $unidades[$numero] ?: 'CERO';
+        }
+        // Manejo de números entre 20 y 99
+        elseif ($numero < 100) {
             $dec = intval($numero / 10);
             $uni = $numero % 10;
-            return $decenas[$dec] . ($uni > 0 ? ' Y ' . $unidades[$uni] : '') . ' PESOS';
-        } elseif ($numero < 1000) {
+            
+            // Casos especiales para 20-29
+            if ($dec == 2) {
+                return $uni == 0 ? 'VEINTE' : $decenas[$dec] . $unidades[$uni];
+            }
+            // Resto de decenas
+            return $decenas[$dec] . ($uni > 0 ? ' Y ' . $unidades[$uni] : '');
+        }
+        // Manejo de números entre 100 y 999
+        elseif ($numero < 1000) {
             $cen = intval($numero / 100);
             $resto = $numero % 100;
             $centena = ($numero == 100) ? 'CIEN' : $centenas[$cen];
             
-            if ($resto > 0) {
-                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
-                return $centena . ' ' . $restoTexto . ' PESOS';
-            } else {
-                return $centena . ' PESOS';
-            }
-        } elseif ($numero < 1000000) {
+            return $centena . ($resto > 0 ? ' ' . $this->convertirNumeroATexto($resto) : '');
+        }
+        // Manejo de números entre 1000 y 999999
+        elseif ($numero < 1000000) {
             $miles = intval($numero / 1000);
             $resto = $numero % 1000;
-            $milesTexto = ($miles == 1) ? 'MIL' : str_replace(' PESOS', '', $this->numeroATexto($miles)) . ' MIL';
+            $milesTexto = ($miles == 1) ? 'MIL' : $this->convertirNumeroATexto($miles) . ' MIL';
             
-            if ($resto > 0) {
-                $restoTexto = str_replace(' PESOS', '', $this->numeroATexto($resto));
-                return $milesTexto . ' ' . $restoTexto . ' PESOS';
-            } else {
-                return $milesTexto . ' PESOS';
-            }
+            return $milesTexto . ($resto > 0 ? ' ' . $this->convertirNumeroATexto($resto) : '');
         }
 
-        return number_format($numero, 2) . ' PESOS';
+        return 'NÚMERO MUY GRANDE';
     }
-
     /**
      * ✅ Obtener texto del turno
      */

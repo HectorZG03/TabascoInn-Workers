@@ -13,19 +13,144 @@ class EstadisticasController extends Controller
     /**
      * ✅ ESTADÍSTICAS PARA TRABAJADORES
      */
-    public function obtenerEstadisticasTrabajadores()
-    {
-        return [
-            'activos' => Trabajador::where('estatus', 'activo')->count(),
-            'total' => Trabajador::where('estatus', '!=', 'inactivo')->count(),
-            'con_permiso' => Trabajador::where('estatus', 'permiso')->count(),
-            'suspendidos' => Trabajador::where('estatus', 'suspendido')->count(),
-            'en_prueba' => Trabajador::where('estatus', 'prueba')->count(),
-            'por_estado' => [
-                'inactivo' => Trabajador::where('estatus', 'inactivo')->count(),
+public function obtenerEstadisticasTrabajadores()
+{
+    // Obtener todos los trabajadores (incluye inactivos para total)
+    $total = Trabajador::count();
+    
+    // Trabajadores inactivos (dados de baja definitivamente)
+    $inactivos = Trabajador::where('estatus', 'inactivo')->count();
+    
+    // Trabajadores en vacaciones
+    $enVacaciones = Trabajador::where('estatus', 'vacaciones')->count();
+    
+    // Trabajadores activos (estado activo normal)
+    $activos = Trabajador::where('estatus', 'activo')->count();
+    
+    // Trabajadores en prueba
+    $enPrueba = Trabajador::where('estatus', 'prueba')->count();
+    
+    // Trabajadores suspendidos
+    $suspendidos = Trabajador::where('estatus', 'suspendido')->count();
+
+    return [
+        'total' => $total,
+        'inactivos' => $inactivos,
+        'en_vacaciones' => $enVacaciones,
+        'activos' => $activos,
+        'en_prueba' => $enPrueba,
+        'suspendidos' => $suspendidos
+    ];
+}
+
+// TAMBIÉN REEMPLAZAR la sección 'trabajadores' en obtenerConfiguracionTarjetas() con esta:
+
+public static function obtenerConfiguracionTarjetas($tipo)
+{
+    $configuraciones = [
+        'trabajadores' => [
+            'total' => [
+                'titulo' => 'Total Trabajadores',
+                'icono' => 'bi-people-fill',
+                'color' => 'info',
+                'descripcion' => 'Todos los trabajadores'
+            ],
+            'inactivos' => [
+                'titulo' => 'Inactivos',
+                'icono' => 'bi-person-x',
+                'color' => 'secondary',
+                'descripcion' => 'Trabajadores dados de baja'
+            ],
+            'en_vacaciones' => [
+                'titulo' => 'En Vacaciones',
+                'icono' => 'bi-calendar-check',
+                'color' => 'success',
+                'descripcion' => 'Trabajadores de vacaciones'
+            ],
+            'activos' => [
+                'titulo' => 'Activos',
+                'icono' => 'bi-person-check',
+                'color' => 'primary',
+                'descripcion' => 'Trabajadores activos'
+            ],
+            'en_prueba' => [
+                'titulo' => 'En Prueba',
+                'icono' => 'bi-person-plus',
+                'color' => 'warning',
+                'descripcion' => 'Período de prueba'
+            ],
+            'suspendidos' => [
+                'titulo' => 'Suspendidos',
+                'icono' => 'bi-person-dash',
+                'color' => 'danger',
+                'descripcion' => 'Trabajadores suspendidos'
             ]
-        ];
-    }
+        ],
+        
+        // ... resto de configuraciones permanece igual
+        'despidos' => [
+            'total_activos' => [
+                'titulo' => 'Bajas Activas',
+                'icono' => 'bi-people-fill',
+                'color' => 'danger',
+                'descripcion' => 'Bajas vigentes'
+            ],
+            'este_mes' => [
+                'titulo' => 'Este Mes',
+                'icono' => 'bi-calendar-month',
+                'color' => 'warning',
+                'descripcion' => 'Bajas del mes actual'
+            ],
+            'este_año' => [
+                'titulo' => 'Este Año',
+                'icono' => 'bi-calendar-year',
+                'color' => 'info',
+                'descripcion' => 'Bajas del año actual'
+            ],
+            'total_cancelados' => [
+                'titulo' => 'Canceladas',
+                'icono' => 'bi-arrow-clockwise',
+                'color' => 'success',
+                'descripcion' => 'Bajas revertidas'
+            ],
+        ],
+        
+        'permisos' => [
+            'activos' => [
+                'titulo' => 'Activos',
+                'icono' => 'bi-calendar-check',
+                'color' => 'info',
+                'descripcion' => 'Permisos vigentes'
+            ],
+            'total' => [
+                'titulo' => 'Total',
+                'icono' => 'bi-calendar-range',
+                'color' => 'primary',
+                'descripcion' => 'Total de permisos'
+            ],
+            'este_mes' => [
+                'titulo' => 'Este Mes',
+                'icono' => 'bi-calendar-month',
+                'color' => 'success',
+                'descripcion' => 'Permisos del mes'
+            ],
+            'finalizados' => [
+                'titulo' => 'Finalizados',
+                'icono' => 'bi-calendar-x',
+                'color' => 'warning',
+                'descripcion' => 'Permisos completados'
+            ],
+            'vencidos' => [
+                'titulo' => 'Vencidos',
+                'icono' => 'bi-exclamation-triangle',
+                'color' => 'danger',
+                'descripcion' => 'Permisos expirados'
+            ],
+        ]
+    ];
+
+    return $configuraciones[$tipo] ?? [];
+}
 
     /**
      * ✅ ESTADÍSTICAS PARA DESPIDOS/BAJAS
@@ -77,112 +202,4 @@ class EstadisticasController extends Controller
         return response()->json($estadisticas);
     }
 
-    /**
-     * ✅ CONFIGURACIONES DE TARJETAS POR TIPO
-     */
-    public static function obtenerConfiguracionTarjetas($tipo)
-    {
-        $configuraciones = [
-            'trabajadores' => [
-                'activos' => [
-                    'titulo' => 'Activos',
-                    'icono' => 'bi-person-check',
-                    'color' => 'success',
-                    'descripcion' => 'Trabajadores activos'
-                ],
-                'con_permiso' => [
-                    'titulo' => 'Con Permiso',
-                    'icono' => 'bi-calendar-event',
-                    'color' => 'info',
-                    'descripcion' => 'Con permisos temporales'
-                ],
-                'suspendidos' => [
-                    'titulo' => 'Suspendidos',
-                    'icono' => 'bi-exclamation-triangle',
-                    'color' => 'danger',
-                    'descripcion' => 'Trabajadores suspendidos'
-                ],
-                'en_prueba' => [
-                    'titulo' => 'En Prueba',
-                    'icono' => 'bi-clock-history',
-                    'color' => 'warning',
-                    'descripcion' => 'Período de prueba'
-                ],
-                'total' => [
-                    'titulo' => 'Total',
-                    'icono' => 'bi-people',
-                    'color' => 'primary',
-                    'descripcion' => 'Total empleados'
-                ],
-                'por_estado.inactivo' => [
-                    'titulo' => 'Inactivos',
-                    'icono' => 'bi-person-x',
-                    'color' => 'secondary',
-                    'descripcion' => 'Empleados inactivos'
-                ],
-            ],
-            
-            'despidos' => [
-                'total_activos' => [
-                    'titulo' => 'Bajas Activas',
-                    'icono' => 'bi-people-fill',
-                    'color' => 'danger',
-                    'descripcion' => 'Bajas vigentes'
-                ],
-                'este_mes' => [
-                    'titulo' => 'Este Mes',
-                    'icono' => 'bi-calendar-month',
-                    'color' => 'warning',
-                    'descripcion' => 'Bajas del mes actual'
-                ],
-                'este_año' => [
-                    'titulo' => 'Este Año',
-                    'icono' => 'bi-calendar-year',
-                    'color' => 'info',
-                    'descripcion' => 'Bajas del año actual'
-                ],
-                'total_cancelados' => [
-                    'titulo' => 'Canceladas',
-                    'icono' => 'bi-arrow-clockwise',
-                    'color' => 'success',
-                    'descripcion' => 'Bajas revertidas'
-                ],
-            ],
-            
-            'permisos' => [
-                'activos' => [
-                    'titulo' => 'Activos',
-                    'icono' => 'bi-calendar-check',
-                    'color' => 'info',
-                    'descripcion' => 'Permisos vigentes'
-                ],
-                'total' => [
-                    'titulo' => 'Total',
-                    'icono' => 'bi-calendar-range',
-                    'color' => 'primary',
-                    'descripcion' => 'Total de permisos'
-                ],
-                'este_mes' => [
-                    'titulo' => 'Este Mes',
-                    'icono' => 'bi-calendar-month',
-                    'color' => 'success',
-                    'descripcion' => 'Permisos del mes'
-                ],
-                'finalizados' => [
-                    'titulo' => 'Finalizados',
-                    'icono' => 'bi-calendar-x',
-                    'color' => 'warning',
-                    'descripcion' => 'Permisos completados'
-                ],
-                'vencidos' => [
-                    'titulo' => 'Vencidos',
-                    'icono' => 'bi-exclamation-triangle',
-                    'color' => 'danger',
-                    'descripcion' => 'Permisos expirados'
-                ],
-            ]
-        ];
-
-        return $configuraciones[$tipo] ?? [];
-    }
 }

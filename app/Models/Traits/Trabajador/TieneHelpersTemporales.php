@@ -11,12 +11,22 @@ trait TieneHelpersTemporales
         return $this->fecha_nacimiento ? Carbon::parse($this->fecha_nacimiento)->age : null;
     }
 
+    public function getAntiguedadAttribute(): int
+    {
+        return $this->fecha_ingreso 
+            ? Carbon::parse($this->fecha_ingreso)->diffInYears(Carbon::now())
+            : 0;
+    }
+
+    // Actualizar otros métodos que usaban antiguedad
     public function getAntiguedadTextoAttribute()
     {
-        return match($this->antiguedad) {
+        $antiguedad = $this->antiguedad; // Usa el accessor
+        
+        return match($antiguedad) {
             0 => 'Nuevo',
             1 => '1 año', 
-            default => "{$this->antiguedad} años"
+            default => "{$antiguedad} años"
         };
     }
 
@@ -24,6 +34,7 @@ trait TieneHelpersTemporales
     {
         return $this->antiguedad === 0;
     }
+
 
     public function getResumenBajasAttribute()
     {

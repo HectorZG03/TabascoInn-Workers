@@ -17,9 +17,24 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
-            $table->enum('tipo', ['Gerencia', 'Recursos_Humanos']);
+            $table->enum('tipo', ['Gerencia', 'Recursos_Humanos', 'Operativo']); // Agregado 'Operativo'
+            $table->boolean('activo')->default(true); // Para activar/desactivar usuarios
             $table->rememberToken();
             $table->timestamps();
+        });
+
+        // Tabla de permisos para usuarios operativos
+        Schema::create('permisos_usuarios', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('user_id')->constrained()->onDelete('cascade');
+            $table->string('modulo'); // trabajadores, permisos, contratos, etc.
+            $table->boolean('ver')->default(false);
+            $table->boolean('crear')->default(false);
+            $table->boolean('editar')->default(false);
+            $table->boolean('eliminar')->default(false);
+            $table->timestamps();
+            
+            $table->unique(['user_id', 'modulo']);
         });
 
         Schema::create('password_reset_tokens', function (Blueprint $table) {
@@ -43,6 +58,7 @@ return new class extends Migration
      */
     public function down(): void
     {
+        Schema::dropIfExists('permisos_usuarios');
         Schema::dropIfExists('users');
         Schema::dropIfExists('password_reset_tokens');
         Schema::dropIfExists('sessions');

@@ -17,7 +17,7 @@
     
     // Definir orden de tarjetas por tipo
     $ordenTarjetas = [
-        'trabajadores' => ['activos', 'con_permiso', 'suspendidos', 'en_prueba', 'total', 'por_estado.inactivo'],
+        'trabajadores' => ['total', 'inactivos', 'en_vacaciones', 'activos', 'en_prueba', 'suspendidos'],
         'despidos' => ['total_activos', 'este_mes', 'este_año', 'total_cancelados'],
         'permisos' => ['activos', 'total', 'este_mes', 'finalizados', 'vencidos']
     ];

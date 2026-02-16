@@ -34,8 +34,5 @@ trait TieneMutators
         $this->attributes['ape_mat'] = $value ? ucwords(strtolower(trim($value))) : null;
     }
 
-    public function setAntiguedadAttribute($value)
-    {
-        $this->attributes['antiguedad'] = (int) $value;
-    }
+
 }

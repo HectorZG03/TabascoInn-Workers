@@ -1,280 +1,400 @@
 /**
- * asignar_vacacion.js - Modal con FORMATO GLOBAL integrado
- * Maneja fechas DD/MM/YYYY en frontend, envía YYYY-MM-DD al backend
+ * asignar_vacacion.js - Modal REFACTORIZADO con cálculo de fecha de reintegro
+ * Entrada manual de año y período + Sin restricciones de fechas + Fecha de reintegro
  */
 class AsignarVacacionModal {
     constructor(trabajadorId) {
         this.trabajadorId = trabajadorId;
         this.initialized = false;
+        this.diasSaltadosReintegro = [];
         
-        console.log(`📝 AsignarVacacionModal iniciado para trabajador: ${trabajadorId}`);
+        console.log(`🏖️ AsignarVacacionModal REFACTORIZADO iniciado para trabajador: ${trabajadorId}`);
         this.init();
     }
 
     init() {
         if (this.initialized) return;
         
+        if (typeof AppRoutes === 'undefined') {
+            console.error('❌ AppRoutes no disponible');
+            return;
+        }
+        
         this.bindEvents();
-        this.setupFormatoGlobalValidations();
+        this.setupValidacionesRefactorizadas();
         this.initialized = true;
-        console.log('✅ Modal de asignar vacaciones inicializado con formato global');
+        console.log('✅ Modal refactorizado inicializado con fecha de reintegro');
     }
 
     bindEvents() {
-        // Modal events
         $('#asignarVacacionesModal').on('show.bs.modal', () => this.initModal());
         $('#form-asignar-vacaciones').on('submit', (e) => this.handleSubmit(e));
         
-        // Form interactions
-        $('#dias_solicitados').on('input', () => this.calcularFechaFin());
-        $('#fecha_inicio').on('input blur', () => this.calcularFechaFin());
+        // ✅ NUEVOS EVENT LISTENERS CON FECHA DE REINTEGRO
+        $('#dias_solicitados').on('input', () => this.updateResumen());
+        $('#fecha_inicio').on('input blur', () => this.updateResumen());
+        $('#fecha_fin').on('input blur', () => {
+            this.updateResumen();
+            this.calcularFechaReintegro(); // ✅ NUEVO: Calcular reintegro al cambiar fecha fin
+        });
+        $('#año_correspondiente').on('input', () => {
+            this.updateResumen();
+            this.calcularFechaReintegro(); // ✅ Recalcular por si hay festivos diferentes en otro año
+        });
+        $('#periodo_vacacional').on('input', () => this.updateResumen());
+        $('#dias_correspondientes').on('input', () => this.updateResumen());
         $('#observaciones').on('input', () => this.updateObservacionesCount());
         
-        console.log('🔗 Eventos del modal vinculados correctamente');
+        // ✅ BOTONES DE UTILIDAD
+        $('#btn-calcular-fecha-fin').on('click', () => this.calcularFechaFin());
+        $('#btn-generar-periodo').on('click', () => this.generarPeriodo());
+        $('#btn-usar-año-actual').on('click', () => this.usarAñoActual());
     }
 
-    // =================================
-    // CONFIGURAR VALIDACIONES ESPECÍFICAS DE VACACIONES
-    // =================================
+    // ✅ VALIDACIONES REFACTORIZADAS - SIN RESTRICCIONES DE FECHAS
+    setupValidacionesRefactorizadas() {
+        if (!window.FormatoGlobal) return;
+        
+        // ✅ OVERRIDE: Eliminar validaciones de fechas pasadas
+        const originalValidar = window.FormatoGlobal.validarRestriccionesFecha;
+        
+        window.FormatoGlobal.validarRestriccionesFecha = (campo, fecha) => {
+            // ✅ PARA VACACIONES: Solo validar formato, NO restricciones temporales
+            if (campo.closest('#asignarVacacionesModal')) {
+                console.log('🔄 Validación de vacaciones: Solo formato, sin restricciones temporales');
+                return null; // Sin restricciones de fecha para vacaciones
+            }
+            
+            // Para otros modales, usar validación original
+            return originalValidar.call(window.FormatoGlobal, campo, fecha);
+        };
 
-    setupFormatoGlobalValidations() {
-        // Extender las validaciones del formato global para fechas de vacaciones
-        if (window.FormatoGlobal) {
-            // Backup de la función original
-            const originalValidarRestricciones = window.FormatoGlobal.validarRestriccionesFecha;
-            
-            // Extender con validaciones de vacaciones
-            window.FormatoGlobal.validarRestriccionesFecha = (campo, fecha) => {
-                // Aplicar validaciones originales primero
-                const errorOriginal = originalValidarRestricciones.call(window.FormatoGlobal, campo, fecha);
-                if (errorOriginal) return errorOriginal;
-                
-                // Validaciones específicas para vacaciones
-                if (campo.id === 'fecha_inicio' && campo.closest('#asignarVacacionesModal')) {
-                    const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
-                    const hoy = new Date();
-                    hoy.setHours(0, 0, 0, 0);
-                    
-                    if (fechaObj < hoy) {
-                        return 'Las vacaciones no pueden iniciarse en el pasado';
-                    }
-                }
-                
-                if (campo.id === 'fecha_fin' && campo.closest('#asignarVacacionesModal')) {
-                    const fechaInicio = $('#fecha_inicio').val();
-                    if (fechaInicio && window.FormatoGlobal.validarFormatoFecha(fechaInicio)) {
-                        const fechaInicioObj = window.FormatoGlobal.convertirFechaADate(fechaInicio);
-                        const fechaFinObj = window.FormatoGlobal.convertirFechaADate(fecha);
-                        
-                        if (fechaFinObj <= fechaInicioObj) {
-                            return 'La fecha de fin debe ser posterior al inicio';
-                        }
-                    }
-                }
-                
-                return null;
-            };
-            
-            console.log('✅ Validaciones de vacaciones integradas con formato global');
-        }
+        console.log('✅ Validaciones refactorizadas aplicadas');
     }
 
-    // =================================
-    // INICIALIZACIÓN DEL MODAL
-    // =================================
-
+    // ✅ INICIALIZACIÓN SIMPLIFICADA DEL MODAL
     async initModal() {
         try {
-            console.log('🔄 Inicializando modal de asignar vacaciones...');
+            console.log('🔄 Cargando datos del modal refactorizado...');
             
-            // Cargar días disponibles del trabajador
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/calcular-dias`, {
-                headers: {
-                    'Accept': 'application/json',
-                    'X-Requested-With': 'XMLHttpRequest'
-                }
+            // Solo cargar datos básicos, sin restricciones
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/calcular-dias`);
+            const response = await fetch(url, {
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
             });
             
             if (response.ok) {
                 const data = await response.json();
                 if (data.success) {
                     $('#dias-disponibles').text(data.dias_restantes);
-                    $('#max-dias-texto').text(data.dias_restantes);
-                    $('#dias_solicitados').attr('max', data.dias_restantes);
                     $('#trabajador-antiguedad').text(data.antiguedad);
-                    
-                    console.log(`✅ Días disponibles cargados: ${data.dias_restantes}`);
-                    
-                    // Verificar si puede tomar vacaciones
-                    if (!data.puede_tomar_vacaciones) {
-                        this.showAlert('El trabajador no puede tomar vacaciones en este momento.', 'warning');
-                    }
+                    $('#dias_correspondientes').val(data.dias_correspondientes || 6);
+                } else {
+                    console.warn('⚠️ Error en datos:', data.message);
                 }
+            } else {
+                console.warn('⚠️ Error HTTP:', response.status);
             }
         } catch (error) {
             console.error('Error loading vacation data:', error);
-            this.showAlert('Error al cargar información de vacaciones', 'danger');
         }
         
         this.resetForm();
+        this.setupDefaultValues();
+    }
+
+    // ✅ NUEVO: Configurar valores por defecto
+    setupDefaultValues() {
+        const añoActual = new Date().getFullYear();
+        const periodoDefault = `${añoActual - 1}-${añoActual}`;
+        
+        $('#año_correspondiente').val(añoActual);
+        $('#periodo_vacacional').val(periodoDefault);
+        
+        console.log(`✅ Valores por defecto: Año ${añoActual}, Período ${periodoDefault}`);
     }
 
     resetForm() {
         $('#form-asignar-vacaciones')[0].reset();
-        $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
-        $('#form-asignar-vacaciones .is-valid').removeClass('is-valid');
-        $('#resumen-vacacion').hide();
-        $('#alert-vacaciones').hide();
+        $('#form-asignar-vacaciones .is-invalid, #form-asignar-vacaciones .is-valid').removeClass('is-invalid is-valid');
+        $('#resumen-vacacion, #alert-vacaciones, #info-dias-saltados').hide();
+        $('#fecha_reintegro_display').val('');
+        $('#btn-info-reintegro').hide();
+        this.diasSaltadosReintegro = [];
         this.updateObservacionesCount();
-        
-        console.log('📋 Formulario reseteado');
     }
 
-    // =================================
-    // FUNCIONES DE CONVERSIÓN DE FECHAS
-    // =================================
-
-    /**
-     * Convertir fecha DD/MM/YYYY a YYYY-MM-DD (para backend)
-     */
-    convertirDDMMYYYYaISO(fechaDDMMYYYY) {
-        if (!fechaDDMMYYYY || !window.FormatoGlobal.validarFormatoFecha(fechaDDMMYYYY)) {
-            return null;
+    // ✅ NUEVO MÉTODO: Calcular fecha de reintegro considerando días de descanso y festivos
+    async calcularFechaReintegro() {
+        const fechaFinDDMM = $('#fecha_fin').val();
+        
+        if (!fechaFinDDMM || !window.FormatoGlobal.validarFormatoFecha(fechaFinDDMM)) {
+            $('#fecha_reintegro_display').val('');
+            $('#btn-info-reintegro').hide();
+            $('#info-dias-saltados').hide();
+            this.diasSaltadosReintegro = [];
+            return;
         }
-        
-        const [dia, mes, año] = fechaDDMMYYYY.split('/').map(Number);
-        
-        // Validar que la fecha sea válida
-        const fecha = new Date(año, mes - 1, dia);
-        if (fecha.getFullYear() !== año || fecha.getMonth() !== mes - 1 || fecha.getDate() !== dia) {
-            return null;
-        }
-        
-        // Formatear a YYYY-MM-DD
-        const mesStr = String(mes).padStart(2, '0');
-        const diaStr = String(dia).padStart(2, '0');
-        
-        return `${año}-${mesStr}-${diaStr}`;
-    }
-
-    /**
-     * Convertir fecha YYYY-MM-DD a DD/MM/YYYY (para mostrar)
-     */
-    convertirISOaDDMMYYYY(fechaISO) {
-        if (!fechaISO) return '';
         
         try {
-            const [year, month, day] = fechaISO.split('-');
-            return `${day}/${month}/${year}`;
+            const fechaFinISO = this.convertirDDMMYYYYaISO(fechaFinDDMM);
+            if (!fechaFinISO) return;
+            
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/calcular-reintegro`);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({ fecha_fin: fechaFinISO })
+            });
+            
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    $('#fecha_reintegro_display').val(result.fecha_reintegro_formateada);
+                    this.diasSaltadosReintegro = result.dias_saltados || [];
+                    
+                    if (result.total_dias_saltados > 0) {
+                        $('#btn-info-reintegro').show();
+                        
+                        // Construir información de días saltados
+                        let infoHtml = '<h6 class="mb-2"><i class="bi bi-calendar-x"></i> Días no laborables que postergan el reintegro:</h6>';
+                        infoHtml += '<ul class="mb-0 small">';
+                        
+                        result.dias_saltados.forEach(dia => {
+                            const icon = dia.razon.includes('Festivo') ? '🎉' : '🏖️';
+                            infoHtml += `<li>${icon} <strong>${dia.fecha}</strong> (${dia.dia_semana || ''}) - ${dia.razon}</li>`;
+                        });
+                        infoHtml += '</ul>';
+                        
+                        if (result.tiene_dias_descanso) {
+                            infoHtml += '<small class="text-muted mt-2 d-block">';
+                            infoHtml += '<i class="bi bi-info-circle"></i> Días de descanso del trabajador: ';
+                            infoHtml += result.dias_descanso_trabajador.join(', ');
+                            infoHtml += '</small>';
+                        }
+                        
+                        $('#info-dias-saltados').html(infoHtml).show();
+                        
+                        // Configurar popover
+                        const popoverContent = `Se recorrió ${result.total_dias_saltados} día(s) el reintegro por días no laborables`;
+                        
+                        // Destruir popover existente si hay uno
+                        const existingPopover = bootstrap.Popover.getInstance($('#btn-info-reintegro')[0]);
+                        if (existingPopover) {
+                            existingPopover.dispose();
+                        }
+                        
+                        // Crear nuevo popover
+                        new bootstrap.Popover($('#btn-info-reintegro')[0], {
+                            trigger: 'hover focus',
+                            placement: 'top',
+                            content: popoverContent,
+                            html: true
+                        });
+                        
+                        // Actualizar resumen
+                        $('#resumen-dias-saltados').text(result.total_dias_saltados);
+                    } else {
+                        $('#btn-info-reintegro').hide();
+                        $('#info-dias-saltados').hide();
+                        $('#resumen-dias-saltados').text('0');
+                    }
+                    
+                    // Actualizar resumen con fecha de reintegro
+                    $('#resumen-reintegro').text(result.fecha_reintegro_formateada);
+                }
+            }
         } catch (error) {
-            console.error('Error converting ISO to DD/MM/YYYY:', error);
-            return fechaISO;
+            console.error('Error calculando fecha de reintegro:', error);
+            // Calcular manualmente si falla el servidor
+            this.calcularFechaReintegroManual(fechaFinDDMM);
         }
     }
 
-    // =================================
-    // CÁLCULOS CON FORMATO DD/MM/YYYY
-    // =================================
+    // ✅ Cálculo manual de fecha de reintegro (fallback)
+    calcularFechaReintegroManual(fechaFinDDMM) {
+        try {
+            const fechaFinDate = window.FormatoGlobal.convertirFechaADate(fechaFinDDMM);
+            if (!fechaFinDate) return;
+            
+            const fechaReintegro = new Date(fechaFinDate);
+            fechaReintegro.setDate(fechaReintegro.getDate() + 1);
+            
+            const fechaReintegroDDMM = `${String(fechaReintegro.getDate()).padStart(2, '0')}/${String(fechaReintegro.getMonth() + 1).padStart(2, '0')}/${fechaReintegro.getFullYear()}`;
+            
+            $('#fecha_reintegro_display').val(fechaReintegroDDMM);
+            $('#resumen-reintegro').text(fechaReintegroDDMM);
+            $('#btn-info-reintegro').hide();
+            $('#info-dias-saltados').hide();
+            $('#resumen-dias-saltados').text('0');
+            this.diasSaltadosReintegro = [];
+        } catch (error) {
+            console.error('Error en cálculo manual:', error);
+        }
+    }
 
-    calcularFechaFin() {
+    // ✅ CONVERSIÓN DE FECHAS (sin restricciones)
+    convertirDDMMYYYYaISO(fechaDDMMYYYY) {
+        if (!fechaDDMMYYYY || !window.FormatoGlobal.validarFormatoFecha(fechaDDMMYYYY)) return null;
+        
+        const [dia, mes, año] = fechaDDMMYYYY.split('/').map(Number);
+        const fecha = new Date(año, mes - 1, dia);
+        
+        if (fecha.getFullYear() !== año || fecha.getMonth() !== mes - 1 || fecha.getDate() !== dia) return null;
+        
+        return `${año}-${String(mes).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
+    }
+
+    // ✅ CÁLCULO DE FECHA FIN REFACTORIZADO
+    async calcularFechaFin() {
         const diasSolicitados = parseInt($('#dias_solicitados').val()) || 0;
         const fechaInicioDDMM = $('#fecha_inicio').val();
         
-        console.log('🔢 Calculando fecha fin:', { diasSolicitados, fechaInicioDDMM });
-        
-        // Limpiar fecha fin si no hay datos suficientes
-        if (!fechaInicioDDMM || diasSolicitados <= 0) {
-            $('#fecha_fin').val('');
-            $('#resumen-vacacion').hide();
-            return;
-        }
-        
-        // Validar formato de fecha inicio
-        if (!window.FormatoGlobal.validarFormatoFecha(fechaInicioDDMM)) {
-            $('#fecha_fin').val('');
-            $('#resumen-vacacion').hide();
+        if (!fechaInicioDDMM || diasSolicitados <= 0 || !window.FormatoGlobal.validarFormatoFecha(fechaInicioDDMM)) {
+            this.showAlert('Ingrese una fecha de inicio válida y días solicitados', 'warning');
             return;
         }
         
         try {
-            // Convertir DD/MM/YYYY a Date object
-            const fechaInicioDate = window.FormatoGlobal.convertirFechaADate(fechaInicioDDMM);
-            if (!fechaInicioDate) {
-                $('#fecha_fin').val('');
-                $('#resumen-vacacion').hide();
+            const fechaInicioISO = this.convertirDDMMYYYYaISO(fechaInicioDDMM);
+            if (!fechaInicioISO) {
+                this.showAlert('Formato de fecha de inicio inválido', 'warning');
                 return;
             }
             
-            // Calcular fecha fin
-            const fechaFinDate = new Date(fechaInicioDate);
-            fechaFinDate.setDate(fechaFinDate.getDate() + diasSolicitados - 1);
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/calcular-fechas`);
+            const response = await fetch(url, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Accept': 'application/json',
+                    'X-CSRF-TOKEN': $('meta[name="csrf-token"]').attr('content'),
+                    'X-Requested-With': 'XMLHttpRequest'
+                },
+                body: JSON.stringify({
+                    fecha_inicio: fechaInicioISO,
+                    dias_solicitados: diasSolicitados
+                })
+            });
             
-            // Convertir de vuelta a DD/MM/YYYY
-            const dia = String(fechaFinDate.getDate()).padStart(2, '0');
-            const mes = String(fechaFinDate.getMonth() + 1).padStart(2, '0');
-            const año = fechaFinDate.getFullYear();
-            const fechaFinDDMM = `${dia}/${mes}/${año}`;
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    const calculo = result.calculo;
+                    $('#fecha_fin').val(calculo.fecha_fin_formatted);
+                    this.updateResumen();
+                    this.calcularFechaReintegro(); // ✅ NUEVO: Calcular reintegro después de calcular fecha fin
+                    this.showAlert(`Fecha fin calculada: ${calculo.fecha_fin_formatted}`, 'success');
+                } else {
+                    throw new Error(result.message);
+                }
+            } else {
+                throw new Error(`HTTP ${response.status}`);
+            }
             
-            $('#fecha_fin').val(fechaFinDDMM);
-            
-            console.log('✅ Fecha fin calculada:', fechaFinDDMM);
-            
-            this.updateResumen();
         } catch (error) {
-            console.error('Error calculating end date:', error);
-            $('#fecha_fin').val('');
-            $('#resumen-vacacion').hide();
+            console.error('Error calculando fechas:', error);
+            this.calcularFechaFinTradicional(diasSolicitados, fechaInicioDDMM);
         }
     }
 
-    updateObservacionesCount() {
-        const texto = $('#observaciones').val();
-        $('#observaciones-count').text(texto.length);
+    calcularFechaFinTradicional(diasSolicitados, fechaInicioDDMM) {
+        try {
+            const fechaInicioDate = window.FormatoGlobal.convertirFechaADate(fechaInicioDDMM);
+            if (!fechaInicioDate) return;
+            
+            const fechaFinDate = new Date(fechaInicioDate);
+            fechaFinDate.setDate(fechaFinDate.getDate() + diasSolicitados - 1);
+            
+            const fechaFinDDMM = `${String(fechaFinDate.getDate()).padStart(2, '0')}/${String(fechaFinDate.getMonth() + 1).padStart(2, '0')}/${fechaFinDate.getFullYear()}`;
+            
+            $('#fecha_fin').val(fechaFinDDMM);
+            this.updateResumen();
+            this.calcularFechaReintegro(); // ✅ Calcular reintegro
+            this.showAlert(`Fecha fin calculada (tradicional): ${fechaFinDDMM}`, 'info');
+            
+        } catch (error) {
+            console.error('Error en cálculo tradicional:', error);
+            this.showAlert('Error al calcular fecha fin', 'danger');
+        }
     }
 
+    // ✅ NUEVO: Generar período automáticamente
+    generarPeriodo() {
+        const año = parseInt($('#año_correspondiente').val());
+        if (!año || año < 2000 || año > 2050) {
+            this.showAlert('Ingrese un año válido primero', 'warning');
+            return;
+        }
+        
+        const periodo = `${año - 1}-${año}`;
+        $('#periodo_vacacional').val(periodo);
+        this.updateResumen();
+        this.showAlert(`Período generado: ${periodo}`, 'success');
+    }
+
+    // ✅ NUEVO: Usar año actual
+    usarAñoActual() {
+        const añoActual = new Date().getFullYear();
+        $('#año_correspondiente').val(añoActual);
+        this.generarPeriodo();
+    }
+
+    // ✅ ACTUALIZAR RESUMEN REFACTORIZADO
     updateResumen() {
+        const año = $('#año_correspondiente').val();
+        const periodo = $('#periodo_vacacional').val();
         const diasSolicitados = $('#dias_solicitados').val();
+        const diasCorrespondientes = $('#dias_correspondientes').val();
         const fechaInicio = $('#fecha_inicio').val();
         const fechaFin = $('#fecha_fin').val();
+        const fechaReintegro = $('#fecha_reintegro_display').val();
         
-        if (diasSolicitados && fechaInicio && fechaFin && 
-            window.FormatoGlobal.validarFormatoFecha(fechaInicio) && 
-            window.FormatoGlobal.validarFormatoFecha(fechaFin)) {
+        if (año || periodo || diasSolicitados || fechaInicio) {
+            $('#resumen-año').text(año || '-');
+            $('#resumen-periodo').text(periodo || '-');
+            $('#resumen-duracion').text(diasSolicitados ? `${diasSolicitados} días` : '0 días');
+            $('#resumen-dias-lft').text(diasCorrespondientes || '0');
+            $('#resumen-reintegro').text(fechaReintegro || 'Por calcular');
+            $('#resumen-dias-saltados').text(this.diasSaltadosReintegro.length);
             
-            $('#resumen-duracion').text(`${diasSolicitados} días`);
-            $('#resumen-fechas').text(`${fechaInicio} - ${fechaFin}`);        
+            if (fechaInicio && fechaFin) {
+                $('#resumen-fechas').text(`${fechaInicio} - ${fechaFin}`);
+            } else {
+                $('#resumen-fechas').text('-');
+            }
+            
             $('#resumen-vacacion').show();
-            console.log('📋 Resumen actualizado');
         } else {
             $('#resumen-vacacion').hide();
         }
     }
 
-    // =================================
-    // ENVÍO DEL FORMULARIO CON CONVERSIÓN
-    // =================================
+    updateObservacionesCount() {
+        $('#observaciones-count').text($('#observaciones').val().length);
+    }
 
+    // ✅ ENVÍO REFACTORIZADO
     async handleSubmit(e) {
         e.preventDefault();
-        
-        console.log('📤 Enviando formulario de asignación...');
         
         try {
             this.setLoadingState(true);
             
-            // Obtener datos del formulario
             const formData = new FormData($('#form-asignar-vacaciones')[0]);
             const data = Object.fromEntries(formData.entries());
             
-            console.log('📋 Datos originales (DD/MM/YYYY):', data);
-            
-            // Validación básica en el frontend
-            if (!this.validarFormulario(data)) {
+            if (!this.validarFormularioRefactorizado(data)) {
                 this.setLoadingState(false);
                 return;
             }
             
-            // ✅ CONVERTIR FECHAS DD/MM/YYYY A YYYY-MM-DD PARA EL BACKEND
+            // ✅ CONVERTIR FECHAS SIN VALIDACIONES TEMPORALES
             const fechaInicioISO = this.convertirDDMMYYYYaISO(data.fecha_inicio);
             const fechaFinISO = this.convertirDDMMYYYYaISO(data.fecha_fin);
             
@@ -284,17 +404,20 @@ class AsignarVacacionModal {
                 return;
             }
             
-            // Preparar datos para el backend con fechas en formato ISO
+            // ✅ DATOS PARA BACKEND REFACTORIZADOS
             const dataParaBackend = {
                 ...data,
                 fecha_inicio: fechaInicioISO,
-                fecha_fin: fechaFinISO
+                fecha_fin: fechaFinISO,
+                año_correspondiente: parseInt(data.año_correspondiente),
+                dias_solicitados: parseInt(data.dias_solicitados),
+                dias_correspondientes: parseInt(data.dias_correspondientes) || 6
             };
             
-            console.log('📤 Datos para backend (YYYY-MM-DD):', dataParaBackend);
+            console.log('📤 Enviando datos:', dataParaBackend);
             
-            // Enviar al servidor
-            const response = await fetch(`/trabajadores/${this.trabajadorId}/vacaciones/asignar`, {
+            const url = AppRoutes.trabajadores(`${this.trabajadorId}/vacaciones/asignar`);
+            const response = await fetch(url, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -306,66 +429,94 @@ class AsignarVacacionModal {
             });
             
             const result = await response.json();
-            console.log('📥 Respuesta del servidor:', result);
+
+            // 👇 DEBUG: mostrar errores cuando no es 200 OK
+            if (!response.ok) {
+                console.error('❌ Error HTTP en asignación:', response.status, response.statusText);
+                console.error('📥 Respuesta del backend:', result);
+            }
             
             if (result.success) {
-                // Cerrar modal
                 $('#asignarVacacionesModal').modal('hide');
-                
-                // Notificar éxito al componente principal
                 this.notifySuccess(result);
                 
-                // Mostrar notificación
-                this.showNotification('success', 'Vacaciones asignadas correctamente');
+                // Mostrar información adicional si hay días saltados para el reintegro
+                let mensaje = 'Vacaciones asignadas correctamente';
+                if (result.info && result.info.dias_saltados_reintegro && result.info.dias_saltados_reintegro.length > 0) {
+                    mensaje += `. Fecha de reintegro: ${result.info.fecha_reintegro} (${result.info.dias_saltados_reintegro.length} días no laborables considerados)`;
+                }
                 
-                console.log('✅ Vacaciones asignadas exitosamente');
+                this.showNotification('success', mensaje);
             } else {
-                // Manejar errores de validación
                 this.handleFormErrors(result.errors);
                 this.showAlert(result.message || 'Error al asignar vacaciones', 'danger');
             }
+            
         } catch (error) {
-            console.error('❌ Error assigning vacation:', error);
-            this.showAlert('Error de conexión al asignar vacaciones', 'danger');
+            console.error('Error assigning vacation:', error);
+            this.showAlert('Error de conexión: ' + error.message, 'danger');
         } finally {
             this.setLoadingState(false);
         }
     }
 
-    validarFormulario(data) {
+    // ✅ VALIDACIÓN REFACTORIZADA
+
+    validarFormularioRefactorizado(data) {
         let isValid = true;
         
-        // Validar días solicitados
-        const dias = parseInt(data.dias_solicitados);
-        if (!dias || dias <= 0) {
-            this.showFieldError('dias_solicitados', 'Debe ingresar días válidos');
+        // Limpiar errores previos
+        $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
+        
+        // Año correspondiente
+        const año = parseInt(data.año_correspondiente);
+        if (!año || año < 2000 || año > 2050) {
+            this.showFieldError('año_correspondiente', 'Ingrese un año válido (2000-2050)');
             isValid = false;
         }
         
-        // Validar fechas con formato global
+        // Período vacacional
+        if (!data.periodo_vacacional || data.periodo_vacacional.trim().length < 3) {
+            this.showFieldError('periodo_vacacional', 'Ingrese un período vacacional válido');
+            isValid = false;
+        }
+        
+        // Días solicitados
+        const dias = parseInt(data.dias_solicitados);
+        if (!dias || dias <= 0 || dias > 365) {
+            this.showFieldError('dias_solicitados', 'Ingrese días válidos (1-365)');
+            isValid = false;
+        }
+        
+        // Días correspondientes
+        const diasCorrespondientes = parseInt(data.dias_correspondientes);
+        if (!diasCorrespondientes || diasCorrespondientes < 6 || diasCorrespondientes > 50) {
+            this.showFieldError('dias_correspondientes', 'Días correspondientes inválidos (6-50)');
+            isValid = false;
+        }
+        
+        // ✅ FECHAS - SOLO FORMATO, SIN RESTRICCIONES TEMPORALES
         if (!data.fecha_inicio || !window.FormatoGlobal.validarFormatoFecha(data.fecha_inicio)) {
-            this.showFieldError('fecha_inicio', 'La fecha de inicio es requerida y debe tener formato DD/MM/YYYY');
+            this.showFieldError('fecha_inicio', 'Fecha de inicio requerida (DD/MM/YYYY)');
             isValid = false;
         }
         
         if (!data.fecha_fin || !window.FormatoGlobal.validarFormatoFecha(data.fecha_fin)) {
-            this.showFieldError('fecha_fin', 'La fecha de fin es requerida y debe tener formato DD/MM/YYYY');
+            this.showFieldError('fecha_fin', 'Fecha de fin requerida (DD/MM/YYYY)');
             isValid = false;
         }
         
-        // Validar que las fechas sean válidas como objetos Date
-        if (data.fecha_inicio && window.FormatoGlobal.validarFormatoFecha(data.fecha_inicio)) {
+        // 🔧 VALIDACIÓN CORREGIDA: Permite vacaciones de 1 día
+        if (data.fecha_inicio && data.fecha_fin && 
+            window.FormatoGlobal.validarFormatoFecha(data.fecha_inicio) && 
+            window.FormatoGlobal.validarFormatoFecha(data.fecha_fin)) {
+            
             const fechaInicio = window.FormatoGlobal.convertirFechaADate(data.fecha_inicio);
-            if (!fechaInicio) {
-                this.showFieldError('fecha_inicio', 'Fecha de inicio inválida');
-                isValid = false;
-            }
-        }
-        
-        if (data.fecha_fin && window.FormatoGlobal.validarFormatoFecha(data.fecha_fin)) {
             const fechaFin = window.FormatoGlobal.convertirFechaADate(data.fecha_fin);
-            if (!fechaFin) {
-                this.showFieldError('fecha_fin', 'Fecha de fin inválida');
+            
+            // 🔧 CAMBIADO: Solo rechaza si fecha fin es ANTERIOR (< en lugar de <=)
+            if (fechaFin < fechaInicio) {
+                this.showFieldError('fecha_fin', 'La fecha de fin debe ser igual o posterior a la fecha de inicio');
                 isValid = false;
             }
         }
@@ -375,46 +526,33 @@ class AsignarVacacionModal {
 
     showFieldError(fieldId, message) {
         const $field = $(`#${fieldId}`);
-        const $feedback = $field.siblings('.invalid-feedback');
-        
         $field.addClass('is-invalid');
+        
+        let $feedback = $field.siblings('.invalid-feedback');
         if ($feedback.length === 0) {
-            $field.after(`<div class="invalid-feedback">${message}</div>`);
-        } else {
-            $feedback.text(message);
+            $feedback = $('<div class="invalid-feedback"></div>');
+            $field.after($feedback);
         }
+        $feedback.text(message);
     }
 
-    // =================================
-    // MANEJO DE ESTADOS Y ERRORES
-    // =================================
-
+    // ✅ UTILIDADES CONSOLIDADAS
     setLoadingState(loading) {
         const $btn = $('#btn-asignar-vacaciones');
-        
-        if (loading) {
-            $btn.find('.btn-text').hide();
-            $btn.find('.btn-loading').show();
-            $btn.prop('disabled', true);
-        } else {
-            $btn.find('.btn-loading').hide();
-            $btn.find('.btn-text').show();
-            $btn.prop('disabled', false);
-        }
+        $btn.find('.btn-text').toggle(!loading);
+        $btn.find('.btn-loading').toggle(loading);
+        $btn.prop('disabled', loading);
     }
 
     handleFormErrors(errors) {
-        // Limpiar errores previos
         $('#form-asignar-vacaciones .is-invalid').removeClass('is-invalid');
         
-        // Mostrar nuevos errores
         if (errors) {
             Object.keys(errors).forEach(field => {
                 const $field = $(`#${field}`);
                 const errorMessage = Array.isArray(errors[field]) ? errors[field][0] : errors[field];
                 
                 $field.addClass('is-invalid');
-                
                 let $feedback = $field.siblings('.invalid-feedback');
                 if ($feedback.length === 0) {
                     $feedback = $('<div class="invalid-feedback"></div>');
@@ -426,37 +564,33 @@ class AsignarVacacionModal {
     }
 
     showAlert(message, type) {
-        const $alert = $('#alert-vacaciones');
-        $alert.removeClass('alert-info alert-success alert-warning alert-danger')
-              .addClass(`alert-${type}`)
-              .find('#alert-mensaje').text(message);
-        $alert.show();
+        $('#alert-vacaciones')
+            .removeClass('alert-info alert-success alert-warning alert-danger')
+            .addClass(`alert-${type}`)
+            .find('#alert-mensaje').text(message);
+        $('#alert-vacaciones').show();
+        
+        // Auto-hide success and info alerts
+        if (['success', 'info'].includes(type)) {
+            setTimeout(() => $('#alert-vacaciones').fadeOut(), 3000);
+        }
     }
 
-    // =================================
-    // COMUNICACIÓN CON EL COMPONENTE PRINCIPAL
-    // =================================
-
     notifySuccess(result) {
-        // Disparar evento personalizado para que el componente principal recargue
-        const event = new CustomEvent('vacacionAsignada', {
+        document.dispatchEvent(new CustomEvent('vacacionAsignada', {
             detail: {
                 vacacion: result.vacacion,
                 trabajador_estatus: result.trabajador_estatus,
-                message: result.message
+                message: result.message,
+                info: result.info
             }
-        });
-        
-        document.dispatchEvent(event);
-        console.log('📡 Evento vacacionAsignada disparado');
+        }));
     }
 
     showNotification(type, message) {
-        // Usar el sistema de notificaciones del componente principal si existe
-        if (window.vacacionesApp && window.vacacionesApp.showNotification) {
+        if (window.vacacionesApp?.showNotification) {
             window.vacacionesApp.showNotification(type, message);
         } else {
-            // Fallback: crear toast propio
             this.createToast(type, message);
         }
     }
@@ -464,10 +598,10 @@ class AsignarVacacionModal {
     createToast(type, message) {
         const toastType = type === 'success' ? 'success' : 'danger';
         const toast = $(`
-            <div class="toast align-items-center text-bg-${toastType} border-0" role="alert" aria-live="assertive" aria-atomic="true">
+            <div class="toast align-items-center text-bg-${toastType} border-0" role="alert">
                 <div class="d-flex">
                     <div class="toast-body">${message}</div>
-                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast"></button>
                 </div>
             </div>
         `);
@@ -479,84 +613,35 @@ class AsignarVacacionModal {
         }
         
         container.append(toast);
-        const bsToast = new bootstrap.Toast(toast[0]);
-        bsToast.show();
-        
+        new bootstrap.Toast(toast[0]).show();
         toast.on('hidden.bs.toast', () => toast.remove());
     }
 
-    // =================================
-    // MÉTODOS PÚBLICOS
-    // =================================
-
-    /**
-     * Abrir el modal programáticamente
-     */
-    open() {
-        $('#asignarVacacionesModal').modal('show');
-    }
-
-    /**
-     * Cerrar el modal programáticamente
-     */
-    close() {
-        $('#asignarVacacionesModal').modal('hide');
-    }
-
-    /**
-     * Verificar si el modal está abierto
-     */
-    isOpen() {
-        return $('#asignarVacacionesModal').hasClass('show');
-    }
-
-    /**
-     * Obtener datos del formulario actual (en formato DD/MM/YYYY)
-     */
-    getFormData() {
-        const formData = new FormData($('#form-asignar-vacaciones')[0]);
-        return Object.fromEntries(formData.entries());
-    }
-
-    /**
-     * Obtener datos del formulario para backend (en formato YYYY-MM-DD)
-     */
-    getFormDataForBackend() {
-        const data = this.getFormData();
-        return {
-            ...data,
-            fecha_inicio: this.convertirDDMMYYYYaISO(data.fecha_inicio),
-            fecha_fin: this.convertirDDMMYYYYaISO(data.fecha_fin)
-        };
-    }
-
-    /**
-     * Resetear el formulario externamente
-     */
-    reset() {
-        this.resetForm();
-    }
+    // ✅ MÉTODOS PÚBLICOS
+    open() { $('#asignarVacacionesModal').modal('show'); }
+    close() { $('#asignarVacacionesModal').modal('hide'); }
+    isOpen() { return $('#asignarVacacionesModal').hasClass('show'); }
+    reset() { this.resetForm(); }
 }
 
-// =================================
-// AUTO-INICIALIZACIÓN
-// =================================
-
-// Inicializar automáticamente cuando el DOM esté listo
+// ✅ INICIALIZACIÓN REFACTORIZADA
 $(document).ready(function() {
-    console.log('🚀 Iniciando modal de asignar vacaciones con formato global...');
+    console.log('🚀 Iniciando modal de vacaciones REFACTORIZADO con fecha de reintegro...');
+    
+    if (typeof AppRoutes === 'undefined') {
+        console.error('❌ AppRoutes no disponible');
+        return;
+    }
     
     const trabajadorId = $('[data-trabajador-id]').data('trabajador-id');
-    
     if (trabajadorId) {
-        // Verificar que el formato global esté disponible
         if (window.FormatoGlobal) {
             window.asignarVacacionModal = new AsignarVacacionModal(trabajadorId);
-            console.log(`✅ Modal con formato global iniciado para trabajador: ${trabajadorId}`);
+            console.log(`✅ Modal REFACTORIZADO iniciado para trabajador: ${trabajadorId}`);
         } else {
-            console.error('❌ FormatoGlobal no está disponible. Asegúrate de incluir formato-global.js');
+            console.error('❌ FormatoGlobal no disponible');
         }
     } else {
-        console.error('❌ No se pudo obtener el ID del trabajador para el modal');
+        console.error('❌ ID trabajador no encontrado');
     }
 });

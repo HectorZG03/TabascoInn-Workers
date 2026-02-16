@@ -9,6 +9,7 @@ use App\Models\FichaTecnica;
 use App\Models\ContactoEmergencia;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Carbon\Carbon;
 
 class TrabajadorController extends Controller
@@ -70,41 +71,83 @@ class TrabajadorController extends Controller
 
     public function store(Request $request)
     {
+        // ✅ VALIDACIONES ACTUALIZADAS PARA CONTRATOS DETERMINADO/INDETERMINADO + NUEVOS CAMPOS
         $validated = $request->validate([
+            // Datos personales
             'nombre_trabajador' => 'required|string|max:50',
             'ape_pat' => 'required|string|max:50',
             'ape_mat' => 'nullable|string|max:50',
             'fecha_nacimiento' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', fn($attr, $val, $fail) => $this->validarFechaNacimiento($val, $fail)],
+            'estado_civil' => 'required|in:' . implode(',', array_keys(\App\Models\Trabajador::ESTADOS_CIVILES)),
             'lugar_nacimiento' => 'nullable|string|max:100',
             'estado_actual' => 'nullable|string|max:50',
             'ciudad_actual' => 'nullable|string|max:50',
+            // ✅ NUEVO: Código postal
+            'codigo_postal' => 'required|string|max:5|regex:/^\d{5}$/',
+            
+            // Identificadores
             'curp' => 'required|string|size:18|unique:trabajadores,curp',
             'rfc' => 'required|string|size:13|unique:trabajadores,rfc',
             'no_nss' => 'nullable|string|max:11',
+            
+            // Contacto
             'telefono' => 'required|string|size:10',
             'correo' => 'nullable|email|max:55|unique:trabajadores,correo',
             'direccion' => 'nullable|string|max:255',
             'fecha_ingreso' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', fn($attr, $val, $fail) => $this->validarFechaIngreso($val, $fail)],
+            
+            // Datos laborales
             'id_area' => 'required|exists:area,id_area',
             'id_categoria' => 'required|exists:categoria,id_categoria',
             'sueldo_diarios' => 'required|numeric|min:0.01|max:99999.99',
             'formacion' => 'nullable|string|max:50',
             'grado_estudios' => 'nullable|string|max:50',
+            
+            // Horarios
             'hora_entrada' => ['required', 'string', 'regex:/^([01]\d|2[0-3]):([0-5]\d)$/'],
             'hora_salida' => ['required', 'string', 'regex:/^([01]\d|2[0-3]):([0-5]\d)$/', fn($attr, $val, $fail) => $this->validarHorario($val, $request->hora_entrada, $fail)],
+            // ✅ NUEVO: Horario de descanso
+            'horario_descanso' => 'required|string|max:100',
             'dias_laborables' => 'required|array|min:1|max:7',
             'dias_laborables.*' => 'string|in:' . implode(',', array_keys(FichaTecnica::DIAS_SEMANA)),
+            
+            // Beneficiario
             'beneficiario_nombre' => 'nullable|string|max:150',
             'beneficiario_parentesco' => 'nullable|string|in:' . implode(',', array_keys(FichaTecnica::PARENTESCOS_BENEFICIARIO)),
+            
+            // Estado del trabajador
             'estatus' => 'required|in:activo,prueba',
-            'fecha_inicio_contrato' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', fn($attr, $val, $fail) => $this->validarFechaInicioContrato($val, $fail)],
-            'fecha_fin_contrato' => ['required', 'string', 'regex:/^\d{2}\/\d{2}\/\d{4}$/', fn($attr, $val, $fail) => $this->validarFechaFinContrato($val, $request->fecha_inicio_contrato, $fail)],
+            
+            // Contratos
+            'tipo_contrato' => 'required|in:determinado,indeterminado',
+            'fecha_inicio_contrato' => [
+                'required', 
+                'string', 
+                'regex:/^\d{2}\/\d{2}\/\d{4}$/', 
+                fn($attr, $val, $fail) => $this->validarFechaInicioContrato($val, $fail)
+            ],
+            'fecha_fin_contrato' => [
+                fn($attr, $val, $fail) => $this->validarFechaFinCondicional($val, $request->tipo_contrato, $request->fecha_inicio_contrato, $fail)
+            ],
+            
+            // Contacto de emergencia (opcional)
             'contacto_nombre_completo' => 'nullable|string|max:150',
             'contacto_parentesco' => 'nullable|string|max:50',
             'contacto_telefono_principal' => 'nullable|string|size:10',
             'contacto_telefono_secundario' => 'nullable|string|size:10',
             'contacto_direccion' => 'nullable|string|max:500',
+        ], [
+            // ✅ NUEVOS MENSAJES DE VALIDACIÓN
+            'estado_civil.required' => 'El estado civil es obligatorio',
+            'estado_civil.in' => 'El estado civil seleccionado no es válido',
+            'estado_actual.max' => 'El estado no puede exceder 50 caracteres',
+            'codigo_postal.required' => 'El código postal es obligatorio',
+            'codigo_postal.regex' => 'El código postal debe tener exactamente 5 dígitos',
+            'codigo_postal.max' => 'El código postal no puede exceder 5 caracteres',
+            'horario_descanso.required' => 'El horario de descanso es obligatorio',
+            'horario_descanso.max' => 'El horario de descanso no puede exceder 100 caracteres',
         ]);
+
 
         // Validar relación área-categoría
         if (!Categoria::where('id_categoria', $validated['id_categoria'])->where('id_area', $validated['id_area'])->exists()) {
@@ -116,15 +159,22 @@ class TrabajadorController extends Controller
             return back()->withErrors(['dias_laborables' => 'No puede seleccionar el mismo día más de una vez'])->withInput();
         }
 
-        // Convertir fechas
+        // ✅ CONVERSIÓN DE FECHAS ACTUALIZADA
         $fechaNacimiento = $this->convertirFechaACarbon($validated['fecha_nacimiento']);
         $fechaIngreso = $this->convertirFechaACarbon($validated['fecha_ingreso']);
         $fechaInicioContrato = $this->convertirFechaACarbon($validated['fecha_inicio_contrato']);
-        $fechaFinContrato = $this->convertirFechaACarbon($validated['fecha_fin_contrato']);
 
-        // Calcular tipo duración contrato
-        $diasTotales = $fechaInicioContrato->diffInDays($fechaFinContrato);
-        $tipoDuracion = $diasTotales > 30 ? 'meses' : 'dias';
+        // ✅ NUEVA LÓGICA: Manejar fecha fin según tipo de contrato
+        $fechaFinContrato = null;
+        $tipoDuracion = null;
+
+        if ($validated['tipo_contrato'] === 'determinado') {
+            $fechaFinContrato = $this->convertirFechaACarbon($validated['fecha_fin_contrato']);
+            
+            // Calcular tipo duración solo para contratos determinados
+            $diasTotales = $fechaInicioContrato->diffInDays($fechaFinContrato);
+            $tipoDuracion = $diasTotales > 30 ? 'meses' : 'dias';
+        }
 
         DB::beginTransaction();
         try {
@@ -133,9 +183,11 @@ class TrabajadorController extends Controller
                 'ape_pat' => $validated['ape_pat'],
                 'ape_mat' => $validated['ape_mat'],
                 'fecha_nacimiento' => $fechaNacimiento->format('Y-m-d'),
+                'estado_civil' => $validated['estado_civil'], 
                 'lugar_nacimiento' => $validated['lugar_nacimiento'],
                 'estado_actual' => $validated['estado_actual'],
                 'ciudad_actual' => $validated['ciudad_actual'],
+                'codigo_postal' => $validated['codigo_postal'],
                 'curp' => strtoupper($validated['curp']),
                 'rfc' => strtoupper($validated['rfc']),
                 'no_nss' => $validated['no_nss'],
@@ -147,7 +199,7 @@ class TrabajadorController extends Controller
                 'estatus' => $validated['estatus'],
             ]);
 
-            // Horarios
+            // ✅ CÁLCULOS DE HORARIOS (sin cambios)
             $entrada = Carbon::parse($validated['hora_entrada']);
             $salida = Carbon::parse($validated['hora_salida']);
             if ($salida->lte($entrada)) $salida->addDay();
@@ -166,6 +218,7 @@ class TrabajadorController extends Controller
                 $turnoCalculado = 'nocturno';
             }
 
+            // ✅ CREAR FICHA TÉCNICA (INCLUIR HORARIO DE DESCANSO)
             FichaTecnica::create([
                 'id_trabajador' => $trabajador->id_trabajador,
                 'id_categoria' => $validated['id_categoria'],
@@ -174,6 +227,8 @@ class TrabajadorController extends Controller
                 'grado_estudios' => $validated['grado_estudios'],
                 'hora_entrada' => $validated['hora_entrada'],
                 'hora_salida' => $validated['hora_salida'],
+                // ✅ NUEVO: Incluir horario de descanso
+                'horario_descanso' => $validated['horario_descanso'],
                 'horas_trabajo' => $horasCalculadas,
                 'turno' => $turnoCalculado,
                 'dias_laborables' => $validated['dias_laborables'],
@@ -183,6 +238,7 @@ class TrabajadorController extends Controller
                 'beneficiario_parentesco' => $validated['beneficiario_parentesco'],
             ]);
 
+            // ✅ CREAR CONTACTO DE EMERGENCIA (sin cambios)
             if ($request->filled('contacto_nombre_completo')) {
                 ContactoEmergencia::create([
                     'id_trabajador' => $trabajador->id_trabajador,
@@ -194,24 +250,109 @@ class TrabajadorController extends Controller
                 ]);
             }
 
-            // Generar contrato (dejo igual)
+            // ✅ GENERAR CONTRATO (sin cambios)
             $contratoController = new ContratoController();
-            $contratoController->generarDefinitivo($trabajador, [
+            
+            $datosContrato = [
+                'tipo_contrato' => $validated['tipo_contrato'],
                 'fecha_inicio_contrato' => $fechaInicioContrato->format('Y-m-d'),
-                'fecha_fin_contrato' => $fechaFinContrato->format('Y-m-d'),
-                'tipo_duracion' => $tipoDuracion,
-            ]);
-            $contratoController->limpiarArchivosTemporales();
+                'sueldo_diarios' => $validated['sueldo_diarios'],
+            ];
+
+            if ($validated['tipo_contrato'] === 'determinado') {
+                $datosContrato['fecha_fin_contrato'] = $fechaFinContrato->format('Y-m-d');
+                $datosContrato['tipo_duracion'] = $tipoDuracion;
+            }
+
+            $contratoController->generarDefinitivo($trabajador, $datosContrato);
 
             DB::commit();
 
-            return redirect()->route('trabajadores.index')->with('success', 'Trabajador creado exitosamente.');
+            // ✅ MENSAJE DE ÉXITO ACTUALIZADO
+            $mensaje = "Trabajador creado exitosamente: {$trabajador->nombre_completo}. ";
+            
+            if ($validated['tipo_contrato'] === 'determinado') {
+                $mensaje .= "Contrato determinado del {$fechaInicioContrato->format('d/m/Y')} al {$fechaFinContrato->format('d/m/Y')}.";
+            } else {
+                $mensaje .= "Contrato indeterminado a partir del {$fechaInicioContrato->format('d/m/Y')}.";
+            }
+
+            return redirect()->route('trabajadores.index')->with('success', $mensaje);
 
         } catch (\Exception $e) {
             DB::rollback();
+            
+            Log::error('Error al crear trabajador con contrato', [
+                'error' => $e->getMessage(),
+                'tipo_contrato' => $validated['tipo_contrato'] ?? 'No especificado',
+                'trabajador_datos' => [
+                    'nombre' => $validated['nombre_trabajador'] ?? 'No especificado',
+                    'curp' => $validated['curp'] ?? 'No especificado'
+                ]
+            ]);
+            
             return back()->withErrors(['error' => 'Error al crear el trabajador: ' . $e->getMessage()])->withInput();
         }
     }
+
+    // ========================================
+    // ✅ MÉTODOS DE VALIDACIÓN ACTUALIZADOS
+    // ========================================
+
+    /**
+     * ✅ NUEVA: Validar fecha fin condicional según tipo de contrato
+     */
+    private function validarFechaFinCondicional($fechaFin, $tipoContrato, $fechaInicioStr, $fail)
+    {
+        if ($tipoContrato === 'indeterminado') {
+            // Para contratos indeterminados, no debe haber fecha fin
+            if (!empty($fechaFin)) {
+                $fail('Los contratos indeterminados no deben tener fecha de fin.');
+            }
+            return;
+        }
+        
+        if ($tipoContrato === 'determinado') {
+            // Para contratos determinados, fecha fin es obligatoria
+            if (empty($fechaFin)) {
+                $fail('Los contratos determinados requieren fecha de fin.');
+                return;
+            }
+            
+            // Validar formato
+            if (!$this->validarFechaPersonalizada($fechaFin)) {
+                $fail('La fecha de fin del contrato no es válida.');
+                return;
+            }
+            
+            // Validar que sea posterior al inicio
+            if ($fechaInicioStr && $this->validarFechaPersonalizada($fechaInicioStr)) {
+                $fechaInicio = $this->convertirFechaACarbon($fechaInicioStr);
+                $fechaFinCarbon = $this->convertirFechaACarbon($fechaFin);
+                
+                if ($fechaInicio && $fechaFinCarbon && $fechaFinCarbon->lte($fechaInicio)) {
+                    $fail('La fecha de fin debe ser posterior a la fecha de inicio.');
+                }
+            }
+        }
+    }
+
+    /**
+     * ✅ ACTUALIZADA: Validar fecha de inicio del contrato (permite fechas pasadas)
+     */
+    private function validarFechaInicioContrato($fecha, $fail)
+    {
+        if (!$this->validarFechaPersonalizada($fecha)) {
+            return $fail('La fecha de inicio del contrato no es válida.');
+        }
+        
+        // ✅ PERMITIR FECHAS PASADAS: Solo validar que sea una fecha válida
+        // No validamos que sea futura porque puede ser un contrato que ya inició
+    }
+
+    // ========================================
+    // ✅ MÉTODOS DE VALIDACIÓN EXISTENTES (sin cambios)
+    // ========================================
 
     private function validarFechaNacimiento($fecha, $fail)
     {
@@ -229,6 +370,7 @@ class TrabajadorController extends Controller
         if (!$this->validarFechaPersonalizada($fecha)) {
             return $fail('La fecha de ingreso no es válida.');
         }
+        // ✅ PERMITIR FECHAS PASADAS: Solo validar fechas futuras si es necesario
         $fechaIngreso = $this->convertirFechaACarbon($fecha);
         if ($fechaIngreso && $fechaIngreso->gt(now())) {
             $fail('La fecha de ingreso no puede ser futura.');
@@ -246,31 +388,6 @@ class TrabajadorController extends Controller
             $horas = $entrada->diffInMinutes($salida) / 60;
             if ($horas < 1 || $horas > 16) {
                 $fail('El horario debe estar entre 1 y 16 horas. Calculado: ' . round($horas, 2) . ' horas.');
-            }
-        }
-    }
-
-    private function validarFechaInicioContrato($fecha, $fail)
-    {
-        if (!$this->validarFechaPersonalizada($fecha)) {
-            return $fail('La fecha de inicio del contrato no es válida.');
-        }
-        $fechaInicio = $this->convertirFechaACarbon($fecha);
-        if ($fechaInicio && $fechaInicio->lt(now()->startOfDay())) {
-            $fail('La fecha de inicio del contrato no puede ser anterior a hoy.');
-        }
-    }
-
-    private function validarFechaFinContrato($fechaFin, $fechaInicioStr, $fail)
-    {
-        if (!$this->validarFechaPersonalizada($fechaFin)) {
-            return $fail('La fecha de fin del contrato no es válida.');
-        }
-        if ($fechaInicioStr) {
-            $fechaInicio = $this->convertirFechaACarbon($fechaInicioStr);
-            $fechaFin = $this->convertirFechaACarbon($fechaFin);
-            if ($fechaInicio && $fechaFin && $fechaFin->lte($fechaInicio)) {
-                $fail('La fecha de fin debe ser posterior a la fecha de inicio.');
             }
         }
     }

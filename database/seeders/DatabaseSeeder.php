@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Models\PlantillaContrato;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -13,46 +14,45 @@ class DatabaseSeeder extends Seeder
      */
     public function run(): void
     {
-        // ✅ PRIMERO: Crear Áreas y Categorías
+        // ✅ PRIMERO: Crear estructura real del Hotel Tabasco Inn (EN ORDEN CORRECTO)
         $this->call([
-            AreaSeeder::class,
-            CategoriaSeeder::class,
+            DepartamentoSeeder::class,      // 1️⃣ Departamentos reales
+            AreaSeeder::class,              // 2️⃣ Áreas reales (necesitan departamentos)
+            CategoriaSeeder::class,         // 3️⃣ Categorías reales (necesitan áreas)
+            VariablesContratoSeeder::class, // 4️⃣ Variables de contrato corregidas
         ]);
 
         // ✅ DESPUÉS: Crear Usuarios de prueba
         // Usuario de Recursos Humanos
         User::create([
-            'nombre' => 'Recursos Humanos',
-            'email' => 'rh@hotel.com',
+            'nombre' => 'Cecilia del Carmen Velazquez del Valle',
+            'email' => 'recursos_humanos@tabascoinn.com',
             'password' => Hash::make('password123'),
             'tipo' => 'Recursos_Humanos',
         ]);
 
-        // Usuario de Gerencia
-        User::create([
-            'nombre' => 'Gerencia',
-            'email' => 'gerencia@hotel.com',
-            'password' => Hash::make('password123'),
-            'tipo' => 'Gerencia',
-        ]);
-
-        // ✅ OPCIONAL: Usuario Administrador adicional
-        User::create([
-            'nombre' => 'Administrador',
-            'email' => 'admin@hotel.com',
-            'password' => Hash::make('password123'),
-            'tipo' => 'Gerencia', // O crear un tipo 'Admin' si lo necesitas
-        ]);
-
-        // ✅ Mostrar información en consola
+        // ✅ INFORMACIÓN ACTUALIZADA CON DATOS REALES DEL HOTEL TABASCO INN
         $this->command->info('🏨 Datos del Hotel TABASCO INN creados exitosamente:');
-        $this->command->info('📍 12 Áreas creadas');
-        $this->command->info('👥 47 Categorías de trabajo creadas');
+        $this->command->info('🏢 7 Departamentos reales creados');
+        $this->command->info('📍 14 Áreas operativas creadas');
+        $this->command->info('👥 45 Categorías de trabajo reales creadas');
         $this->command->info('🔑 3 Usuarios de prueba creados');
         $this->command->line('');
-        $this->command->info('Usuarios de prueba:');
-        $this->command->line('• RH: rh@hotel.com / password123');
-        $this->command->line('• Gerencia: gerencia@hotel.com / password123');
-        $this->command->line('• Admin: admin@hotel.com / password123');
+        
+        // ✅ ESTRUCTURA REAL DEL HOTEL TABASCO INN
+        $this->command->info('🏢 Estructura Real del Hotel:');
+        $this->command->line('• ALIMENTOS Y BEBIDAS → Restaurante, Cocina, Índigo, A&B General');
+        $this->command->line('• DIVISIÓN CUARTOS → Recepción, Rest-Recepción, Áreas Públicas, Hospedaje, Lavandería');
+        $this->command->line('• MANTENIMIENTO → Mantenimiento General');
+        $this->command->line('• VENTAS → Ventas y Eventos');
+        $this->command->line('• SERVICIOS → Seguridad');
+        $this->command->line('• COMPRAS → Almacén');
+        $this->command->line('• ADMINISTRATIVO → Gerencia Administrativa');
+        $this->command->line('');
+        
+        $this->command->info('');
+        $this->command->info('✅ Sistema inicializado con estructura REAL del Hotel Tabasco Inn:');
+        $this->command->info('   Departamentos → Áreas → Categorías → Variables de Contrato');
+        $this->command->info('🎯 Listo para recibir trabajadores reales del hotel');
     }
 }

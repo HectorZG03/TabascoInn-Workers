@@ -32,6 +32,7 @@ class Area extends Model
      * Campos que se pueden asignar masivamente
      */
     protected $fillable = [
+        'id_departamento', // ✅ Nueva relación
         'nombre_area',
     ];
 
@@ -44,6 +45,14 @@ class Area extends Model
      * Campos que deben ser casteados a tipos nativos
      */
     protected $casts = [];
+
+    /**
+     * ✅ NUEVA: Relación con departamento
+     */
+    public function departamento()
+    {
+        return $this->belongsTo(Departamento::class, 'id_departamento', 'id_departamento');
+    }
 
     /**
      * Relación: Un área puede tener muchas categorías
@@ -68,7 +77,15 @@ class Area extends Model
      */
     public function contarTrabajadoresActivos()
     {
-        return $this->trabajadores()->where('estatus', 1)->count();
+        return $this->trabajadores()->where('estatus', 'activo')->count();
+    }
+
+    /**
+     * ✅ NUEVO: Obtener nombre completo (departamento - área)
+     */
+    public function getNombreCompletoAttribute()
+    {
+        return $this->departamento->nombre_departamento . ' - ' . $this->nombre_area;
     }
 
     /**
@@ -77,5 +94,13 @@ class Area extends Model
     public function scopeActivas($query)
     {
         return $query->whereNotNull('nombre_area');
+    }
+
+    /**
+     * ✅ NUEVO: Scope por departamento
+     */
+    public function scopePorDepartamento($query, $idDepartamento)
+    {
+        return $query->where('id_departamento', $idDepartamento);
     }
 }

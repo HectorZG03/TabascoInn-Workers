@@ -3,31 +3,6 @@
 @section('title', 'Perfil de ' . $trabajador->nombre_completo . ' - Hotel')
 
 @section('content')
-<style>
-    /* Pestañas nav-pills con texto e iconos negros */
-    .nav-pills .nav-link {
-        color: black; /* texto negro */
-        font-weight: 600;
-        border-radius: 0.5rem;
-        transition: background-color 0.3s ease, color 0.3s ease;
-    }
-    .nav-pills .nav-link:hover {
-        background-color: #e7f1ff;
-        color: black;
-    }
-    .nav-pills .nav-link.active {
-        background-color: #0d6efd; /* azul bootstrap */
-        color: black; /* texto negro */
-        box-shadow: 0 0 8px rgb(13 110 253 / 0.5);
-    }
-    /* Iconos en pestañas (negros) */
-    .nav-pills .nav-link i {
-        margin-right: 6px;
-        font-size: 1.1rem;
-        vertical-align: middle;
-        color: inherit; /* hereda color del texto */
-    }
-</style>
 
 <div class="container-fluid" data-trabajador-id="{{ $trabajador->id_trabajador }}">
     <!-- Header del Perfil -->
@@ -43,11 +18,12 @@
                         @csrf
                         @method('PUT')
                         <select class="form-select form-select-sm" name="estatus" id="estatus-select">
-                            @foreach(App\Models\Trabajador::TODOS_ESTADOS as $key => $estado)
-                                <option value="{{ $key }}" {{ $trabajador->estatus == $key ? 'selected' : '' }}>
-                                    {{ $estado }}
-                                </option>
-                            @endforeach
+                            <option value="prueba" {{ $trabajador->estatus == 'prueba' ? 'selected' : '' }}>
+                                Período de Prueba
+                            </option>
+                            <option value="activo" {{ $trabajador->estatus == 'activo' ? 'selected' : '' }}>
+                                Activo
+                            </option>
                         </select>
                         <button type="submit" class="btn btn-sm btn-primary">
                             <i class="bi bi-check-lg"></i>
@@ -166,6 +142,15 @@
                         <button class="nav-link" id="nav-documentos-tab" data-bs-toggle="tab" data-bs-target="#nav-documentos" type="button" role="tab">
                             <i class="bi bi-files"></i> Documentos
                         </button>
+                        
+                        {{-- ✅ NUEVA PESTAÑA DE HISTORIAL --}}
+                        <button class="nav-link" id="nav-historial-tab" data-bs-toggle="tab" data-bs-target="#nav-historial" type="button" role="tab">
+                            <i class="bi bi-clock-history"></i> Historial
+                            @if(isset($historialCompleto) && $historialCompleto->count() > 0)
+                                <span class="badge bg-info text-dark ms-1">{{ $historialCompleto->count() }}</span>
+                            @endif
+                        </button>
+                        
                         <button class="nav-link" id="nav-horas-tab" data-bs-toggle="tab" data-bs-target="#nav-horas" type="button" role="tab">
                             <i class="bi bi-clock"></i> Horas Extra 
                             @if($trabajador->saldo_horas_extra > 0)
@@ -175,15 +160,18 @@
                         <button class="nav-link" id="nav-contratos-tab" data-bs-toggle="tab" data-bs-target="#nav-contratos" type="button" role="tab">
                             <i class="bi bi-file-earmark-text"></i> Contratos
                         </button>
-                        <button class="nav-link" id="nav-permisos-tab" data-bs-toggle="tab" data-bs-target="#nav-permisos" type="button" role="tab">
-                            <i class="bi bi-calendar-check"></i> Permisos
-                        </button>
-                        <button class="nav-link" id="nav-bajas-tab" data-bs-toggle="tab" data-bs-target="#nav-bajas" type="button" role="tab">
+                        
+                        {{-- ENLACES DIRECTOS (sin cambios) --}}
+                        <a href="{{ route('trabajadores.perfil.permisos.historial', $trabajador) }}" class="nav-link">
+                            <i class="bi bi-calendar-check"></i>Permisos
+                        </a>
+                        
+                        <a href="{{ route('trabajadores.perfil.bajas.historial', $trabajador) }}" class="nav-link">
                             <i class="bi bi-person-x"></i> Historial de Bajas
                             @if($trabajador->despidosActivos() > 0)
                                 <span class="badge bg-danger ms-1">{{ $trabajador->despidosActivos() }}</span>
                             @endif
-                        </button>
+                        </a>
                     </div>
                 </nav>
                 <div>
@@ -198,56 +186,39 @@
     <!-- CONTENIDO DE LAS PESTAÑAS (SIN vacaciones) -->
     <div class="row">
         <div class="col-12">
-            <div class="tab-content" id="nav-tabContent">
-                <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
-                    @include('trabajadores.secciones_perfil.datos_personales')
-                </div>
+        <div class="tab-content" id="nav-tabContent">
+            <div class="tab-pane fade show active" id="nav-datos" role="tabpanel" aria-labelledby="nav-datos-tab">
+                @include('trabajadores.secciones_perfil.datos_personales')
+            </div>
 
-                <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
-                    @include('trabajadores.secciones_perfil.datos_laborales')
-                </div>
+            <div class="tab-pane fade" id="nav-laborales" role="tabpanel" aria-labelledby="nav-laborales-tab">
+                @include('trabajadores.secciones_perfil.datos_laborales')
+            </div>
 
-                <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
-                    @include('trabajadores.secciones_perfil.documentos')
-                </div>
+            <div class="tab-pane fade" id="nav-documentos" role="tabpanel" aria-labelledby="nav-documentos-tab">
+                @include('trabajadores.secciones_perfil.documentos')
+            </div>
 
-                <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
-                    @include('trabajadores.secciones_perfil.horas_extra')
-                </div>
+            {{-- ✅ NUEVA PESTAÑA DE HISTORIAL --}}
+            <div class="tab-pane fade" id="nav-historial" role="tabpanel" aria-labelledby="nav-historial-tab">
+                @include('trabajadores.secciones_perfil.historial_cambios')
+            </div>
 
-                <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
-                    <div id="contratos-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando contratos...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando información de contratos...</p>
+            <div class="tab-pane fade" id="nav-horas" role="tabpanel" aria-labelledby="nav-horas-tab">
+                @include('trabajadores.secciones_perfil.horas_extra')
+            </div>
+
+            <div class="tab-pane fade" id="nav-contratos" role="tabpanel" aria-labelledby="nav-contratos-tab">
+                <div id="contratos-content">
+                    <div class="text-center py-5">
+                        <div class="spinner-border text-primary" role="status">
+                            <span class="visually-hidden">Cargando contratos...</span>
                         </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="nav-permisos" role="tabpanel" aria-labelledby="nav-permisos-tab">
-                    <div id="permisos-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando permisos...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando historial de permisos...</p>
-                        </div>
-                    </div>
-                </div>
-
-                <div class="tab-pane fade" id="nav-bajas" role="tabpanel" aria-labelledby="nav-bajas-tab">
-                    <div id="bajas-content">
-                        <div class="text-center py-5">
-                            <div class="spinner-border text-primary" role="status">
-                                <span class="visually-hidden">Cargando historial de bajas...</span>
-                            </div>
-                            <p class="mt-3 text-muted">Cargando historial de bajas...</p>
-                        </div>
+                        <p class="mt-3 text-muted">Cargando información de contratos...</p>
                     </div>
                 </div>
             </div>
+        </div>
         </div>
     </div>
 
@@ -266,29 +237,130 @@
     'saldoActual' => $trabajador->saldo_horas_extra
 ])
 
-{{-- Scripts del perfil trabajador en orden de dependencias (SIN vacaciones.js) --}}
-<script src="{{ asset('js/formato-global.js')}}"></script>
-<script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/contratos.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/dias_laborables.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/validaciones_campos.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/navegacion.js') }}"></script>
-<script src="{{ asset('js/perfil_trabajador/notificaciones.js') }}"></script>
+{{-- Sección al final del archivo perfil_trabajador.blade.php --}}
+{{-- ✅ SCRIPTS ACTUALIZADOS CON HORAS EXTRA --}}
 
-{{-- Script adicional si existe (mantener compatibilidad) --}}
-@if(file_exists(public_path('js/perfil_trabajador/historiales_perfil.js')))
-<script src="{{ asset('js/perfil_trabajador/historiales_perfil.js') }}"></script>
-@endif
+{{-- 1. PRIMERO: Script de rutas dinámicas globales --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
 
-{{-- ✅ VARIABLE GLOBAL PARA EL USUARIO ACTUAL --}}
+{{-- 2. SEGUNDO: Variables globales de configuración --}}
 <script>
+// ✅ VARIABLES GLOBALES PARA LA APLICACIÓN
+window.APP_DEBUG = @json(config('app.debug'));
 window.currentUser = @json([
     'id' => Auth::id(),
     'nombre' => Auth::user()->nombre,
     'tipo' => Auth::user()->tipo
 ]);
+
+// ✅ VERIFICAR QUE AppRoutes ESTÉ DISPONIBLE
+if (typeof AppRoutes === 'undefined') {
+    console.error('❌ CRÍTICO: app-routes.js no se cargó correctamente');
+} else {
+    console.log('✅ AppRoutes disponible, base URL:', AppRoutes.getBaseUrl());
+}
 </script>
+
+{{-- 3. TERCERO: Scripts del perfil trabajador en orden de dependencias --}}
+<script src="{{ asset('js/formato-global.js')}}"></script>
+<script src="{{ asset('js/horas_extra.js')}}"></script>
+<script src="{{ asset('js/perfil_trabajador/perfil_scripts.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/areas_categorias.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/documentos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/contratos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/dias_laborales.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/validaciones_campos.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/navegacion.js') }}"></script>
+<script src="{{ asset('js/perfil_trabajador/notificaciones.js') }}"></script>
+
+{{-- ✅ 4. CUARTO: Script de inicialización final --}}
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // ✅ VERIFICACIÓN FINAL DE CARGA
+    setTimeout(() => {
+        if (typeof AppRoutes !== 'undefined' && typeof window.PERFIL_CONFIG !== 'undefined') {
+            console.log('🎉 Perfil del trabajador completamente inicializado');
+            
+            // ✅ VERIFICAR QUE LOS SISTEMAS DE FORMATO ESTÉN FUNCIONANDO
+            if (typeof window.FormatoGlobal !== 'undefined') {
+                console.log('✅ Sistema global de formato activo');
+            }
+            
+            if (typeof window.HorasExtraJS !== 'undefined') {
+                console.log('✅ Sistema de horas extra activo');
+            }
+            
+            // ✅ DEBUG EN DESARROLLO
+            if (window.APP_DEBUG && typeof window.debugRutas === 'function') {
+                window.debugRutas();
+            }
+        } else {
+            console.error('❌ Error en la inicialización del perfil');
+        }
+    }, 500);
+    
+    // ✅ CONFIGURAR VALIDACIÓN ANTES DEL ENVÍO DE FORMULARIOS
+    document.querySelectorAll('form[action*="horas-extra"]').forEach(form => {
+        form.addEventListener('submit', function(e) {
+            const isAsignar = this.action.includes('asignar');
+            const isRestar = this.action.includes('restar');
+            
+            if (typeof window.validarHorasExtra !== 'undefined') {
+                const trabajadorId = window.PerfilUtils ? window.PerfilUtils.getTrabajadorId() : null;
+                
+                if (trabajadorId) {
+                    let esValido = true;
+                    
+                    if (isAsignar) {
+                        esValido = window.validarHorasExtra.asignar(trabajadorId);
+                    } else if (isRestar) {
+                        esValido = window.validarHorasExtra.compensar(trabajadorId);
+                    }
+                    
+                    if (!esValido) {
+                        e.preventDefault();
+                        console.log('❌ Formulario no válido, envío cancelado');
+                        
+                        // Mostrar mensaje de error
+                        const alertDiv = document.createElement('div');
+                        alertDiv.className = 'alert alert-danger alert-dismissible fade show mt-3';
+                        alertDiv.innerHTML = `
+                            <strong>Error:</strong> Por favor, corrija los errores en el formulario antes de continuar.
+                            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                        `;
+                        
+                        const modalBody = this.closest('.modal-body');
+                        if (modalBody) {
+                            modalBody.insertBefore(alertDiv, modalBody.firstChild);
+                        }
+                        
+                        return false;
+                    }
+                }
+            }
+        });
+    });
+    
+    // ✅ CONFIGURAR EVENTOS PARA ABRIR MODALES
+    document.querySelectorAll('[data-bs-target*="modalAsignarHoras"], [data-bs-target*="modalRestarHoras"]').forEach(button => {
+        button.addEventListener('click', function() {
+            // Limpiar validaciones previas cuando se abre el modal
+            setTimeout(() => {
+                const modal = document.querySelector(this.getAttribute('data-bs-target'));
+                if (modal) {
+                    const campos = modal.querySelectorAll('.is-valid, .is-invalid');
+                    campos.forEach(campo => {
+                        campo.classList.remove('is-valid', 'is-invalid');
+                    });
+                    
+                    const feedbacks = modal.querySelectorAll('.invalid-feedback');
+                    feedbacks.forEach(feedback => feedback.remove());
+                }
+            }, 100);
+        });
+    });
+});
+</script>
+
 
 @endsection

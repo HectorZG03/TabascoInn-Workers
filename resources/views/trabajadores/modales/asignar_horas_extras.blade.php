@@ -1,4 +1,4 @@
-{{-- ✅ MODAL PARA ASIGNAR HORAS EXTRA --}}
+{{-- ✅ MODAL PARA ASIGNAR HORAS EXTRA CON DECIMALES Y SIN RESTRICCIONES DE FECHA --}}
 <div class="modal fade" id="modalAsignarHoras{{ $trabajador->id_trabajador }}" tabindex="-1" aria-labelledby="modalAsignarHorasLabel{{ $trabajador->id_trabajador }}" aria-hidden="true">
     <div class="modal-dialog modal-lg">
         <div class="modal-content">
@@ -34,7 +34,8 @@
                                 @endphp
                                 <div class="badge bg-primary fs-6">
                                     <i class="bi bi-clock"></i> 
-                                    {{ $saldoActualAsignar }} {{ $saldoActualAsignar == 1 ? 'hora' : 'horas' }}
+                                    {{ $saldoActualAsignar == floor($saldoActualAsignar) ? number_format($saldoActualAsignar, 0) : number_format($saldoActualAsignar, 1) }} 
+                                    {{ $saldoActualAsignar == 1 ? 'hora' : 'horas' }}
                                 </div>
                                 <div class="small text-muted mt-1">Saldo actual</div>
                             </div>
@@ -43,7 +44,7 @@
 
                     {{-- Formulario --}}
                     <div class="row g-3">
-                        {{-- Horas a asignar --}}
+                        {{-- ✅ HORAS CON DECIMALES --}}
                         <div class="col-md-6">
                             <label for="horas_asignar{{ $trabajador->id_trabajador }}" class="form-label">
                                 <i class="bi bi-clock-fill text-success"></i> Horas Extra Trabajadas <span class="text-danger">*</span>
@@ -54,41 +55,42 @@
                                        id="horas_asignar{{ $trabajador->id_trabajador }}" 
                                        name="horas" 
                                        value="{{ old('horas') }}"
-                                       min="1" 
+                                       min="0.1" 
                                        max="24" 
-                                       step="1" 
-                                       placeholder="0"
+                                       step="0.1" 
+                                       placeholder="0.0"
                                        required>
-                                <span class="input-group-text">{{ old('horas') == 1 ? 'hora' : 'horas' }}</span>
+                                <span class="input-group-text">horas</span>
                                 @error('horas')
                                     <div class="invalid-feedback">{{ $message }}</div>
                                 @enderror
                             </div>
                             <div class="form-text">
                                 <i class="bi bi-info-circle"></i> 
-                                Mínimo: 1 hora | Máximo: 24 horas completas
+                                Mínimo: 0.1 horas (6 min) | Máximo: 24 horas | <strong>Acepta decimales</strong> (ej: 1.5, 2.25)
                             </div>
                         </div>
 
-                        {{-- Fecha --}}
+                        {{-- ✅ FECHA SIN RESTRICCIONES --}}
                         <div class="col-md-6">
                             <label for="fecha_asignar{{ $trabajador->id_trabajador }}" class="form-label">
                                 <i class="bi bi-calendar3"></i> Fecha del Trabajo <span class="text-danger">*</span>
                             </label>
-                            <input type="date" 
-                                   class="form-control @error('fecha') is-invalid @enderror" 
+                            <input type="text" 
+                                   class="form-control formato-fecha @error('fecha') is-invalid @enderror" 
                                    id="fecha_asignar{{ $trabajador->id_trabajador }}" 
                                    name="fecha" 
-                                   value="{{ old('fecha', now()->format('Y-m-d')) }}"
-                                   max="{{ now()->format('Y-m-d') }}"
-                                   min="{{ now()->subDays(30)->format('Y-m-d') }}"
+                                   value="{{ old('fecha', now()->format('d/m/Y')) }}"
+                                   placeholder="DD/MM/YYYY"
+                                   maxlength="10"
+                                   autocomplete="off"
                                    required>
                             @error('fecha')
                                 <div class="invalid-feedback">{{ $message }}</div>
                             @enderror
                             <div class="form-text">
-                                <i class="bi bi-exclamation-triangle"></i> 
-                                Máximo 30 días atrás
+                                <i class="bi bi-info-circle"></i> 
+                                Formato: DD/MM/YYYY - <strong>Cualquier fecha válida</strong>
                             </div>
                         </div>
 
@@ -111,7 +113,7 @@
                             </div>
                         </div>
 
-                        {{-- Vista previa del resultado --}}
+                        {{-- ✅ VISTA PREVIA ACTUALIZADA PARA DECIMALES --}}
                         <div class="col-12">
                             <div class="card border-success">
                                 <div class="card-body bg-light">
@@ -120,7 +122,9 @@
                                     </h6>
                                     <div class="row text-center">
                                         <div class="col-4">
-                                            <div class="h5 text-primary mb-1">{{ $saldoActualAsignar }}</div>
+                                            <div class="h5 text-primary mb-1">
+                                                {{ $saldoActualAsignar == floor($saldoActualAsignar) ? number_format($saldoActualAsignar, 0) : number_format($saldoActualAsignar, 1) }}
+                                            </div>
                                             <small class="text-muted">Saldo Actual</small>
                                         </div>
                                         <div class="col-1 align-self-center">
@@ -137,7 +141,9 @@
                                         </div>
                                         <div class="col-3">
                                             <div class="h5 text-primary mb-1">
-                                                <span id="saldoFinalAsignar{{ $trabajador->id_trabajador }}">{{ $saldoActualAsignar }}</span>
+                                                <span id="saldoFinalAsignar{{ $trabajador->id_trabajador }}">
+                                                    {{ $saldoActualAsignar == floor($saldoActualAsignar) ? number_format($saldoActualAsignar, 0) : number_format($saldoActualAsignar, 1) }}
+                                                </span>
                                             </div>
                                             <small class="text-muted">Horas Acumuladas</small>
                                         </div>
@@ -147,7 +153,7 @@
                         </div>
                     </div>
 
-                    {{-- Información adicional --}}
+                    {{-- ✅ INFORMACIÓN ACTUALIZADA --}}
                     <div class="mt-4">
                         <div class="alert alert-light border">
                             <h6 class="mb-2">
@@ -155,10 +161,12 @@
                             </h6>
                             <ul class="mb-0 small">
                                 <li>Las horas extra se acumularán al saldo del trabajador</li>
-                                <li>Solo se registran <strong>horas completas</strong> (sin fracciones)</li>
+                                <li><strong>Acepta decimales:</strong> puede registrar 0.5, 1.25, 2.75 horas, etc.</li>
                                 <li>Estas horas podrán ser compensadas posteriormente</li>
                                 <li>El registro quedará en el historial laboral</li>
-                                <li>Solo se pueden registrar horas de los últimos 30 días</li>
+                                <li><strong>Sin restricciones de fecha:</strong> puede registrar cualquier fecha válida</li>
+                                <li><strong>Formato de fecha:</strong> DD/MM/YYYY (se formatea automáticamente)</li>
+                                <li>Mínimo: 0.1 horas (6 minutos) | Máximo: 24 horas por registro</li>
                             </ul>
                         </div>
                     </div>
@@ -178,7 +186,7 @@
     </div>
 </div>
 
-{{-- ✅ Script para contador de caracteres y calculadora --}}
+{{-- ✅ Script actualizado para decimales --}}
 <script>
 document.addEventListener('DOMContentLoaded', function() {
     const textarea = document.getElementById('descripcion_asignar{{ $trabajador->id_trabajador }}');
@@ -198,15 +206,53 @@ document.addEventListener('DOMContentLoaded', function() {
         contador.textContent = textarea.value.length;
     }
     
-    // Calculadora de saldo resultante
+    // ✅ CALCULADORA ACTUALIZADA PARA DECIMALES
     if (inputHoras && spanHorasAAsignar && spanSaldoFinal) {
         inputHoras.addEventListener('input', function() {
-            const horasAAsignar = parseInt(this.value) || 0;
+            const horasAAsignar = parseFloat(this.value) || 0; // ✅ parseFloat en lugar de parseInt
             const saldoFinal = saldoActual + horasAAsignar;
             
-            spanHorasAAsignar.textContent = horasAAsignar;
-            spanSaldoFinal.textContent = saldoFinal;
+            // ✅ FORMATEAR DECIMALES CORRECTAMENTE
+            spanHorasAAsignar.textContent = horasAAsignar === Math.floor(horasAAsignar) ? 
+                horasAAsignar.toString() : horasAAsignar.toFixed(1);
+            spanSaldoFinal.textContent = saldoFinal === Math.floor(saldoFinal) ? 
+                saldoFinal.toString() : saldoFinal.toFixed(1);
+                
+            // Cambiar color según validez
+            if (horasAAsignar < 0.1 || horasAAsignar > 24) { // ✅ min 0.1
+                spanSaldoFinal.className = 'text-warning';
+                inputHoras.classList.add('is-invalid');
+            } else {
+                spanSaldoFinal.className = 'text-primary';
+                inputHoras.classList.remove('is-invalid');
+            }
         });
+    }
+    
+    // ✅ VALIDACIÓN SIMPLIFICADA DE FECHAS - SOLO FORMATO
+    const campoFecha = document.getElementById('fecha_asignar{{ $trabajador->id_trabajador }}');
+    if (campoFecha) {
+        campoFecha.addEventListener('blur', function() {
+            const fecha = this.value.trim();
+            
+            if (!fecha) return;
+            
+            // Solo validar formato usando el sistema global
+            if (window.FormatoGlobal && window.FormatoGlobal.validarFormatoFecha(fecha)) {
+                const fechaObj = window.FormatoGlobal.convertirFechaADate(fecha);
+                if (fechaObj) {
+                    window.FormatoGlobal.mostrarExito(this);
+                } else {
+                    window.FormatoGlobal.mostrarError(this, 'Fecha inválida');
+                }
+            } else {
+                if (window.FormatoGlobal) {
+                    window.FormatoGlobal.mostrarError(this, 'Formato inválido. Use DD/MM/YYYY');
+                }
+            }
+        });
+        
+        console.log('✅ Validaciones básicas de fecha asignadas (sin restricciones de período)');
     }
 });
 </script>

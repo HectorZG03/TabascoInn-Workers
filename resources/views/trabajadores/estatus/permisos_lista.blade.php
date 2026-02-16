@@ -35,7 +35,7 @@
             </h6>
         </div>
         <div class="card-body">
-            <form method="GET" action="{{ route('permisos.index') }}"  enctype="multipart/form-data">
+            <form method="GET" action="{{ route('permisos.index') }}" enctype="multipart/form-data">
                 <div class="row g-3">
                     <!-- Búsqueda -->
                     <div class="col-md-3">
@@ -141,8 +141,10 @@
                                 <tr>
                                     <td>
                                         <div class="d-flex align-items-center">
-                                            <div class="avatar-circle bg-info text-white d-flex align-items-center justify-content-center me-3" style="width: 35px; height: 35px; border-radius: 50%; font-size: 12px;">
-                                                {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
+                                            <div class="flex-shrink-0 me-3">
+                                                <div class="avatar-circle bg-primary text-white d-flex align-items-center justify-content-center" style="width: 50px; height: 50px; border-radius: 50%;">
+                                                    {{ substr($permiso->trabajador->nombre_trabajador, 0, 1) }}{{ substr($permiso->trabajador->ape_pat, 0, 1) }}
+                                                </div>
                                             </div>
                                             <div>
                                                 <div class="fw-medium">{{ $permiso->trabajador->nombre_completo }}</div>
@@ -199,7 +201,7 @@
                                         @elseif($permiso->estatus_permiso === 'cancelado')
                                             <span class="badge bg-secondary">Cancelado</span>
                                             <div class="text-muted small mt-1">
-                                                <i class="bi bi-x-circle"></i> Cancelado
+                                                <i class="bi bi-x-circle"></i> {{ $permiso->fecha_cancelacion_formateada }}
                                             </div>
                                         @endif
                                     </td>
@@ -223,30 +225,42 @@
                                                 <i class="bi bi-eye"></i>
                                             </button>
                                             
-                                            <!-- Solo mostrar acciones de gestión si el permiso está activo -->
+                                            <!-- ✅ SOLO MOSTRAR ACCIONES DE GESTIÓN SI EL PERMISO ESTÁ ACTIVO -->
                                             @if($permiso->estatus_permiso === 'activo')
+                                                <!-- Finalizar Permiso -->
                                                 <button type="button" 
-                                                        class="btn btn-outline-warning"
+                                                        class="btn btn-outline-success"
                                                         title="Finalizar Permiso"
                                                         onclick="finalizarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
                                                     <i class="bi bi-check-circle"></i>
                                                 </button>
                                                 
+                                                <!-- ✅ CANCELAR PERMISO (CON MODAL) -->
+                                                <button type="button" 
+                                                        class="btn btn-outline-warning"
+                                                        title="Cancelar Permiso"
+                                                        data-bs-toggle="modal"
+                                                        data-bs-target="#modalCancelar{{ $permiso->id_permiso }}">
+                                                    <i class="bi bi-x-circle"></i>
+                                                </button>
+                                                
+                                                <!-- ✅ ELIMINAR PERMISO DEFINITIVAMENTE -->
                                                 <button type="button" 
                                                         class="btn btn-outline-danger"
                                                         title="Eliminar Permiso Definitivamente"
-                                                        onclick="cancelarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
+                                                        onclick="eliminarPermiso({{ $permiso->id_permiso }}, '{{ $permiso->trabajador->nombre_completo }}')">
                                                     <i class="bi bi-trash"></i>
                                                 </button>
                                             @endif
-                                           @if($permiso->tiene_pdf)
+
+                                            <!-- Archivo -->
+                                            @if($permiso->tiene_pdf)
                                                 <a href="{{ route('permisos.descargar', $permiso) }}" 
                                                 class="btn btn-outline-info"
                                                 title="Descargar archivo adjunto">
                                                     <i class="bi bi-download"></i>
                                                 </a>
                                             @else
-                                                <!-- Botón para abrir modal subir archivo -->
                                                 <button type="button" 
                                                         class="btn btn-outline-success" 
                                                         data-bs-toggle="modal" 
@@ -254,47 +268,117 @@
                                                         title="Subir archivo del permiso">
                                                     <i class="bi bi-upload"></i>
                                                 </button>
-
-                                                <!-- Incluir el componente modal para subir archivo -->
                                                 <x-modal_subir_archivo :permiso-id="$permiso->id_permiso" />
                                             @endif
-
                                         </div>
 
-                                    <!-- Modal de detalles del permiso -->
-                                    <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1" aria-labelledby="modalDetallesLabel{{ $permiso->id_permiso }}" aria-hidden="true">
-                                        <div class="modal-dialog modal-lg modal-dialog-scrollable">
-                                            <div class="modal-content">
-                                                <!-- Header del modal -->
-                                                <div class="modal-header">
-                                                    <h5 class="modal-title" id="modalDetallesLabel{{ $permiso->id_permiso }}">
-                                                        Detalles del Permiso #{{ $permiso->id_permiso }}
-                                                    </h5>
-                                                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
-                                                </div>
+                                        <!-- ✅ MODAL DE CANCELACIÓN -->
+                                        <div class="modal fade" id="modalCancelar{{ $permiso->id_permiso }}" tabindex="-1" aria-labelledby="modalCancelarLabel{{ $permiso->id_permiso }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-dialog-centered">
+                                                <div class="modal-content">
+                                                    <div class="modal-header bg-warning">
+                                                        <h5 class="modal-title text-dark" id="modalCancelarLabel{{ $permiso->id_permiso }}">
+                                                            <i class="bi bi-exclamation-triangle"></i> Cancelar Permiso
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <form method="POST" action="{{ route('permisos.cancelar', $permiso) }}">
+                                                        @csrf
+                                                        @method('PATCH')
+                                                        <div class="modal-body">
+                                                            <div class="alert alert-warning">
+                                                                <strong>¿Está seguro de cancelar este permiso?</strong>
+                                                                <br>
+                                                                <small>Trabajador: <strong>{{ $permiso->trabajador->nombre_completo }}</strong></small>
+                                                                <br>
+                                                                <small>Tipo: <strong>{{ $permiso->tipo_permiso }}</strong></small>
+                                                                <br>
+                                                                <small>Periodo: <strong>{{ $permiso->fecha_inicio->format('d/m/Y') }} - {{ $permiso->fecha_fin->format('d/m/Y') }}</strong></small>
+                                                            </div>
 
-                                                <!-- Body del modal -->
-                                                <div class="modal-body">
-                                                    <ul class="list-group list-group-flush">
-                                                        <li class="list-group-item"><strong>Trabajador:</strong> {{ $permiso->trabajador->nombre_completo ?? 'N/A' }}</li>
-                                                        <li class="list-group-item"><strong>Tipo:</strong> {{ $permiso->tipo_permiso_texto }}</li>
-                                                        <li class="list-group-item"><strong>Motivo:</strong> {{ $permiso->motivo_texto }}</li>
-                                                        <li class="list-group-item"><strong>Fechas:</strong> {{ $permiso->fecha_inicio->format('d/m/Y') }} al {{ $permiso->fecha_fin->format('d/m/Y') }}</li>
-                                                        <li class="list-group-item"><strong>Observaciones:</strong> {{ $permiso->observaciones ?? 'Ninguna' }}</li>
-                                                        <li class="list-group-item"><strong>Estatus:</strong> {{ $permiso->estatus_permiso_texto }}</li>
-                                                    </ul>
-                                                </div>
+                                                            <div class="mb-3">
+                                                                <label for="motivo_cancelacion{{ $permiso->id_permiso }}" class="form-label">
+                                                                    <strong>Motivo de la cancelación <span class="text-danger">*</span></strong>
+                                                                </label>
+                                                                <textarea class="form-control" 
+                                                                        id="motivo_cancelacion{{ $permiso->id_permiso }}" 
+                                                                        name="motivo_cancelacion" 
+                                                                        rows="4" 
+                                                                        required 
+                                                                        minlength="10"
+                                                                        maxlength="500"
+                                                                        placeholder="Explique detalladamente el motivo de la cancelación (mínimo 10 caracteres)"></textarea>
+                                                                <div class="form-text">
+                                                                    Este motivo quedará registrado permanentemente en el sistema.
+                                                                </div>
+                                                            </div>
 
-                                                <!-- Footer del modal -->
-                                                <div class="modal-footer">
-                                                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
-                                                        <i class="bi bi-x-circle"></i> Cerrar
-                                                    </button>
+                                                            <div class="alert alert-info">
+                                                                <strong>Al cancelar:</strong>
+                                                                <ul class="mb-0 mt-2">
+                                                                    <li>El permiso cambiará a estado "Cancelado"</li>
+                                                                    <li>El trabajador será reactivado automáticamente</li>
+                                                                    <li>El registro se mantendrá para auditoría</li>
+                                                                    <li>No se podrá reactivar este permiso</li>
+                                                                </ul>
+                                                            </div>
+                                                        </div>
+                                                        <div class="modal-footer">
+                                                            <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                                <i class="bi bi-x"></i> Mantener Permiso
+                                                            </button>
+                                                            <button type="submit" class="btn btn-warning">
+                                                                <i class="bi bi-x-circle"></i> Confirmar Cancelación
+                                                            </button>
+                                                        </div>
+                                                    </form>
                                                 </div>
                                             </div>
                                         </div>
-                                    </div>
 
+                                        <!-- Modal de detalles del permiso -->
+                                        <div class="modal fade" id="modalDetalles{{ $permiso->id_permiso }}" tabindex="-1" aria-labelledby="modalDetallesLabel{{ $permiso->id_permiso }}" aria-hidden="true">
+                                            <div class="modal-dialog modal-lg modal-dialog-scrollable">
+                                                <div class="modal-content">
+                                                    <div class="modal-header">
+                                                        <h5 class="modal-title" id="modalDetallesLabel{{ $permiso->id_permiso }}">
+                                                            Detalles del Permiso #{{ $permiso->id_permiso }}
+                                                        </h5>
+                                                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                                                    </div>
+                                                    <div class="modal-body">
+                                                        <ul class="list-group list-group-flush">
+                                                            <li class="list-group-item"><strong>Trabajador:</strong> {{ $permiso->trabajador->nombre_completo ?? 'N/A' }}</li>
+                                                            <li class="list-group-item"><strong>Tipo:</strong> {{ $permiso->tipo_permiso_texto }}</li>
+                                                            <li class="list-group-item"><strong>Motivo:</strong> {{ $permiso->motivo_texto }}</li>
+                                                            <li class="list-group-item"><strong>Fechas:</strong> {{ $permiso->fecha_inicio->format('d/m/Y') }} al {{ $permiso->fecha_fin->format('d/m/Y') }}</li>
+                                                            <li class="list-group-item"><strong>Observaciones:</strong> {{ $permiso->observaciones ?? 'Ninguna' }}</li>
+                                                            <li class="list-group-item"><strong>Estatus:</strong> {{ $permiso->estatus_permiso_texto }}</li>
+                                                            
+                                                            <!-- ✅ MOSTRAR INFORMACIÓN DE CANCELACIÓN SI APLICA -->
+                                                            @if($permiso->estatus_permiso === 'cancelado')
+                                                                <li class="list-group-item bg-light">
+                                                                    <strong>Información de Cancelación:</strong>
+                                                                    <div class="mt-2">
+                                                                        <small><strong>Fecha:</strong> {{ $permiso->fecha_cancelacion_formateada }}</small><br>
+                                                                        <small><strong>Cancelado por:</strong> {{ $permiso->cancelado_por }}</small><br>
+                                                                        <small><strong>Motivo:</strong></small>
+                                                                        <div class="mt-1 p-2 bg-warning bg-opacity-10 border border-warning rounded">
+                                                                            {{ $permiso->motivo_cancelacion }}
+                                                                        </div>
+                                                                    </div>
+                                                                </li>
+                                                            @endif
+                                                        </ul>
+                                                    </div>
+                                                    <div class="modal-footer">
+                                                        <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">
+                                                            <i class="bi bi-x-circle"></i> Cerrar
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
                                     </td>
                                 </tr>
                             @endforeach
@@ -334,52 +418,31 @@
     </div>
 </div>
 
-<script>
-function finalizarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`¿Está seguro de finalizar el permiso de ${nombreTrabajador}? El trabajador será reactivado.`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permisos/${permisoId}/finalizar`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'PATCH';
-        
-        form.appendChild(csrfToken);
-        form.appendChild(methodField);
-        document.body.appendChild(form);
-        form.submit();
-    }
-}
+{{-- ✅ SCRIPTS ACTUALIZADOS --}}
+<script src="{{ asset('js/app-routes.js') }}"></script>
 
-function cancelarPermiso(permisoId, nombreTrabajador) {
-    if (confirm(`⚠️ ¿Está seguro de ELIMINAR DEFINITIVAMENTE el permiso de ${nombreTrabajador}?\n\nEsta acción:\n• Eliminará el permiso de la base de datos\n• Reactivará al trabajador\n• NO SE PUEDE DESHACER\n\n¿Continuar?`)) {
-        const form = document.createElement('form');
-        form.method = 'POST';
-        form.action = `/permisos/${permisoId}/cancelar`;
-        
-        const csrfToken = document.createElement('input');
-        csrfToken.type = 'hidden';
-        csrfToken.name = '_token';
-        csrfToken.value = '{{ csrf_token() }}';
-        
-        const methodField = document.createElement('input');
-        methodField.type = 'hidden';
-        methodField.name = '_method';
-        methodField.value = 'DELETE';
-        
-        form.appendChild(csrfToken);
-        form.appendChild(methodField);
-        document.body.appendChild(form);
-        form.submit();
+<script src="{{ asset('js/listas/permisos_lista.js') }}"></script>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    if (typeof window.APP_DEBUG !== 'undefined' && window.APP_DEBUG) {
+        setTimeout(() => {
+            if (typeof window.debugRutasPermisos === 'function') {
+                console.group('🔍 Debug Lista Permisos');
+                window.debugRutasPermisos();
+                console.log('Funciones disponibles:', {
+                    finalizarPermiso: typeof window.finalizarPermiso,
+                    eliminarPermiso: typeof window.eliminarPermiso,
+                    subirArchivoPermiso: typeof window.subirArchivoPermiso,
+                    descargarArchivoPermiso: typeof window.descargarArchivoPermiso
+                });
+                console.groupEnd();
+            }
+        }, 1000);
     }
-}
+    
+    console.log('✅ Lista de permisos con cancelación inicializada correctamente');
+});
 </script>
 
 @endsection

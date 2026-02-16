@@ -1,4 +1,4 @@
-{{-- ✅ MODAL DE DESPIDO CON FORMATO GLOBAL DD/MM/YYYY --}}
+{{-- ✅ MODAL DE DESPIDO CON FORMATO GLOBAL DD/MM/YYYY - SIN SCRIPT INTERNO --}}
 <div class="modal fade" id="modalDespido" tabindex="-1" aria-labelledby="modalDespidoLabel" aria-hidden="true">
   <div class="modal-dialog modal-lg modal-dialog-centered">
     <div class="modal-content border-danger shadow-sm">
@@ -27,27 +27,27 @@
           </div>
           
           <div class="row g-3">
-            <!-- ✅ FECHA DE BAJA CON FORMATO PERSONALIZADO -->
+          <!-- ✅ FECHA DE BAJA CON FORMATO PERSONALIZADO -->
             <div class="col-md-6">
-              <label for="fecha_baja" class="form-label fw-semibold">
-                <i class="bi bi-calendar-x-fill me-1"></i> Fecha de Baja <span class="text-danger">*</span>
-              </label>
-              @php
-                  $fechaBaja = old('fecha_baja') 
-                      ? \Carbon\Carbon::parse(old('fecha_baja'))->format('d/m/Y') 
-                      : '';
-              @endphp
+                <label for="fecha_baja" class="form-label fw-semibold">
+                    <i class="bi bi-calendar-x-fill me-1"></i> Fecha de Baja <span class="text-danger">*</span>
+                </label>
+                @php
+                    $fechaBaja = old('fecha_baja') 
+                        ? \Carbon\Carbon::parse(old('fecha_baja'))->format('d/m/Y') 
+                        : '';
+                @endphp
 
-              <input type="text" 
-                    class="form-control formato-fecha" 
-                    id="fecha_baja" 
-                    name="fecha_baja" 
-                    placeholder="DD/MM/YYYY"
-                    maxlength="10"
-                    value="{{ $fechaBaja }}"
-                    required>
-              <div class="form-text">Formato: DD/MM/YYYY (no puede ser posterior a hoy)</div>
-              <div class="invalid-feedback"></div>
+                <input type="text" 
+                      class="form-control formato-fecha" 
+                      id="fecha_baja" 
+                      name="fecha_baja" 
+                      placeholder="DD/MM/YYYY"
+                      maxlength="10"
+                      value="{{ $fechaBaja }}"
+                      required>
+                <div class="form-text">Formato: DD/MM/YYYY</div> <!-- Eliminado mensaje restrictivo -->
+                <div class="invalid-feedback"></div>
             </div>
             
             <!-- Tipo de Baja -->
@@ -193,5 +193,3 @@
     </div>
   </div>
 </div>
-
-<script src="{{ asset('js/modales/despidos_modal.js') }}"></script>
